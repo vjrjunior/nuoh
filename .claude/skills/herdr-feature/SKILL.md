@@ -11,8 +11,9 @@ The loop: **frame → prior art → plan → worktree and move → build → Don
 
 ## 1. Frame
 
+0. `MAIN` below is the main checkout: `dirname "$(git rev-parse --path-format=absolute --git-common-dir)"`.
 1. Herdr's guide reaches the session through `CLAUDE.md`. Read it again, in one read, only when a reminder says it changed. Run `herdr-app --version`.
-2. Say in a few lines what the person sees and does, in `vjr-desk` and in `vjr-desk-square`, and where it lands: a new mod, one of ours (`mods/spaces-tree`, `command-center`, `comeback`, `move-tab`, `markdown`), a recipe that patches a copy of a Herdr mod (as `recipes/move-tab.ts` patches `menu` and `tabs`), or the layout tree.
+2. Say in a few lines what the person sees and does, in `vjr-desk` and in `vjr-desk-square`, and where it lands: a new mod, one of ours (`mods/spaces-tree`, `comeback`, `move-tab`, `markdown`), a recipe that patches a copy of a Herdr mod (as `recipes/move-tab.ts` patches `menu` and `tabs`), or the layout tree.
 
 ## 2. Prior art and questions
 
@@ -26,7 +27,7 @@ The loop: **frame → prior art → plan → worktree and move → build → Don
 
 ## 3. Plan
 
-Name the branch (`feat/`, `fix/`, `chore/`, `docs/`, `refactor/` plus a topic) and write `~/orbita/vjrjunior-herdr/docs/plans/<YYYY-MM-DD>-<topic>.md`:
+Name the branch (`feat/`, `fix/`, `chore/`, `docs/`, `refactor/` plus a topic) and write `$MAIN/docs/plans/<YYYY-MM-DD>-<topic>.md`:
 
 1. **Goal**: what the person sees and does.
 2. **Prior art**: the searches run, each candidate with its link, verdict and what we take ("nothing fits" counts).
@@ -41,12 +42,12 @@ Name the branch (`feat/`, `fix/`, `chore/`, `docs/`, `refactor/` plus a topic) a
 
 With the plan written, and before asking for approval:
 
-1. Reuse what exists: check `git -C ~/orbita/vjrjunior-herdr worktree list` and `git branch --list '<branch>'` first.
+1. Reuse what exists: check `git -C "$MAIN" worktree list` and `git branch --list '<branch>'` first.
 2. Create it as `AGENTS.md` › Worktrees shows.
 3. Schedule the move. When this turn ends, Move tab resumes the conversation with `claude --resume` in a space of the worktree, or a new one named after the branch:
 
    ```bash
-   WT=~/.herdr/worktrees/vjrjunior-herdr/<branch, / as ->
+   WT=~/.herdr/worktrees/"$(basename "$MAIN")"/<branch, / as ->
    sh ~/.config/herdr-app/mods/vjr-move-tab/schedule.sh --to "$WT"
    ```
 
@@ -68,7 +69,7 @@ In the worktree, with the plan approved:
 
 ## 6. Done
 
-All of `AGENTS.md` › Done. The live checks go in one test-panel run, `~/orbita/vjrjunior-herdr/docs/runs/<topic>.json`:
+All of `AGENTS.md` › Done. The live checks go in one test-panel run, `$MAIN/docs/runs/<topic>.json`:
 
 - `"layouts"` names both, with one step per layout that switches to it with `run` and shows the change; the shot each answer takes is that layout's Done shot.
 - `"report"` is `$HC_TERMINAL_ID`, so the summary comes back to this session.
@@ -78,7 +79,5 @@ All of `AGENTS.md` › Done. The live checks go in one test-panel run, `~/orbita
 ## 7. Land
 
 - Commit each change a person would name on its own, as `AGENTS.md` › Commits says; a feature is usually one commit.
-- Run `/verify` right before each commit.
-  - This repo's pregate map is `~/.gstack/projects/vjrjunior-herdr/pregate.json`, not `.gstack/pregate.json`. A file tests read at run time (a fixture) goes there, mapped to those tests.
-  - It selects against `origin/main`, so it also sees local `main`'s unpushed commits. A red or `UNMAPPED` file only those commits touched is not this branch's: report it, and offer to push `main`.
+- Run `bun test` right before each commit.
 - Ask whether to open a PR or merge into `main`. Once it lands or is dropped, update the main checkout and run `bun run apply-layout` there. Remove the worktree last, from the main checkout, because this session runs inside it.

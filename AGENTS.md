@@ -2,6 +2,8 @@
 
 This repo customizes herdr-app: the VJR palette and theme (also built for Ghostty), the `vjr-desk` layouts and their mods. Weigh every idea by what it does for herdr-app. `README.md` covers each part and its commands; `RECIPE.md` describes the layouts.
 
+Asked only to install the layouts on someone's machine? Follow [`INSTALL.md`](INSTALL.md) and skip the rest of this file: the rules below are for changing the repo.
+
 ## Herdr's guide
 
 `~/.config/herdr-app/AGENTS.md` is the contract for everything built here: the app's files, its commands, the mod API, and what is read-only. Herdr rewrites it on every start and update, so read it at the start of every session that plans or builds, all of it, in one read. Searching or skimming it has already cost a wrong plan (themes do not reload live) and an edit to a read-only shipped layout. Claude Code loads it through `CLAUDE.md`. `herdr.d.ts` and `gpui-kit.d.ts` next to it are the API, and `herdr-app --version` says which version it describes.
@@ -31,13 +33,14 @@ Copied code needs a license that allows it and a credit in `README.md` with auth
 
 ## Worktrees
 
-Each feature or fix gets its own branch in its own worktree. The main checkout, `~/orbita/vjrjunior-herdr`, stays on `main` and may hold another session's work: leave its branch, index and files as they are.
+Each feature or fix gets its own branch in its own worktree. The main checkout, the folder the repo was cloned into, stays on `main` and may hold another session's work: leave its branch, index and files as they are.
 
 - Branch names carry a conventional prefix: `feat/`, `fix/`, `chore/`, `docs/`, `refactor/`.
-- Worktrees go where Herdr's New worktree puts them, so one made from Herdr's space menu and one made in a shell sit side by side: `~/.herdr/worktrees/vjrjunior-herdr/<branch with / as ->`.
+- Worktrees go where Herdr's New worktree puts them, so one made from Herdr's space menu and one made in a shell sit side by side: `~/.herdr/worktrees/<repo folder's name>/<branch with / as ->`.
 
   ```sh
-  git -C ~/orbita/vjrjunior-herdr worktree add -b feat/<topic> ~/.herdr/worktrees/vjrjunior-herdr/feat-<topic> main
+  MAIN=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")
+  git -C "$MAIN" worktree add -b feat/<topic> ~/.herdr/worktrees/"$(basename "$MAIN")"/feat-<topic> main
   ```
 
 - Specs and plans live in the main checkout's `docs/`, by absolute path. `docs/` is git-ignored, and removing a worktree deletes its ignored files. Planning files stay out of every commit, whatever a skill says.
@@ -47,8 +50,9 @@ Each feature or fix gets its own branch in its own worktree. The main checkout, 
 
 Every feature ships in `vjr-desk` and `vjr-desk-square`, built from the same recipes, as Comeback and the Spaces tree do.
 
-- Add the feature's recipe to both entries of `VARIANTS` in `recipes/variants.ts`. In `vjr-desk-square`, `square` stays last: it squares every corner and turns `●` and `○` into `■` and `□` in what the recipes before it produced.
-- A mod from this repo's `mods/` also goes in `recipes/square.ts`, in its `mods` (`from: "repo"`) and in `OWN_MODS`. Nothing warns when a feature is missing from one layout, so the shot of each layout in Done is the check.
+- Add the feature's recipe to `OWN` in `recipes/variants.ts`: both layouts are built from that list. In `vjr-desk-square`, `square` runs last: it squares every corner and turns `●` and `○` into `■` and `□` in what the recipes before it produced, and it takes every `from: "repo"` mod of those recipes by itself.
+- A recipe whose mod opens a popup says so in its `square` field (`popupRoots`, `frameless`), as `recipes/move-tab.ts` does. Nothing warns when a popup is missing there, so the shot of each layout in Done is the check.
+- What belongs to one person (their editor, a mod for their team's workflow) stays out of this repo: it goes in the local config and its `extras`, described in `README.md` › Local config.
 - Mods are installed as `vjr-<name>` in one layout and `vjr-square-<name>` in the other. Name another mod as `mod: "<name>"` or `{ name: "<name>" }`, in double quotes, so the generator can add the prefix; it refuses a reference it cannot rewrite. Commands sent to a mod differ the same way (`vjr-comeback.resume`, `vjr-square-comeback.resume`), so docs give both.
 
 ## UI
