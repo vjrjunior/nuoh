@@ -1,6 +1,16 @@
 # vjrjunior-herdr
 
-My customizations for [Herdr](https://herdr.dev): the VJR theme, a dark palette of three hues (peach, mint and red) over a gray ladder, generated from one file for herdr-app and Ghostty, and two herdr-app layouts built on it.
+VJR Desk for [Herdr](https://herdr.dev): the VJR theme, a dark palette of three hues (peach, mint and red) over a gray ladder, generated from one file for herdr-app and Ghostty, and two herdr-app layouts built on it.
+
+## Install with an agent
+
+Paste this into Claude Code, or any coding agent with a shell, on the machine that runs herdr-app:
+
+```
+Install the VJR Desk layouts for herdr-app by following https://github.com/vjrjunior/vjrjunior-herdr/blob/main/INSTALL.md
+```
+
+[`INSTALL.md`](INSTALL.md) tells the agent what to check, what to run, what each mod reads and runs, and how to undo it. The rest of this file describes each part.
 
 ## Use the theme
 
@@ -58,7 +68,8 @@ A palette that does not validate installs nothing, and the last good theme stays
 | Variable | Default | Used for |
 |---|---|---|
 | `HERDR_APP_HOME` | `~/.config/herdr-app` | herdr-app's folder, and which running window `herdr-app` talks to |
-| `XDG_CONFIG_HOME` | `~/.config` | Ghostty's folder |
+| `XDG_CONFIG_HOME` | `~/.config` | Ghostty's folder, and `vjr-herdr/config.json`, the [local config](#local-config) |
+| `VJR_HERDR_CONFIG` | `~/.config/vjr-herdr/config.json` | another file for the local config |
 | `XDG_STATE_HOME` | `~/.local/state` | backups, the install records and the layout log |
 
 ## Use the layouts
@@ -92,7 +103,37 @@ If a recipe no longer fits the new version, nothing changes in either layout: th
 - Run it again after changing the shortcut for the palette, Settings, help or search in the `global` section of `keys.json`.
 - The layouts store this repo's path. If you move it, run `bun run apply-layout` from the new place.
 - `~/.local/state/vjr-herdr/layout.log` records every run.
-- `bun run apply-layout --pp-stack <folder>` makes the Command Center run `pp-lane-status` and `pp-pr-evidence` from `<folder>/bin/` instead of the installed pp-stack, to try a pp-stack branch before it ships. The folder needs `bin/pp-lane-status`. Later runs, including the ones `vjr-sync` makes after a Herdr update, keep it; `--pp-stack ''` goes back to `~/.claude/skills/pp-stack`.
+
+### Local config
+
+`~/.config/vjr-herdr/config.json` holds what is yours and stays out of this repo. Without it the layouts are the ones described here. `XDG_CONFIG_HOME` moves the folder, and `VJR_HERDR_CONFIG` names another file.
+
+```json
+{
+  "editor": { "name": "Zed", "argv": ["zed"] },
+  "extras": [{ "path": "~/code/my-herdr-extras", "options": {} }]
+}
+```
+
+- **`editor`** names the Markdown viewer's first button and gives the command it runs, with the file as its last argument.
+- **`extras`** are folders with more recipes, each a path or `{ path, options }`. An extra has `recipes/index.ts`, which exports `recipes` (a list of `{ name, mods, apply }`, the shape in `recipes/recipe.ts`), its mods in `mods/<name>/` and, if it brings icons, `kit/icons/*.svg`.
+  - Its recipes run in both layouts after this repo's and before `square`, so its mods are installed as `vjr-<name>` and `vjr-square-<name>` and come out square in `vjr-desk-square`.
+  - A recipe's `mods` entry with `from: "repo"` is read from the extra's own `mods/`, and `apply` gets the extra's `options`.
+  - A mod of an extra imports the kit as `../../kit/kit.js`, like this repo's, and its icons are installed next to the kit's.
+  - `square: { popupRoots, frameless }` on a recipe gives its popups the square border and drops Herdr's frame.
+  - An extra that does not load stops `apply-layout` before it installs anything, and the message names the folder.
+
+Run `bun run apply-layout` after changing the file. `vjr-sync` reads it again on every Herdr update.
+
+### A second line under a worktree
+
+The Spaces tree draws a second line under any worktree that has an entry in the shared key `spaces-tree.lines`, so another mod can say where that worktree stands:
+
+```js
+setShared("spaces-tree.lines", { "/path/to/worktree": { text: "PR open", tone: "working", why: "2 checks running" } });
+```
+
+`text` is drawn in the `tone` color (`working`, `blocked`, `done` or `accent`; anything else is gray), then `· <why>` in `muted`. The key holds every worktree's line at once, so a mod that publishes it writes the whole map. Nothing in this repo writes it.
 
 ### Git Graph
 
@@ -108,47 +149,21 @@ When the Mac restarts, Herdr brings every terminal back as a bare shell. `mods/c
 
 Each loss gets one automatic try. `herdr-app do vjr-square-comeback.resume` (or `vjr-comeback.resume` in `vjr-desk`) tries again. [`mods/comeback/RECIPE.md`](mods/comeback/RECIPE.md) describes it in full and is ready for herdr.dev.
 
-### Command Center
-
-The `Command Center` button, right after `+` in the top bar, opens a column for the checkout of the focused terminal. Like the side panel, each space remembers whether its column was open.
-
-- **Profiles:** the button in the header picks the repo's profile. `Work` is every repo's default and covers two flows, chosen per worktree with no setting: a worktree with a `VJR-TASK.md` follows **Work - VJR**, and any other follows **Work - PP**, the team's flow. `Off` stops the panel from reading that repo at all. The header says `Work` in the main checkout and the flow's name in a worktree.
-- **In a Work - PP worktree** the column shows the task's id (a dash when there is none) and where it came from (`claimed with /work`, `from the branch`, `from the PR title`), its title, `branch → base`, and links to ClickUp, the PR and the person's editor (Zed when `PP_EDITOR` is `zed`, else Cursor). Below it is a timeline of six steps, Build, Ship, Evidence, PR, Merge and Clear, each with the note `pp-lane-status` gives it. The current step opens with what it needs: the commits ahead of the base, the ships and what the last one covers, why each receipt is stale with the release card, or the PR's checks (each opens its run), preview and review, then the next step's button. Nothing in it mentions `VJR-TASK.md`, done items or manual checks.
-- **In a Work - VJR worktree** (a worktree other than the main checkout, with a `VJR-TASK.md` from `/vjr-task`), the column shows the task and its track as a timeline: Task, AC, Ship, Evidence, PR, Merge, Clear. Each step says what happened or what comes next. The current step opens with what it needs: the manual checks while `/vjr-ac` asks them, the PR's checks, preview and review, or the next step's button. Task and Evidence open with a click, on the done items and on the receipts with the release card (the screenshots and `Copy message`); Evidence opens by itself once the PR merges. The task's links (ClickUp, the PR, `VJR-TASK.md`, Zed) are outline buttons with a gray icon and the name. The timeline's nodes are drawn icons: done is filled with a check, the current step is a ring with a dot (an exclamation when it went wrong), later steps are empty rings, and Task and Evidence have a chevron that turns when they are open. Check states are chips with an icon. `VJR-TASK.md` opens in the Markdown viewer next to the terminal.
-- **In the main checkout,** a `Start a task` field sits over the repo's lanes of both flows, each with its id and title, its own dots (seven for Work - VJR, six for Work - PP), its step, why it waits and what to do. Where `/vjr-task` is installed, each row also carries a small `VJR` or `PP` tag.
-
-The number on the button counts the lanes that wait on you, red when a PR failed. In both flows a lane waits on you when a Claude is blocked or a skill stopped to ask you something, when its PR failed, when the PR is ready to merge, and when it merged and waits for `/pp-clear`. Each worktree with a lane gets a second line in the Spaces tree under its name: the step (Work - VJR: `Task`, `AC 3/5`, `AC done`, `Ship`, `PR open`, `PR failed`, `Ready`, `Merged`; Work - PP: `Build`, `Ship`, `Ship stale`, `Evidence`, `PR open`, `PR failed`, `Ready`, `Merged`) in the lane's color, red when it waits on you, then `· <why>`.
-
-While `/vjr-ac` asks its manual checks, the AC step shows them as cards, read from the `## Manual checks` table it writes to `VJR-TASK.md`: the check being asked has `Passed` and `Failed…` (type what you saw, Enter sends, Esc cancels), which answer in the Claude running `/vjr-ac`.
-
-**Start a task** takes a ClickUp id (`CUP-1234`, a `https://app.clickup.com/t/…` link or an internal `86…` id) or a few words of what you'll do. Enter with an id runs `/work start <id>, then /pp-worktree-start for it`; with words, `/pp-worktree-start <words>`. The Claude starts with `PP_EDITOR=herdr` in a new tab of the main checkout's space named `start · <id or first words>`, so `/pp-worktree-start` opens the new worktree as a Herdr space with Claude in it. Where `/vjr-task` is installed, Enter sends the text to `/vjr-task` instead and a `Team flow instead` link takes the team's route; without it nothing in the field mentions vjr. The text goes on one line, and an id that already has a lane goes to its space instead.
-
-The next step is one click, and the line at the bottom of the column says what it did (`Sent to claude · t12`, `New tab: /pp-ship`, `Went to claude · t41`, `Opened <url>`):
-- `/vjr-ac` goes to the Claude session that ran `/vjr-task`, named by the `**Session:**` line `/vjr-task` writes to `VJR-TASK.md`, even when it runs in the main checkout. Without that line it goes to the worktree's Claude, else to a new tab.
-- `/pp-ship` opens in a new tab of the worktree, named `ship · <id>` (the folder's name when there is no id). In Work - VJR it carries the base and the scope it needs.
-- The push for a task based on another branch, `/pp-pr-ready`, `/land-and-deploy` and the release message go to the worktree's Claude.
-- `/pp-clear` always runs in a new tab of the main checkout.
-- A step that stopped to ask you turns the button into `Go to claude`.
-
-It never types into another worktree, into a working Claude, into one waiting on a prompt, or into a session whose skill is still running. A send to an idle Claude uses `hc send --if idle`, so it fails rather than typing into a Claude that just started working. It never merges, pushes, posts to Slack or changes ClickUp.
-
-`mods/command-center/` gets every lane's ship, evidence, PR, checks and preview from pp-stack's `pp-lane-status --json` (pp-stack 0.94.0 or later), run once per repo in Work: every 5 seconds for the repo in focus, every 30 for the others, and at once when one of its Claudes stops working. `pp-lane-status` asks GitHub once per repo and caches the answer for 30 seconds; a worktree the report leaves out (a new one in focus, a Work - VJR task with no commits yet) is read alone with `--no-network`. The mod itself never calls `gh`. It runs `pp-lane-status` with the `bun` that ran `apply-layout`, kept in the watcher's props, because the app's PATH often lacks `~/.bun/bin`. A repo whose `pp-lane-status` is missing says `Command Center needs pp-stack 0.94.0 or later` and offers to switch it off. The mod also reads `VJR-TASK.md`, `git`, `pp-pr-evidence last-code-sha`, `~/.pp-stack/session/`, `~/.claude/sessions/` (each Claude's current conversation tells which one is the task's session), whether `~/.claude/skills/vjr-task/SKILL.md` exists, and `PP_EDITOR` from the login shell. It alerts only when a PR becomes ready, needs attention or merges. It writes nothing but copies of the screenshots under `data/<copy>/shots/`, removed when the task is gone, and the repos switched off, in `command-center.profiles` in shared state. Clicking an alert runs `vjr-command-center.show` (`vjr-square-command-center.show` in the square layout), which selects the task's space and opens the column.
-
 ### Markdown viewer
 
 `mods/markdown/` shows one Markdown file in a pane. Another mod opens it with `pane.split` and `props: { file }`, and so can you:
 
 ```sh
-herdr-app do pane.split --direction right --mod vjr-markdown --props '{"file":"/path/to/VJR-TASK.md"}'
+herdr-app do pane.split --direction right --mod vjr-markdown --props '{"file":"/path/to/NOTES.md"}'
 ```
 
-In the square layout the mod is `vjr-square-markdown`. The pane reads the file again when it changes and hides front matter. A link to another `.md` opens in the same pane, with `Back` (an outline button with an arrow) to return; web links open in the browser and other files in their own app. The header's right side has two buttons: Zed, an outline button with a gray Zed icon and the name, opens the file in Zed, and Reload, an icon button with a tooltip, reads it again. It reads only the file it shows and the files it links to, runs `open` and `zed`, and never reaches the network.
+In the square layout the mod is `vjr-square-markdown`. The pane reads the file again when it changes and hides front matter. A link to another `.md` opens in the same pane, with `Back` (an outline button with an arrow) to return; web links open in the browser and other files in their own app. The header's right side has two buttons: Open, an outline button with a gray icon, opens the file in its own app, and Reload, an icon button with a tooltip, reads it again. With an `editor` in the [local config](#local-config), the first button carries that editor's name and runs its command. It reads only the file it shows and the files it links to, runs `open` or the configured editor, and never reaches the network.
 
 ### Move tab
 
-Right-click a tab and pick `Move to…`, press `cmd-shift-m` for the focused tab, or drag the tab onto the Spaces tree to send it to another checkout of its repo: the main checkout, or a worktree, open as a space or not. The tab's Claude Code conversation is ended and resumed there with `claude --resume`, with the same options (a relative path in them still names the same folder or file) and a note that its folder changed. A shell with nothing running gets a new shell in the matching folder (`src/app` in the main checkout is `src/app` in the worktree), and a mod pane such as the Markdown viewer opens again with its props. Splits keep their shape, not their sizes. The tab shows up in the target space, selected, and the old space stays open: when the tab was its only one, the space gets a new tab with a shell at its checkout's root. A worktree with no space gets one first, named after its branch as `CUP-5365 · bulk orders cron` for `feat/CUP-4825--cup-5365-bulk-orders-cron` (the main checkout's keeps Herdr's own name).
+Right-click a tab and pick `Move to…`, press `cmd-shift-m` for the focused tab, or drag the tab onto the Spaces tree to send it to another checkout of its repo: the main checkout, or a worktree, open as a space or not. The tab's Claude Code conversation is ended and resumed there with `claude --resume`, with the same options (a relative path in them still names the same folder or file) and a note that its folder changed. A shell with nothing running gets a new shell in the matching folder (`src/app` in the main checkout is `src/app` in the worktree), and a mod pane such as the Markdown viewer opens again with its props. Splits keep their shape, not their sizes. The tab shows up in the target space, selected, and the old space stays open: when the tab was its only one, the space gets a new tab with a shell at its checkout's root. A worktree with no space gets one first, named after its branch as `ABC-5365 · bulk orders cron` for `feat/ABC-4825--abc-5365-bulk-orders-cron` (the main checkout's keeps Herdr's own name).
 
-A Claude session can also schedule its own move, which is how `/herdr-feature` and `/vjr-task` send a session into the worktree they just made:
+A Claude session can also schedule its own move, which is how `/herdr-feature` sends a session into the worktree it just made:
 
 ```sh
 sh ~/.config/herdr-app/mods/vjr-move-tab/schedule.sh --to <worktree> [--prompt <next turn>]
@@ -182,7 +197,7 @@ Both layouts show the same folders, kept with their fold in `spaces.folders` in 
 
 ## Kit
 
-`kit/kit.js` is the UI kit of this repo's mods (the Command Center, the Spaces tree, the Markdown viewer and Move tab): tokens (sizes, text, radii), components (`button`, `iconButton`, `link`, `chip`, `pill`, `card`, `heading`, `line`, `popupRow`, `mark`, `statusDot`, `stepNode`, `icon`) and the SVG icons in `kit/icons/`. A mod imports it as `../../kit/kit.js`, and `apply-layout` copies `kit.js` into each installed mod that imports it. The icons are installed once per layout, in the `kit` mod's `icons/` folder, where the kit reads them. A layout whose mods use the kit must include the `kit` recipe; the generator refuses otherwise.
+`kit/kit.js` is the UI kit of this repo's mods (the Spaces tree, the Markdown viewer and Move tab): tokens (sizes, text, radii), components (`button`, `iconButton`, `link`, `chip`, `pill`, `card`, `heading`, `line`, `popupRow`, `mark`, `statusDot`, `stepNode`, `icon`) and the SVG icons in `kit/icons/`. A mod imports it as `../../kit/kit.js`, and `apply-layout` copies `kit.js` into each installed mod that imports it. The icons are installed once per layout, in the `kit` mod's `icons/` folder, where the kit reads them. A layout whose mods use the kit must include the `kit` recipe; the generator refuses otherwise.
 
 `mods/kit/` is a gallery that shows every component and icon. Open it beside the focused terminal:
 
@@ -194,7 +209,7 @@ In the square layout the mod is `vjr-square-kit`.
 
 Credits:
 - [Lucide](https://lucide.dev) icons by Lucide Contributors (ISC; portions from Feather by Cole Bemis, MIT), from `lucide-static@0.469.0`. The license is in `kit/icons/LICENSE-lucide`.
-- [Simple Icons](https://simpleicons.org) by Simple Icons contributors (CC0), from `simple-icons@13.21.0`: ClickUp, GitHub and Zed; and from `simple-icons@16.0.0`: Cursor. Brand marks are their owners' trademarks.
+- [Simple Icons](https://simpleicons.org) by Simple Icons contributors (CC0), from `simple-icons@13.21.0`: GitHub. Brand marks are their owners' trademarks.
 
 ## Test panel
 

@@ -70,7 +70,7 @@ describe("apply", () => {
 
     expect(result.code).toBe(0);
     expect(result.stdout).toContain("applied");
-    expect(readdirSync(join(home, "mods")).filter((name) => name.startsWith("vjr-"))).toHaveLength(33);
+    expect(readdirSync(join(home, "mods")).filter((name) => name.startsWith("vjr-"))).toHaveLength(31);
     expect(existsSync(join(home, "mods/git-graph/LICENSE"))).toBe(true);
     for (const file of ["vjr-desk.json", "vjr-desk-square.json", "vjr-desk.svg", "vjr-desk-square.svg"]) {
       expect(existsSync(join(home, "layouts", file))).toBe(true);
@@ -172,39 +172,7 @@ describe("apply", () => {
 
     apply();
 
-    expect(log().filter((line) => line.startsWith("check "))).toHaveLength(34);
-  });
-
-  test("--pp-stack points the Command Center's watcher at that pp-stack and is kept for later runs", () => {
-    const { apply, layout, record, base } = setupWithBase();
-    const ppStack = join(base, "pp stack");
-    mkdirSync(join(ppStack, "bin"), { recursive: true });
-    writeFileSync(join(ppStack, "bin", "pp-lane-status"), "");
-    const watcher = (name: string) => layout(name).floating.find((node: { id: string }) => node.id === "command-center-watch").content.props;
-
-    expect(apply(["--pp-stack", ppStack]).code).toBe(0);
-    expect(watcher("vjr-desk")).toEqual({ role: "watch", bun: process.execPath, ppStack });
-    expect(watcher("vjr-desk-square")).toEqual({ role: "watch", bun: process.execPath, ppStack });
-    expect(record().ppStack).toBe(ppStack);
-
-    expect(apply(["--herdr-version", "0.1.11"]).code).toBe(0);
-    expect(watcher("vjr-desk")).toEqual({ role: "watch", bun: process.execPath, ppStack });
-
-    expect(apply(["--pp-stack", ""]).code).toBe(0);
-    expect(watcher("vjr-desk")).toEqual({ role: "watch", bun: process.execPath });
-    expect(record().ppStack).toBeUndefined();
-  });
-
-  test("--pp-stack refuses a folder without bin/pp-lane-status and changes nothing", () => {
-    const { apply, base, record } = setupWithBase();
-    apply();
-    const before = record();
-
-    const result = apply(["--pp-stack", join(base, "nowhere")]);
-
-    expect(result.code).toBe(1);
-    expect(result.stderr).toContain("bin/pp-lane-status");
-    expect(record()).toEqual(before);
+    expect(log().filter((line) => line.startsWith("check "))).toHaveLength(32);
   });
 
   test("records what it created", () => {
@@ -213,7 +181,7 @@ describe("apply", () => {
     apply();
 
     expect(record().version).toBe("0.1.10");
-    expect(record().mods).toHaveLength(34);
+    expect(record().mods).toHaveLength(32);
     expect(record().kept).toEqual([]);
     expect(record().files.sort()).toEqual(["layouts/vjr-desk-square.json", "layouts/vjr-desk-square.svg", "layouts/vjr-desk.json", "layouts/vjr-desk.svg"]);
     expect(record().sections).toEqual(["layout:vjr-desk", "layout:vjr-desk-square"]);

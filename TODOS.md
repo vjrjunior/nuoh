@@ -14,42 +14,6 @@
 **Priority:** P1
 **Depends on:** The next restart
 
-### The Command Center button in the tab bar on the kit
-
-**What:** Draw the Command Center button in the tab bar with the kit's components.
-
-**Why:** The button is drawn by hand inside the copy of Herdr's `tabs`.
-
-**Context:** The kit only reaches this repo's mods. Copies of shipped mods would need the generator to inject it there, and `square` to treat `tabs` as an own mod.
-
-**Effort:** S
-**Priority:** P3
-**Depends on:** Nothing
-
-### Command Center Inbox
-
-**What:** An Inbox in the main checkout's view, under `Start a task`, with the open ClickUp tasks and a Start button that opens `/vjr-task CUP-xxxx` in a new tab of the main checkout.
-
-**Why:** Starting a task still means typing its id.
-
-**Context:** `~/.pp-stack/cache/clickup/my-open.json` stopped on Oct 9, so the Inbox needs a fresh ClickUp source first. The manual check buttons, the other half of phase 2, shipped.
-
-**Effort:** M
-**Priority:** P2
-**Depends on:** A fresh ClickUp source
-
-### A personal profile for the Command Center
-
-**What:** A second profile for personal repos, with its own steps and skills, picked from the profile button next to Work and Off.
-
-**Why:** Work follows the company's flows (Work - VJR with `VJR-TASK.md`, Work - PP from `pp-lane-status`); personal repos show up as Work - PP today and need a flow of their own, or Off.
-
-**Context:** `PROFILES` in `mods/command-center/logic.js` holds only `work`, and `profileOf` reads anything but `off` as Work. Inside Work, the watcher picks the flow per worktree by `VJR-TASK.md` (`lanesOf` in `main.js`). `mods/command-center/flow-pp.js` is the model for a new flow: it turns a lane into `steps`, `notes`, `next`, `chip` and `summary`, routes commands through `route.js`, and the column draws it with its own step list (`ppTaskView` in `column.js`).
-
-**Effort:** M
-**Priority:** P3
-**Depends on:** Deciding the personal flow
-
 ### Draw Mermaid diagrams in the Markdown viewer
 
 **What:** Draw ` ```mermaid ` blocks as diagrams in `mods/markdown/` instead of showing their source.
@@ -80,7 +44,7 @@
 
 **Why:** The repo follows the community's conventions, but its mods are generated on the machine, so it can't be installed with `cp`.
 
-**Context:** The build must drop the local `repo` and `bun` props of `vjr-sync`. Herdr's code is Apache-2.0, so a package with copies of it needs a `NOTICE`. `preview.png` needs a window with no private data, like the isolated demo in `shellscape/herdr-whitby`.
+**Context:** `INSTALL.md` already lets an agent install the repo from a prompt, by cloning it and running `apply-layout`; a package would add herdr.dev's listing and a `cp` install. The build must drop the local `repo` and `bun` props of `vjr-sync`, and leave out anything that comes from the local config. Herdr's code is Apache-2.0, so a package with copies of it needs a `NOTICE`. `preview.png` needs a window with no private data, like the isolated demo in `shellscape/herdr-whitby`.
 
 **Effort:** M
 **Priority:** P3
@@ -134,13 +98,13 @@
 **Priority:** P3
 **Depends on:** Nothing
 
-### Move Move tab's and the Command Center's popups onto the kit's popupRow
+### Move Move tab's popup onto the kit's popupRow
 
-**What:** Draw the rows of Move tab's popup and of the Command Center's profile popup with `popupRow` from `kit/kit.js`, and drop their own row code.
+**What:** Draw the rows of Move tab's popup with `popupRow` from `kit/kit.js`, and drop its own row code.
 
-**Why:** AGENTS.md puts a component in the kit as soon as a second mod draws the same thing. The Spaces folders popups brought `popupRow` into the kit; the two older popups still draw the same row by hand.
+**Why:** AGENTS.md puts a component in the kit as soon as a second mod draws the same thing. The Spaces folders popups brought `popupRow` into the kit; Move tab's popup still draws the same row by hand.
 
-**Context:** `row` in `mods/move-tab/main.js` uses the kit's tokens (`CONTROL.large`, `RADIUS.control`, `TEXT.sm`) and marks the selected row with `selected`, which is `popupRow`'s `selected`. `profileView` in `mods/command-center/column.js` uses fixed sizes (28px high, radius 4) and marks the chosen row with an `accent` check, which is `popupRow`'s `check`, but it also has a second line of 10.5px text under the label that `popupRow` doesn't draw yet. Both popups have view tests that look the rows up by id.
+**Context:** `row` in `mods/move-tab/main.js` uses the kit's tokens (`CONTROL.large`, `RADIUS.control`, `TEXT.sm`) and marks the selected row with `selected`, which is `popupRow`'s `selected`. The popup has view tests that look the rows up by id.
 
 **Effort:** S
 **Priority:** P3

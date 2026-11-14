@@ -45,14 +45,14 @@ beforeAll(() => {
   root = join(realpathSync(mkdtempSync(join(tmpdir(), "move-tab-schedule-"))), "Local Sites");
   fake = join(root, "fake");
   main = join(root, "repo");
-  worktree = join(root, "repo-worktrees", "cup-1-thing");
+  worktree = join(root, "repo-worktrees", "abc-1-thing");
   home = join(root, "home");
   mkdirSync(join(fake, "bin"), { recursive: true });
   mkdirSync(join(home, ".claude/sessions"), { recursive: true });
   mkdirSync(main, { recursive: true });
   git(main, "init", "-q", "-b", "main");
   git(main, "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "--allow-empty", "-m", "start");
-  git(main, "worktree", "add", "-q", "-b", "fix/cup-1-thing", worktree);
+  git(main, "worktree", "add", "-q", "-b", "fix/abc-1-thing", worktree);
   tool("hc", 'case $1 in get) cat "$FAKE/info.json" ;; label) shift 2; printf "%s\\n" "$@" >> "$FAKE/labels" ;; esac');
   tool("herdr-app", 'cat "$FAKE/status.json"');
 });
@@ -72,7 +72,7 @@ describe("move-tab schedule.sh", () => {
   test("labels this terminal with the move the worker reads", () => {
     const { code, out, labels } = schedule(["--to", worktree, "--prompt", "Implement the plan"]);
     expect(code).toBe(0);
-    expect(out).toBe(`This session moves to fix/cup-1-thing when the current turn ends. Cancel with: sh ${SCRIPT} --cancel`);
+    expect(out).toBe(`This session moves to fix/abc-1-thing when the current turn ends. Cancel with: sh ${SCRIPT} --cancel`);
     expect(labels).toHaveLength(1);
     const [key, ...rest] = (labels[0] as string).split("=");
     expect(key).toBe(LABEL);

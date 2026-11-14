@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { folderOf, linkTarget, nameOf, shortFolder, stripFrontMatter } from "../mods/markdown/logic.js";
 
-const FILE = "/w/app/cup-1234/VJR-TASK.md";
+const FILE = "/w/app/abc-1234/NOTES.md";
 
 describe("front matter", () => {
   test("a YAML block at the top is hidden", () => {
@@ -29,14 +29,14 @@ describe("front matter", () => {
 
 describe("links", () => {
   test("web addresses open in the browser", () => {
-    expect(linkTarget(FILE, "https://app.clickup.com/t/86")).toEqual({ kind: "web", url: "https://app.clickup.com/t/86" });
+    expect(linkTarget(FILE, "https://example.com/t/86")).toEqual({ kind: "web", url: "https://example.com/t/86" });
     expect(linkTarget(FILE, "mailto:a@b.co")).toEqual({ kind: "web", url: "mailto:a@b.co" });
   });
 
   test("a relative markdown file opens next to the current one", () => {
-    expect(linkTarget(FILE, "docs/plan.md")).toEqual({ kind: "markdown", path: "/w/app/cup-1234/docs/plan.md" });
+    expect(linkTarget(FILE, "docs/plan.md")).toEqual({ kind: "markdown", path: "/w/app/abc-1234/docs/plan.md" });
     expect(linkTarget(FILE, "../README.MD")).toEqual({ kind: "markdown", path: "/w/app/README.MD" });
-    expect(linkTarget(FILE, "./notes/../plan.markdown#steps")).toEqual({ kind: "markdown", path: "/w/app/cup-1234/plan.markdown" });
+    expect(linkTarget(FILE, "./notes/../plan.markdown#steps")).toEqual({ kind: "markdown", path: "/w/app/abc-1234/plan.markdown" });
   });
 
   test("absolute paths and file URLs are read as paths", () => {
@@ -45,7 +45,7 @@ describe("links", () => {
   });
 
   test("other files open in their own app", () => {
-    expect(linkTarget(FILE, "shots/01-home.png")).toEqual({ kind: "file", path: "/w/app/cup-1234/shots/01-home.png" });
+    expect(linkTarget(FILE, "shots/01-home.png")).toEqual({ kind: "file", path: "/w/app/abc-1234/shots/01-home.png" });
   });
 
   test("an anchor on the same page does nothing", () => {
@@ -60,8 +60,8 @@ describe("links", () => {
 
 describe("names", () => {
   test("the header shows the file name and its folder from home", () => {
-    expect(nameOf(FILE)).toBe("VJR-TASK.md");
-    expect(folderOf(FILE)).toBe("/w/app/cup-1234");
+    expect(nameOf(FILE)).toBe("NOTES.md");
+    expect(folderOf(FILE)).toBe("/w/app/abc-1234");
     expect(shortFolder("/Users/me/work/app", "/Users/me")).toBe("~/work/app");
     expect(shortFolder("/Users/me", "/Users/me")).toBe("~");
     expect(shortFolder("/Users/meg/app", "/Users/me")).toBe("/Users/meg/app");

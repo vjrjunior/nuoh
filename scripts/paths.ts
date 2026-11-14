@@ -12,3 +12,7 @@ export function herdrAppHome(): string {
 export function stateDir(): string {
   return join(process.env.XDG_STATE_HOME || join(homedir(), ".local/state"), "vjr-herdr");
 }
+
+export function localConfigPath(): string {
+  return process.env.VJR_HERDR_CONFIG || join(configHome(), "vjr-herdr/config.json");
+}

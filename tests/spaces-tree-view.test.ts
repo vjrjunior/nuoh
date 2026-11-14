@@ -237,7 +237,7 @@ describe("head rows", () => {
   });
 });
 
-describe("command center lane line", () => {
+describe("a worktree's second line", () => {
   const row = (view: { render(): Node }) => pathTo(view.render(), "kid-/w/app/one")?.at(-1) as Node;
   const find = (node: Node, text: string): Node | null => {
     if (node.texts.includes(text)) return node;
@@ -257,17 +257,17 @@ describe("command center lane line", () => {
   const colorOf = (node: Node) => node.calls.find(([call]) => call === "text_color")?.[1][0];
   const withLane = (lane: Record<string, unknown>) => {
     const view = setup();
-    app.shared["command-center.lanes"] = { "/w/app/one": lane };
+    app.shared["spaces-tree.lines"] = { "/w/app/one": lane };
     return view;
   };
 
   test("a worktree row with a lane shows its step and why under its name", () => {
-    const node = row(withLane({ chip: "AC 3/5", tone: "blocked", why: "vjr-ac asks M4" }));
+    const node = row(withLane({ text: "AC 3/5", tone: "blocked", why: "review asks M4" }));
     expect(node.calls).toContainEqual(["h", [48]]);
     expect(texts(node)).toContain("AC 3/5");
-    expect(texts(node)).toContain("· vjr-ac asks M4");
+    expect(texts(node)).toContain("· review asks M4");
     expect(colorOf(find(node, "AC 3/5") as Node)).toBe("#blocked");
-    expect(colorOf(find(node, "· vjr-ac asks M4") as Node)).toBe("#muted");
+    expect(colorOf(find(node, "· review asks M4") as Node)).toBe("#muted");
   });
 
   test("a row without a lane stays one 34 px line", () => {
@@ -277,28 +277,28 @@ describe("command center lane line", () => {
   });
 
   test("the narrow rail shows no lane line", () => {
-    const view = withLane({ chip: "AC 3/5", tone: "blocked", why: "vjr-ac asks M4" });
+    const view = withLane({ text: "AC 3/5", tone: "blocked", why: "review asks M4" });
     herdr.layout = () => ({ id: "root", children: [{ id: "sidebar", size: { px: 100 } }] });
     const root = view.render();
     expect(texts(root)).not.toContain("AC 3/5");
-    expect(texts(root)).not.toContain("· vjr-ac asks M4");
+    expect(texts(root)).not.toContain("· review asks M4");
     expect(pathTo(root, "kid-/w/app/one")).toBeNull();
   });
 
   test("a lane without a why shows only its step", () => {
-    const node = row(withLane({ chip: "PR open", tone: "work" }));
+    const node = row(withLane({ text: "PR open", tone: "work" }));
     expect(texts(node)).toContain("PR open");
     expect(texts(node).filter((text) => text.startsWith("·"))).toEqual([]);
     expect(colorOf(find(node, "PR open") as Node)).toBe("#unknown");
   });
 
   test("both lines of a lane row truncate", () => {
-    const node = row(withLane({ chip: "AC 3/5", tone: "blocked", why: "vjr-ac asks M4" }));
+    const node = row(withLane({ text: "AC 3/5", tone: "blocked", why: "review asks M4" }));
     const name = find(node, "one") as Node;
     expect(name.calls.some(([call]) => call === "truncate")).toBe(true);
     const sub = node.kids.flatMap((kid) => [kid, ...kid.kids]).find((kid) => kid.calls.some(([call, args]) => call === "h" && args[0] === 14) && kid.calls.some(([call]) => call === "text_size")) as Node;
     expect(sub.calls.some(([call]) => call === "truncate")).toBe(true);
-    const why = find(node, "· vjr-ac asks M4") as Node;
+    const why = find(node, "· review asks M4") as Node;
     const names = why.calls.map(([call]) => call);
     expect(names).toContain("flex_1");
     expect(names).toContain("truncate");
@@ -306,7 +306,7 @@ describe("command center lane line", () => {
   });
 
   test("the lane line shows in the blocks style too", () => {
-    const view = withLane({ chip: "Ready", tone: "done", why: "ready to merge" });
+    const view = withLane({ text: "Ready", tone: "done", why: "ready to merge" });
     app.shared["spaces.style"] = "blocks";
     const node = row(view);
     expect(texts(node)).toContain("Ready");
@@ -315,7 +315,7 @@ describe("command center lane line", () => {
   });
 
   test("the rail runs past a two-line row", () => {
-    const view = withLane({ chip: "AC 3/5", tone: "blocked", why: "x" });
+    const view = withLane({ text: "AC 3/5", tone: "blocked", why: "x" });
     app.spaces = [space("m"), space("x", { active: true })];
     view.repos[common].checkouts.push({ path: "/w/app/two", branch: "two", main: false });
     const node = row(view);

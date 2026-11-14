@@ -57,9 +57,9 @@ test("a todo step is an empty input ring", () => {
 });
 
 test("an icon button has its tooltip and a colored icon", () => {
-  const node = iconButton("b", { icon: "zed", tooltip: "Zed", color: "t.accent", onClick() {} }, t);
-  expect(calls(node, "tooltip")).toContainEqual(["Zed"]);
-  expect(svgs(node)).toEqual(["mods/kit/icons/zed.svg"]);
+  const node = iconButton("b", { icon: "github", tooltip: "GitHub", color: "t.accent", onClick() {} }, t);
+  expect(calls(node, "tooltip")).toContainEqual(["GitHub"]);
+  expect(svgs(node)).toEqual(["mods/kit/icons/github.svg"]);
   expect(calls(node, "text_color")).toContainEqual(["t.accent"]);
 });
 
@@ -86,11 +86,11 @@ test("a chip draws its mark before the text", () => {
 });
 
 test("a button's icon takes iconColor while the label keeps the text color", () => {
-  const node = button("b", { label: "Zed", icon: "zed", iconColor: "t.muted", onClick() {} }, t);
+  const node = button("b", { label: "GitHub", icon: "github", iconColor: "t.muted", onClick() {} }, t);
   const iconNode = node.kids.find((k) => k.calls.some(([c]) => c === "svg")) as Node;
   expect(own(iconNode, "text_color")).toEqual([["t.muted"]]);
   expect(own(node, "text_color")).toEqual([["t.foreground"]]);
-  const plain = button("b", { label: "Zed", icon: "zed", onClick() {} }, t);
+  const plain = button("b", { label: "GitHub", icon: "github", onClick() {} }, t);
   const plainIcon = plain.kids.find((k) => k.calls.some(([c]) => c === "svg")) as Node;
   expect(own(plainIcon, "text_color")).toEqual([["t.foreground"]]);
 });
@@ -103,8 +103,6 @@ test("kit.js has no hex color", () => {
 const ADOPTERS = [
   "kit/kit.js",
   "mods/kit/main.js",
-  "mods/command-center/column.js",
-  "mods/command-center/logic.js",
   "mods/spaces-tree/main.js",
   "mods/markdown/main.js",
   "mods/move-tab/main.js",

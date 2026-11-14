@@ -4,8 +4,8 @@ import { herdr, type Node } from "./app-mocks";
 const { default: Markdown } = await import("../mods/markdown/main.js");
 
 const HOME = "/Users/me";
-const DIR = "/Users/me/w/app/cup-1234";
-const FILE = `${DIR}/VJR-TASK.md`;
+const DIR = "/Users/me/w/app/abc-1234";
+const FILE = `${DIR}/NOTES.md`;
 
 let files: Record<string, string>;
 let reads: string[];
@@ -99,8 +99,8 @@ describe("reading", () => {
     const { view } = await open();
     const shown = texts(view.render());
     expect(shown).toContain("# Draft autosave\n\nBody text");
-    expect(shown).toContain("VJR-TASK.md");
-    expect(shown).toContain("~/w/app/cup-1234");
+    expect(shown).toContain("NOTES.md");
+    expect(shown).toContain("~/w/app/abc-1234");
   });
 
   test("the text view scrolls and its text can be selected", async () => {
@@ -120,7 +120,7 @@ describe("reading", () => {
   test("a missing file says so and comes back when it appears", async () => {
     delete files[FILE];
     const { view } = await open();
-    expect(texts(view.render())).toContain("VJR-TASK.md is gone");
+    expect(texts(view.render())).toContain("NOTES.md is gone");
     files[FILE] = "# Back";
     watches.at(-1)?.resolve([DIR]);
     await flush();
@@ -259,13 +259,13 @@ describe("links and buttons", () => {
     expect(reads).toEqual([FILE]);
   });
 
-  test("Zed opens the shown file", async () => {
+  test("Open opens the shown file in its own app", async () => {
     const { view, cx } = await open();
-    click(view, "md-zed", cx);
-    expect(execs).toContainEqual(["zed", [FILE]]);
+    click(view, "md-editor", cx);
+    expect(execs).toContainEqual(["open", [FILE]]);
   });
 
-  test("the header's Zed is a named button with a gray icon and Reload an icon with a tooltip", async () => {
+  test("the header's Open is a named button with a gray icon and Reload an icon with a tooltip", async () => {
     herdr.theme = () => new Proxy({}, { get: (_x, p) => (typeof p === "string" ? `t.${p}` : undefined) });
     files["/Users/me/w/app/docs/plan.md"] = "# The plan";
     const { view, cx } = await open();
@@ -274,10 +274,10 @@ describe("links and buttons", () => {
     const root = view.render();
     const svgs = (node: Node): string[] => [...node.calls.filter(([n]) => n === "svg").map(([, a]) => a[0] as string), ...node.kids.flatMap(svgs)];
     const at = (id: string) => find(root, (item) => item.key === id) as Node;
-    const zed = at("md-zed");
-    expect(texts(zed)).toContain("Zed");
-    expect(svgs(zed)).toEqual(["mods/kit/icons/zed.svg"]);
-    const zedIcon = find(zed, (item) => item.calls.some(([n, a]) => n === "svg" && a[0] === "mods/kit/icons/zed.svg")) as Node;
+    const zed = at("md-editor");
+    expect(texts(zed)).toContain("Open");
+    expect(svgs(zed)).toEqual(["mods/kit/icons/external-link.svg"]);
+    const zedIcon = find(zed, (item) => item.calls.some(([n, a]) => n === "svg" && a[0] === "mods/kit/icons/external-link.svg")) as Node;
     expect(zedIcon.calls).toContainEqual(["text_color", ["t.muted"]]);
     const reload = at("md-reload");
     expect(reload.calls).toContainEqual(["tooltip", ["Reload"]]);

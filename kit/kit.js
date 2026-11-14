@@ -12,8 +12,6 @@ export const ICONS = [
   "check-heavy",
   "chevron-down",
   "chevron-right",
-  "clickup",
-  "cursor",
   "exclamation",
   "external-link",
   "eye",
@@ -25,7 +23,6 @@ export const ICONS = [
   "rotate-cw",
   "terminal",
   "x",
-  "zed",
 ];
 
 export const iconPath = (name) => `mods/${KIT.name}/icons/${name}.svg`;

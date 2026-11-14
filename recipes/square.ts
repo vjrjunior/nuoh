@@ -1,4 +1,4 @@
-import { type Copy, exact, findNode, type LayoutNode, pattern, type Recipe } from "./recipe";
+import { type Copy, exact, findNode, type LayoutNode, type ModSource, pattern, type Recipe } from "./recipe";
 
 const POPOVER = ".bg(t.popover)";
 const BORDER = ".border_1().border_color(t.border)";
@@ -12,69 +12,76 @@ const POPUP_ROOTS: Record<string, number> = {
   palette: 1,
   agents: 1,
   "git-graph": 2,
-  "command-center": 1,
-  "move-tab": 1,
-  "spaces-tree": 3,
 };
-const FRAMELESS = ["picker", "machine-add", "menu", "palette", "move-tab"];
-const OWN_MODS = ["git-graph", "spaces-tree", "comeback", "command-center", "markdown", "kit", "move-tab"];
+const FRAMELESS = ["picker", "machine-add", "menu", "palette"];
 
 function squareCorner(_match: string, side?: string): string {
   return side === "_full" ? ".rounded(0)" : `.rounded${side ?? ""}(0)`;
 }
 
-export const square: Recipe = {
-  name: "square",
-  mods: [
-    ...["workspace-chrome", "agents", "files", "changes", "pane", "menu", "new-menu", "picker", "worktree", "machine-add", "help"].map(
-      (name) => ({ name, from: "mods" as const }),
-    ),
-    { name: "settings", from: "frame" },
-    { name: "git-graph", from: "repo" },
-    { name: "spaces-tree", from: "repo" },
-    { name: "comeback", from: "repo" },
-    { name: "command-center", from: "repo" },
-    { name: "markdown", from: "repo" },
-    { name: "kit", from: "repo" },
-    { name: "move-tab", from: "repo" },
-  ],
-  apply({ copies, layout, replacements }) {
-    const all = Object.values(copies);
-    const corners = /\.rounded(_[a-z]+)?\([^()]*\)/g;
-    const copy = (name: string) => copies[name] as Copy;
+const GIT_GRAPH: ModSource = { name: "git-graph", from: "repo" };
 
-    pattern(
-      all.filter((mod) => !OWN_MODS.includes(mod.name)),
-      corners,
-      squareCorner,
-      1,
-    );
-    pattern(OWN_MODS.map(copy), corners, squareCorner);
-    pattern(all, /●/g, "■");
-    pattern(all, /○/g, "□");
-    pattern(all, /openOverlay\(\{ mod: "([a-z-]+)", kind: "(?:popup|dialog)",/g, (whole, name) =>
-      Object.hasOwn(copies, name as string) ? `${whole} frame: "none",` : whole,
-    );
+export function squareFor(recipes: Recipe[]): Recipe {
+  const own = new Map<string, ModSource>([[GIT_GRAPH.name, GIT_GRAPH]]);
+  for (const source of recipes.flatMap((recipe) => recipe.mods)) {
+    if (source.from === "repo" && !own.has(source.name)) own.set(source.name, source);
+  }
+  const popupRoots = { ...POPUP_ROOTS };
+  const frameless = [...FRAMELESS];
+  for (const recipe of recipes) {
+    Object.assign(popupRoots, recipe.square?.popupRoots ?? {});
+    frameless.push(...(recipe.square?.frameless ?? []));
+  }
+  const ownMods = [...own.keys()];
+  return {
+    name: "square",
+    mods: [
+      ...["workspace-chrome", "agents", "files", "changes", "pane", "menu", "new-menu", "picker", "worktree", "machine-add", "help"].map(
+        (name) => ({ name, from: "mods" as const }),
+      ),
+      { name: "settings", from: "frame" },
+      ...own.values(),
+    ],
+    apply({ copies, layout, replacements }) {
+      const all = Object.values(copies);
+      const corners = /\.rounded(_[a-z]+)?\([^()]*\)/g;
+      const copy = (name: string) => copies[name] as Copy;
 
-    for (const [name, count] of Object.entries(POPUP_ROOTS)) exact(copy(name), POPOVER, `${POPOVER}${BORDER}`, count);
-    exact(copy("settings"), '.id("settings")', `.id("settings")${POPOVER}${BORDER}`);
+      pattern(
+        all.filter((mod) => !ownMods.includes(mod.name)),
+        corners,
+        squareCorner,
+        1,
+      );
+      pattern(ownMods.map(copy), corners, squareCorner);
+      pattern(all, /●/g, "■");
+      pattern(all, /○/g, "□");
+      pattern(all, /openOverlay\(\{ mod: "([a-z-]+)", kind: "(?:popup|dialog)",/g, (whole, name) =>
+        Object.hasOwn(copies, name as string) ? `${whole} frame: "none",` : whole,
+      );
 
-    exact(copy("workspace-chrome"), 'run("app.settings")', 'run("mod.open", { name: "settings" })');
-    exact(copy("palette"), '["app.settings", {}, "App", "Settings"', '["mod.open", { name: "settings" }, "App", "Settings"');
-    exact(copy("palette"), '["app.help", {}, "App", "Keys"', '["mod.open", { name: "help" }, "App", "Keys"');
-    exact(copy("palette"), '  "app.palette", "app.hide",', '  "app.palette", "app.help", "app.hide",');
-    pattern([copy("menu")], /else run\(it\[1\], it\[2\]\);/g, 'else if (it[1] === "app.help") run("mod.open", { name: "help" });\n    else run(it[1], it[2]);');
+      for (const [name, count] of Object.entries(popupRoots)) exact(copy(name), POPOVER, `${POPOVER}${BORDER}`, count);
+      exact(copy("settings"), '.id("settings")', `.id("settings")${POPOVER}${BORDER}`);
 
-    for (const name of FRAMELESS) copy(name).meta.overlay = { ...(copy(name).meta.overlay as object | undefined), frame: "none" };
-    copy("help").meta.overlay = { kind: "dialog", width: 520, height: 0.7, frame: "none" };
-    copy("settings").meta.overlay = { kind: "dialog", width: 880, height: 620, frame: "none" };
+      exact(copy("workspace-chrome"), 'run("app.settings")', 'run("mod.open", { name: "settings" })');
+      exact(copy("palette"), '["app.settings", {}, "App", "Settings"', '["mod.open", { name: "settings" }, "App", "Settings"');
+      exact(copy("palette"), '["app.help", {}, "App", "Keys"', '["mod.open", { name: "help" }, "App", "Keys"');
+      exact(copy("palette"), '  "app.palette", "app.hide",', '  "app.palette", "app.help", "app.hide",');
+      pattern([copy("menu")], /else run\(it\[1\], it\[2\]\);/g, 'else if (it[1] === "app.help") run("mod.open", { name: "help" });\n    else run(it[1], it[2]);');
 
-    const content = findNode(layout, "main").content as LayoutNode;
-    (content.pane as LayoutNode).radius = 0;
-    layout.terminal_menu = "menu";
+      for (const name of frameless) copy(name).meta.overlay = { ...(copy(name).meta.overlay as object | undefined), frame: "none" };
+      copy("help").meta.overlay = { kind: "dialog", width: 520, height: 0.7, frame: "none" };
+      copy("settings").meta.overlay = { kind: "dialog", width: 880, height: 620, frame: "none" };
 
-    replacements["app.settings"] = "settings";
-    replacements["app.help"] = "help";
-    replacements["mod.open:picker"] = "picker";
-  },
-};
+      const content = findNode(layout, "main").content as LayoutNode;
+      (content.pane as LayoutNode).radius = 0;
+      layout.terminal_menu = "menu";
+
+      replacements["app.settings"] = "settings";
+      replacements["app.help"] = "help";
+      replacements["mod.open:picker"] = "picker";
+    },
+  };
+}
+
+export const square: Recipe = squareFor([]);

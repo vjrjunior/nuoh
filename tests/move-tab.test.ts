@@ -105,10 +105,10 @@ describe("move-tab logic", () => {
   });
 
   test("names a space after its branch", () => {
-    expect(spaceName("feat/CUP-4825--cup-5365-bulk-orders-cron")).toBe("CUP-5365 · bulk orders cron");
-    expect(spaceName("feat/CUP-4825")).toBe("CUP-4825");
+    expect(spaceName("feat/ABC-4825--abc-5365-bulk-orders-cron")).toBe("ABC-5365 · bulk orders cron");
+    expect(spaceName("feat/ABC-4825")).toBe("ABC-4825");
     expect(spaceName("feat/move-to-worktree")).toBe("move to worktree");
-    expect(spaceName("fix/cup-6278-inbox-rail-item")).toBe("CUP-6278 · inbox rail item");
+    expect(spaceName("fix/abc-6278-inbox-rail-item")).toBe("ABC-6278 · inbox rail item");
     expect(spaceName("main")).toBe("main");
     expect(spaceName("")).toBeNull();
     expect(spaceName(null)).toBeNull();

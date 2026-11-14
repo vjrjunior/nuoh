@@ -1,12 +1,14 @@
 import { appendFileSync, closeSync, cpSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync, writeSync } from "node:fs";
-import { basename, dirname, join, resolve } from "node:path";
-import { LEFT_ROUNDED, REPLACED, VARIANTS } from "../recipes/variants";
+import { basename, dirname, join } from "node:path";
+import type { Variant } from "../recipes/recipe";
+import { LEFT_ROUNDED, REPLACED, variantsWith } from "../recipes/variants";
+import { loadExtras, readLocalConfig } from "./config";
 import { type Generated, generateVariant } from "./generate-layout";
 import { deriveSection, type KeyTable, keysText, readKeys, withoutSections, withSections } from "./layout-keys";
 import { herdrAppHome, stateDir } from "./paths";
 
 export type ApplyResult = "applied" | "unchanged" | "busy";
-export type LayoutRecord = { version: string; mods: string[]; kept: string[]; files: string[]; sections: string[]; ppStack?: string };
+export type LayoutRecord = { version: string; mods: string[]; kept: string[]; files: string[]; sections: string[] };
 
 const root = join(import.meta.dir, "..");
 const REPO_MODS = ["vjr-sync", "git-graph"];
@@ -65,7 +67,9 @@ function removeLeftovers(home: string): void {
 }
 
 function readRecord(): LayoutRecord {
-  return existsSync(recordPath()) ? { ...EMPTY_RECORD, ...JSON.parse(readFileSync(recordPath(), "utf8")) } : EMPTY_RECORD;
+  if (!existsSync(recordPath())) return EMPTY_RECORD;
+  const { version, mods, kept, files, sections } = { ...EMPTY_RECORD, ...JSON.parse(readFileSync(recordPath(), "utf8")) };
+  return { version, mods, kept, files, sections };
 }
 
 function writeRecord(record: LayoutRecord): void {
@@ -183,10 +187,10 @@ function refuseNewErrors(before: string[] | null): void {
   if (added.length > 0) throw new Error(`herdr-app reported errors after the swap: ${added.join("; ")}`);
 }
 
-function warnUncovered(home: string): void {
+function warnUncovered(home: string, variants: Variant[]): void {
   const path = join(home, "installed.json");
   if (!existsSync(path)) return;
-  const covered = VARIANTS.flatMap((variant) => variant.recipes.flatMap((recipe) => recipe.mods.map((mod) => mod.name)));
+  const covered = variants.flatMap((variant) => variant.recipes.flatMap((recipe) => recipe.mods.map((mod) => mod.name)));
   for (const name of Object.keys(JSON.parse(readFileSync(path, "utf8")))) {
     if (name.startsWith("layout:") || covered.includes(name) || LEFT_ROUNDED.includes(name) || REPLACED.includes(name)) continue;
     const main = join(home, "mods", name, "main.js");
@@ -194,15 +198,7 @@ function warnUncovered(home: string): void {
   }
 }
 
-function ppStackFor(given: string | undefined, record: LayoutRecord): string | undefined {
-  if (given === undefined) return record.ppStack;
-  if (!given) return undefined;
-  const folder = resolve(given);
-  if (!existsSync(join(folder, "bin/pp-lane-status"))) throw new Error(`${join(folder, "bin/pp-lane-status")} not found: --pp-stack needs a pp-stack folder with pp-lane-status`);
-  return folder;
-}
-
-function applyAll(options: { herdrVersion?: string; ppStack?: string }): ApplyResult {
+function applyAll(options: { herdrVersion?: string }): ApplyResult {
   const home = herdrAppHome();
   const state = stateDir();
   if (!existsSync(join(home, "themes/vjr.json"))) throw new Error("the vjr theme is not installed: run bun run install-theme first");
@@ -210,8 +206,10 @@ function applyAll(options: { herdrVersion?: string; ppStack?: string }): ApplyRe
   const table = readKeys(keysPath);
   const version = options.herdrVersion ?? installedVersion();
   const record = readRecord();
-  const ppStack = ppStackFor(options.ppStack, record);
-  const generated = VARIANTS.map((variant) => generateVariant(variant, { home, version, repo: root, bun: process.execPath, ppStack }));
+  const config = readLocalConfig();
+  const extras = loadExtras(config.extras);
+  const variants = variantsWith(extras.recipes);
+  const generated = variants.map((variant) => generateVariant(variant, { home, version, repo: root, bun: process.execPath, editor: config.editor, icons: extras.icons }));
   const build = join(state, `build-${process.pid}`);
   const previous = join(state, `previous-${process.pid}`);
   mkdirSync(build, { recursive: true });
@@ -246,7 +244,6 @@ function applyAll(options: { herdrVersion?: string; ppStack?: string }): ApplyRe
       kept,
       files: union(record.files, Object.keys(files)),
       sections: union(record.sections, Object.keys(sections)),
-      ppStack: record.ppStack,
     });
     mkdirSync(previous, { recursive: true });
     const installed: string[] = [];
@@ -273,8 +270,8 @@ function applyAll(options: { herdrVersion?: string; ppStack?: string }): ApplyRe
       if (before !== null) Bun.sleepSync(RELOAD_MS);
       for (const mod of staleMods) rmSync(join(home, "mods", mod), { recursive: true, force: true });
     }
-    writeRecord({ version, mods, kept, files: Object.keys(files), sections: Object.keys(sections), ppStack });
-    warnUncovered(home);
+    writeRecord({ version, mods, kept, files: Object.keys(files), sections: Object.keys(sections) });
+    warnUncovered(home, variants);
     return "applied";
   } finally {
     rmSync(build, { recursive: true, force: true });
@@ -286,7 +283,7 @@ function writeLog(line: string): void {
   appendFileSync(join(stateDir(), "layout.log"), `${new Date().toISOString()} ${line.replace(/\s+/g, " ")}\n`);
 }
 
-export function apply(options: { herdrVersion?: string; ppStack?: string } = {}): ApplyResult {
+export function apply(options: { herdrVersion?: string } = {}): ApplyResult {
   mkdirSync(stateDir(), { recursive: true });
   if (!takeLock()) return "busy";
   const started = Date.now();
@@ -330,9 +327,9 @@ function flag(args: string[], name: string): string | undefined {
 if (import.meta.main) {
   try {
     const [command, ...args] = process.argv.slice(2);
-    if (command === "apply") console.log(apply({ herdrVersion: flag(args, "--herdr-version"), ppStack: flag(args, "--pp-stack") }));
+    if (command === "apply") console.log(apply({ herdrVersion: flag(args, "--herdr-version") }));
     else if (command === "uninstall") uninstall();
-    else throw new Error("usage: layout.ts apply [--herdr-version X] [--pp-stack <folder> | --pp-stack ''] | uninstall");
+    else throw new Error("usage: layout.ts apply [--herdr-version X] | uninstall");
   } catch (error) {
     console.error(`error: ${(error as Error).message}`);
     process.exit(1);

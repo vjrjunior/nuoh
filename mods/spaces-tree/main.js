@@ -528,8 +528,8 @@ export default class SpacesTree extends View {
   }
 
   laneLine(row, t) {
-    const found = row.path ? (shared("command-center.lanes") ?? {})[row.path] : null;
-    if (!found?.chip) return null;
+    const found = row.path ? (shared("spaces-tree.lines") ?? {})[row.path] : null;
+    if (!found?.text) return null;
     const color = toneColor(found.tone, t);
     const sub = h_flex()
       .h(SUB)
@@ -539,7 +539,7 @@ export default class SpacesTree extends View {
       .gap(4)
       .truncate()
       .text_size(TEXT.sm)
-      .child(div().flex_none().text_color(color).child(found.chip))
+      .child(div().flex_none().text_color(color).child(found.text))
       .when(Boolean(found.why), (el) => el.child(div().flex_1().min_w(0).truncate().text_color(t.muted).child(`· ${found.why}`)));
     return { height: LANE, sub };
   }

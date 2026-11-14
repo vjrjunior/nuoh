@@ -1,4 +1,6 @@
-export type ModSource = { name: string; from: "mods" | "frame" | "repo" };
+export type ModSource = { name: string; from: "mods" | "frame" | "repo"; root?: string };
+export type Editor = { name: string; argv: string[] };
+export type SquareHints = { popupRoots?: Record<string, number>; frameless?: string[] };
 export type Copy = { name: string; files: Record<string, string>; meta: Record<string, unknown> };
 export type LayoutNode = Record<string, unknown>;
 export type RecipeContext = {
@@ -8,9 +10,10 @@ export type RecipeContext = {
   keys: Record<string, string>;
   variant: Variant;
   bun?: string;
-  ppStack?: string;
+  editor?: Editor;
+  options: Record<string, unknown>;
 };
-export type Recipe = { name: string; mods: ModSource[]; apply(context: RecipeContext): void };
+export type Recipe = { name: string; mods: ModSource[]; square?: SquareHints; options?: Record<string, unknown>; apply(context: RecipeContext): void };
 export type Variant = { layout: string; prefix: string; preview: string; recipes: Recipe[] };
 
 export class RecipeError extends Error {}

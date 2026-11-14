@@ -23,7 +23,7 @@ export default class Kit extends View {
       .child(button("kit-b-outline", { label: "Outline", onClick: noop }, t))
       .child(button("kit-b-dashed", { label: "Dashed", variant: "dashed", onClick: noop }, t))
       .child(button("kit-b-icon", { label: "With icon", icon: "plus", onClick: noop }, t))
-      .child(button("kit-b-named", { label: "ClickUp", icon: "clickup", iconColor: t.muted, onClick: noop }, t))
+      .child(button("kit-b-named", { label: "GitHub", icon: "github", iconColor: t.muted, onClick: noop }, t))
       .child(button("kit-b-pass", { label: "Passed", icon: "check", color: t.done, onClick: noop }, t))
       .child(button("kit-b-fail", { label: "Failed", icon: "x", color: t.blocked, onClick: noop }, t))
       .child(button("kit-b-hint", { label: "With hint", hint: "ctrl-k", onClick: noop }, t))
@@ -31,9 +31,7 @@ export default class Kit extends View {
     const iconButtons = row()
       .child(iconButton("kit-ib-bordered", { icon: "eye", tooltip: "Bordered", onClick: noop }, t))
       .child(iconButton("kit-ib-plain", { icon: "terminal", tooltip: "Plain", bordered: false, onClick: noop }, t))
-      .child(iconButton("kit-ib-clickup", { icon: "clickup", tooltip: "ClickUp", onClick: noop }, t))
-      .child(iconButton("kit-ib-zed", { icon: "zed", tooltip: "Zed", bordered: false, onClick: noop }, t))
-      .child(iconButton("kit-ib-cursor", { icon: "cursor", tooltip: "Cursor", bordered: false, onClick: noop }, t));
+      .child(iconButton("kit-ib-github", { icon: "github", tooltip: "GitHub", onClick: noop }, t));
     const links = row()
       .child(link("kit-l-plain", { label: "A link", onClick: noop }, t))
       .child(link("kit-l-icon", { label: "An external link", icon: "external-link", onClick: noop }, t));

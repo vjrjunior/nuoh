@@ -4,6 +4,8 @@ import { exec, home, props, readTextFile, theme, watchFolder } from "herdr";
 import { button, iconButton } from "../../kit/kit.js";
 import { folderOf, linkTarget, nameOf, shortFolder, stripFrontMatter } from "./logic.js";
 
+const EDITOR = { name: "Open", argv: ["open"] };
+
 function message(text, t) {
   return div().p(16).text_size(12).text_color(t.dim).child(text);
 }
@@ -100,7 +102,7 @@ export default class Markdown extends View {
       .child(div().flex_1().min_w(0).overflow_hidden().whitespace_nowrap().text_ellipsis_start().text_size(11).text_color(t.dim).child(file ? shortFolder(folderOf(file), home()) : ""))
       .when(Boolean(file), (el) =>
         el
-          .child(button("md-zed", { label: "Zed", icon: "zed", iconColor: t.muted, onClick: () => exec("zed", [file]).catch(() => {}) }, t))
+          .child(button("md-editor", { label: EDITOR.name, icon: "external-link", iconColor: t.muted, onClick: () => exec(EDITOR.argv[0], [...EDITOR.argv.slice(1), file]).catch(() => {}) }, t))
           .child(
             iconButton(
               "md-reload",

@@ -1,8 +1,8 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { type Copy, type LayoutNode, type ModSource, RecipeError, type RecipeContext, type Variant } from "../recipes/recipe";
+import { type Copy, type Editor, type LayoutNode, type ModSource, RecipeError, type RecipeContext, type Variant } from "../recipes/recipe";
 
-export type GenerateOptions = { home: string; version: string; repo: string; bun: string; ppStack?: string };
+export type GenerateOptions = { home: string; version: string; repo: string; bun: string; editor?: Editor; icons?: string[] };
 export type Generated = {
   layout: string;
   layoutText: string;
@@ -15,7 +15,7 @@ const REFERENCE = /(\bmod:\s*"|\{\s*name:\s*")([a-z-]+)"/g;
 const LEFTOVER = /(openOverlay\(\{[^)]*\bmod:\s*|"mod\.open",\s*\{\s*name:\s*)['`]([a-z-]+)['`]/g;
 
 function sourceFolder(source: ModSource, options: GenerateOptions): string {
-  if (source.from === "repo") return join(options.repo, "mods", source.name);
+  if (source.from === "repo") return join(source.root ?? options.repo, "mods", source.name);
   return join(options.home, source.from, source.name);
 }
 
@@ -36,8 +36,9 @@ function installKit(source: ModSource, options: GenerateOptions, files: Record<s
   }
   if (uses) files["kit.js"] = readFileSync(join(options.repo, "kit/kit.js"), "utf8");
   if (source.name === "kit") {
-    const icons = join(options.repo, "kit/icons");
-    for (const icon of readdirSync(icons).filter((name) => name.endsWith(".svg"))) files[`icons/${icon}`] = readFileSync(join(icons, icon), "utf8");
+    for (const icons of [...(options.icons ?? []), join(options.repo, "kit/icons")]) {
+      for (const icon of readdirSync(icons).filter((name) => name.endsWith(".svg"))) files[`icons/${icon}`] = readFileSync(join(icons, icon), "utf8");
+    }
   }
 }
 
@@ -77,10 +78,10 @@ function rewireLayout(node: unknown, copies: Record<string, Copy>, prefix: strin
   }
 }
 
-function applyRecipes(variant: Variant, context: RecipeContext): void {
+function applyRecipes(variant: Variant, context: Omit<RecipeContext, "options">): void {
   for (const recipe of variant.recipes) {
     try {
-      recipe.apply(context);
+      recipe.apply({ ...context, options: recipe.options ?? {} });
     } catch (error) {
       throw new RecipeError(`recipe ${recipe.name}: ${(error as Error).message}`);
     }
@@ -116,7 +117,7 @@ export function generateVariant(variant: Variant, options: GenerateOptions): Gen
   }
   const replacements: Record<string, string> = {};
   const keys: Record<string, string> = {};
-  applyRecipes(variant, { copies, layout, replacements, keys, variant, bun: options.bun, ppStack: options.ppStack });
+  applyRecipes(variant, { copies, layout, replacements, keys, variant, bun: options.bun, editor: options.editor });
   for (const copy of Object.values(copies)) {
     if (copy.files["kit.js"] !== undefined && !Object.hasOwn(copies, "kit")) throw new RecipeError(`${copy.name} uses the kit, but ${variant.layout} has no kit`);
   }
