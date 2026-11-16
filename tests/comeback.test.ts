@@ -12,6 +12,7 @@ import {
   markTried,
   parseBoot,
   parseEtime,
+  parseProcess,
   parseSession,
   planPass,
   quote,
@@ -42,6 +43,12 @@ describe("machine facts", () => {
     expect(parseEtime("06:30:21")).toBe(23421);
     expect(parseEtime("2-01:02:03")).toBe(176523);
     expect(parseEtime("soon")).toBeNull();
+  });
+
+  test("reads a process's start and age from one ps line", () => {
+    expect(parseProcess("Mon Nov 16 19:49:22 2026              00:30\n")).toEqual({ start: "Mon Nov 16 19:49:22 2026", age: 30 });
+    expect(parseProcess("Mon Nov  2 09:01:02 2026         2-01:02:03\n")).toEqual({ start: "Mon Nov  2 09:01:02 2026", age: 176523 });
+    expect(parseProcess("")).toEqual({ start: "", age: Infinity });
   });
 });
 

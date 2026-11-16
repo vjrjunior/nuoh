@@ -41,6 +41,13 @@ export function parseEtime(text) {
   return ((Number(days) * 24 + Number(hours)) * 60 + Number(minutes)) * 60 + Number(seconds);
 }
 
+export function parseProcess(text) {
+  const line = (text ?? "").trim();
+  const cut = line.lastIndexOf(" ");
+  if (cut < 0) return { start: "", age: Infinity };
+  return { start: line.slice(0, cut).trim(), age: parseEtime(line.slice(cut + 1)) ?? Infinity };
+}
+
 export function parseSession(text) {
   if (typeof text !== "string") return null;
   try {

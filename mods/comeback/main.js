@@ -10,7 +10,7 @@ import {
   lastLine,
   markTried,
   parseBoot,
-  parseEtime,
+  parseProcess,
   parseSession,
   planPass,
   resumeCommand,
@@ -91,13 +91,13 @@ export default class Comeback extends View {
   async readTerminal(address) {
     const data = await this.hc(["get", address, "--json"]);
     if (!data || data.state !== "live" || !Number.isInteger(data.pid)) return null;
-    const [start, elapsed] = await Promise.all([this.ps("lstart=", data.pid), this.ps("etime=", data.pid)]);
+    const { start, age } = parseProcess(await this.ps("lstart=,etime=", data.pid));
     return {
       address,
       where: data.labels?.where ?? address,
       pid: data.pid,
       start,
-      age: parseEtime(elapsed) ?? Infinity,
+      age,
       foreground: data.foreground ?? null,
       app: data.status?.app ?? null,
       note: decodeNote(data.labels?.comeback),

@@ -77,7 +77,7 @@ function respond(command: string, args: string[]) {
   if (command === "ps" && args[1] === "pid=") return ok(`${(args[3] ?? "").split(",").join("\n")}\n`);
   if (command === "ps") {
     const owner = Object.keys(terminal).find((address) => String(terminal[address]?.pid) === args.at(-1));
-    return ok(args[1] === "lstart=" ? `${START}\n` : `${(owner && ages[owner]) || "00:30"}\n`);
+    return ok(`${START}                  ${(owner && ages[owner]) || "00:30"}\n`);
   }
   if (command === "sysctl") return ok(BOOT);
   return ok("");
