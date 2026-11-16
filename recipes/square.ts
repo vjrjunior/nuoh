@@ -85,5 +85,3 @@ export function squareFor(recipes: Recipe[]): Recipe {
     },
   };
 }
-
-export const square: Recipe = squareFor([]);

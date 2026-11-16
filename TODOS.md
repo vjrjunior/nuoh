@@ -44,7 +44,7 @@
 
 **Why:** The repo follows the community's conventions, but its mods are generated on the machine, so it can't be installed with `cp`.
 
-**Context:** `INSTALL.md` already lets an agent install the repo from a prompt, by cloning it and running `apply-layout`; a package would add herdr.dev's listing and a `cp` install. The build must drop the local `repo` and `bun` props of `vjr-sync`, and leave out anything that comes from the local config. Herdr's code is Apache-2.0, so a package with copies of it needs a `NOTICE`. `preview.png` needs a window with no private data, like the isolated demo in `shellscape/herdr-whitby`.
+**Context:** `INSTALL.md` already lets an agent install the repo from a prompt, by cloning it and running `apply-layout`; a package would add herdr.dev's listing and a `cp` install. The build must drop the local `repo` and `bun` props of `vjr-sync`, and leave out anything that comes from the local config. Herdr's code is Apache-2.0, so a package with copies of it needs a `NOTICE`. `preview.png` needs a window with no private data, such as an isolated demo home.
 
 **Effort:** M
 **Priority:** P3
@@ -68,7 +68,7 @@
 
 **Why:** The selection moves past the bottom edge and the person can't see which row Enter will pick.
 
-**Context:** `mods/move-tab/main.js` keeps the selection in `this.at` and draws the rows in an `overflow_y_scrollbar()` list. `~/.config/herdr-app/gpui-kit.d.ts` shows what a scroll handle offers.
+**Context:** `mods/move-tab/main.js` keeps the selection in `this.at` and draws the rows in an `overflow_y_scrollbar()` list. `ScrollHandle` from `gpui-base` does it: `ScrollHandle.new()` in `init`, `.track_scroll(handle)` on the list and `handle.scroll_to_item(this.at)` when the selection moves.
 
 **Effort:** S
 **Priority:** P3
@@ -128,7 +128,7 @@
 
 **Why:** The panel's text can't be selected. The scheduled-move run asked the person to paste three messages into a Claude, and they had to come through the chat instead, which is what the panel exists to avoid.
 
-**Context:** `tools/test-panel/main.js` draws each `step.do` line as plain text in an `h_flex`. A small copy icon button at the end of each line (the kit's `iconButton` with a copy icon in `kit/icons/`) could write it to the clipboard; check `gpui-kit.d.ts` for a clipboard call, or fall back to `exec("pbcopy")` with the text on stdin. A run could also mark only the lines meant to be pasted, for example with a `"paste"` field next to `"do"`.
+**Context:** `tools/test-panel/main.js` draws each `step.do` line as plain text in an `h_flex`. A small copy icon button at the end of each line (the kit's `iconButton` with a copy icon in `kit/icons/`) could write it with `cx.write_to_clipboard(text)`, which the click handler's `cx` has. A run could also mark only the lines meant to be pasted, for example with a `"paste"` field next to `"do"`.
 
 **Effort:** S
 **Priority:** P2
