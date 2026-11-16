@@ -1,6 +1,6 @@
 import { View, div } from "gpui-kit";
 import * as fs from "fs/promises";
-import { agents, terminals, exec, home, readTextFile, notify, nextCommand, shared, setShared } from "herdr";
+import { agents, terminals, exec, home, readTextFile, notify, nextCommand, shared, setShared, checking } from "herdr";
 import {
   autoCandidate,
   decodeNote,
@@ -46,6 +46,7 @@ export default class Comeback extends View {
     this.checking = false;
     this.passing = false;
     this.boot = null;
+    if (checking()) return;
     cx.timer.every(CHECK, (cx) => cx.spawn(async (cx) => this.check(cx)));
     cx.spawn(async (cx) => this.startup(cx));
     cx.spawn(async (cx) => {

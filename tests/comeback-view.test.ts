@@ -354,3 +354,17 @@ describe("review fixes", () => {
     expect(sendCalls()).toEqual([]);
   });
 });
+
+describe("while Herdr checks the mod", () => {
+  test("starts no timer and no task", () => {
+    let started = 0;
+    herdr.checking = () => true;
+    try {
+      const view = new Comeback();
+      view.init({}, { ...cx, timer: { every: () => started++ }, spawn: () => started++ });
+    } finally {
+      delete herdr.checking;
+    }
+    expect(started).toBe(0);
+  });
+});
