@@ -21,7 +21,7 @@ Before installing, tell them this, as Herdr's guide asks. Mods are trusted code 
 | Part | Runs | Reads outside its folder | Network |
 |---|---|---|---|
 | Spaces tree | `git` in each repository | each repository's git folder | no |
-| Git Graph (third party, MIT, pinned to a commit) | `git` in the focused repository, also on other machines | the folders open in other panes | only through git: Fetch, Push, deleting a remote branch |
+| Git Graph (third party, MIT, pinned to a commit) | `git` in the focused repository, also on other machines; `find` under a folder that is not a repository | the folders open in other panes | only through git: Fetch, Push, deleting a remote branch |
 | Comeback | `hc`, `ps`, `sysctl` | `~/.claude/sessions/`, and which conversations `~/.claude/projects/` holds | no |
 | Move tab | `git`, `ps`, `kill`, `test`, `hc`, `herdr-app do`, `sh` | `~/.claude/sessions/`, and which conversations `~/.claude/projects/` holds | no |
 | Markdown viewer | `open`, or the editor the person configures | the file it shows and the files it links to | no |

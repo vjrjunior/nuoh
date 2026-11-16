@@ -137,11 +137,11 @@ setShared("spaces-tree.lines", { "/path/to/worktree": { text: "PR open", tone: "
 
 ### Git Graph
 
-`mods/git-graph/` is [herdr-git-graph](https://github.com/rabeeh-ta/herdr-git-graph) by Rabeeh T A (MIT), unmodified, at commit `1cfcff3`. `apply-layout` installs it, and leaves an identical copy you already have alone.
+`mods/git-graph/` is [herdr-git-graph](https://github.com/rabeeh-ta/herdr-git-graph) by Rabeeh T A (MIT), v0.3.3 at commit `0da8862`, with one change: its daily check for a new release on GitHub is turned off (`CHECK = false` in `update.js`). `apply-layout` installs it, and leaves an identical copy you already have alone.
 
-It runs `git` in the focused repository and reads the folders open in other panes ahead of time, also on other machines. It reaches the network only through git, on Fetch, Push and when deleting a remote branch.
+It runs `git` in the focused repository and reads the folders open in other panes ahead of time, also on other machines. In a folder that is not a repository, it runs `find` to list the repositories up to 5 folders below it (3 unless you change it behind the gear), never from your home folder or above. It can commit your uncommitted changes when you ask it to, and opens a remote's page in the browser. It reaches the network only through git, on Fetch (in one repository or in every one it listed), Push and when deleting a remote branch.
 
-It is third-party code that runs with your permissions, so it never updates by itself. To move to a new version, read the new code, replace `mods/git-graph/` and run `bun run apply-layout`.
+It is third-party code that runs with your permissions, so it never updates by itself. To move to a new version, read the new code, replace `mods/git-graph/`, set `CHECK` to `false` again and run `bun run apply-layout`; a test fails while the check is on.
 
 ### Comeback
 

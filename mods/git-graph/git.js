@@ -7,11 +7,26 @@
 export const READ = ["--no-optional-locks", "-c", "core.fsmonitor=false", "-c", "diff.autoRefreshIndex=false"];
 export const STATUS = ["status", "--porcelain=v1", "-z", "--no-renames", "--untracked-files=all"];
 export const UNCOMMITTED = "*";
-const FORMAT = "%x1e%H%x1f%P%x1f%an%x1f%ae%x1f%at%x1f%D%x1f%s";
+// Git's pretty fields are NUL-free strings; -z terminates each seven-field record.
+const FORMAT = "%H%x00%P%x00%an%x00%ae%x00%at%x00%D%x00%s";
+const objectId = (s) => typeof s === "string" && /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/.test(s);
+const refName = (s) => typeof s === "string" && s.length > 0 && !/^[-/]/.test(s)
+  && !/[\x00-\x20\x7f~^:?*\[\\]/.test(s) && !s.includes("..") && !s.includes("@{")
+  && s !== "@" && !s.endsWith(".") && s.split("/").every((p) => p && !p.startsWith(".") && !p.endsWith(".lock"));
+
+function checkCommit(commit) {
+  if (!objectId(commit?.hash) || !Array.isArray(commit.parents) || !commit.parents.every(objectId)) {
+    throw new Error("Invalid commit identity");
+  }
+}
 
 export function logArgs({ all, remotes, limit }) {
-  const scope = all ? [...(remotes ? [] : ["--exclude=refs/remotes/*"]), "--exclude=refs/stash", "--all"] : ["HEAD"];
-  return ["log", ...scope, "--date-order", "--decorate=full", `-n${limit}`, `--format=${FORMAT}`];
+  // All branches walks local branches, tags, remote branches (with Remotes) and HEAD, as other Git tools do.
+  // Not `--all`: it also walks the private refs of other tools, such as the per-turn checkpoints of
+  // T3 Code (refs/t3/checkpoints/*), which have no label and show up as orphan commits.
+  // `--ignore-missing` keeps a repository with no commits (no HEAD yet) an empty log.
+  const scope = all ? ["--branches", "--tags", ...(remotes ? ["--remotes"] : []), "--ignore-missing", "HEAD"] : ["HEAD"];
+  return ["log", "-z", ...scope, "--date-order", "--decorate=full", `-n${limit}`, `--format=${FORMAT}`];
 }
 
 export function parseRefs(text) {
@@ -20,20 +35,28 @@ export function parseRefs(text) {
     const head = name.startsWith("HEAD -> ");
     if (head) name = name.slice(8);
     if (name === "HEAD") refs.push({ kind: "detached", name: "HEAD" });
-    else if (name.startsWith("refs/heads/")) refs.push({ kind: "branch", name: name.slice(11), head });
-    else if (name.startsWith("tag: refs/tags/")) refs.push({ kind: "tag", name: name.slice(15) });
-    else if (name.startsWith("refs/remotes/") && !name.endsWith("/HEAD")) refs.push({ kind: "remote", name: name.slice(13) });
+    else if (name.startsWith("refs/heads/") && refName(name.slice(11))) refs.push({ kind: "branch", name: name.slice(11), head });
+    else if (name.startsWith("tag: refs/tags/") && refName(name.slice(15))) refs.push({ kind: "tag", name: name.slice(15) });
+    else if (name.startsWith("refs/remotes/") && !name.endsWith("/HEAD") && refName(name.slice(13))) refs.push({ kind: "remote", name: name.slice(13) });
   }
   return refs;
 }
 
 export function parseLog(text) {
-  return text.split("\x1e").filter((r) => r.trim()).map((record) => {
-    const [hash, parents, author, email, time, refs, subject] = record.replace(/\n$/, "").split("\x1f");
+  if (!text) return [];
+  const fields = text.split("\0");
+  if (fields.pop() !== "" || fields.length % 7 !== 0) throw new Error("Invalid history framing");
+  const commits = [];
+  for (let i = 0; i < fields.length; i += 7) {
+    const [hash, parents, author, email, time, refs, subject] = fields.slice(i, i + 7);
     const parsed = parseRefs(refs);
-    return { hash, parents: parents ? parents.split(" ") : [], author, email, time: Number(time), refs: parsed, subject,
+    const commit = { hash, parents: parents ? parents.split(" ") : [], author, email, time: Number(time), refs: parsed, subject,
       head: parsed.some((r) => r.head || r.kind === "detached") };
-  });
+    checkCommit(commit);
+    if (!/^\d+$/.test(time) || !Number.isSafeInteger(commit.time)) throw new Error("Invalid commit time");
+    commits.push(commit);
+  }
+  return commits;
 }
 
 // `git status --porcelain=v1 -z --no-renames`: one NUL-terminated "XY path" per file.
@@ -41,7 +64,8 @@ export function parseStatus(text) {
   return text.split("\0").filter(Boolean).map((entry) => {
     const xy = entry.slice(0, 2), path = entry.slice(3);
     const status = xy === "??" ? "A" : xy.includes("U") || xy === "AA" || xy === "DD" ? "U" : xy.includes("D") ? "D" : xy.includes("A") ? "A" : "M";
-    return { path, status, untracked: xy === "??" };
+    // staged: the index differs from HEAD (conflicts aren't staged changes).
+    return { path, status, untracked: xy === "??", staged: status !== "U" && xy[0] !== " " && xy[0] !== "?" };
   });
 }
 
@@ -113,10 +137,12 @@ const item = (label, icon, action) => ({ label, icon, action });
 // The right-click menu for a commit, a label part or the uncommitted row:
 // Git Graph's menus, minus what needs VS Code. Sections are separated.
 export function menuFor(target, ctx) {
+  if (target.kind === "repo") return repoMenu(target, ctx);
   const cur = currentName(ctx), c = target.commit;
   let sections;
   if (target.kind === "uncommitted") {
     sections = [
+      section(item("Commit…", "commit", { type: "commit", staged: Boolean(target.staged) })),
       section(item("Stash uncommitted changes…", "stash", { type: "stash" })),
       section(item("Reset uncommitted changes…", "reset", { type: "resetUncommitted" })),
       section(item("Show in Changes panel", "mods/changes/changes.svg", { type: "showChanges" })),
@@ -177,6 +203,29 @@ const remoteChoice = (ctx) => ({ id: "remote", label: "Remote", value: ctx.remot
 const mergeNote = (a) => (a.merge ? " It's a merge commit: its changes against its first parent are used." : "");
 
 // The dialog an action asks first, or null when it runs at once.
+// A Manygit row's menu. Herdr's own first: an agent's tab (most picked first, as
+// its + menu) or a terminal in the repository. Then what the row's ↑/↓ asks for,
+// its uncommitted changes, and its links.
+function repoMenu(r, ctx) {
+  const st = r.status ?? {}, branch = st.branch, remote = ctx.remotes.length > 0;
+  const pull = remote && st.upstream && !st.gone && item("Pull…", "fetch", { type: "pull", upstream: st.upstream });
+  const push = remote && branch && item(st.upstream ? "Push…" : "Push and set upstream…", "push", { type: "push", name: branch });
+  const fetch = remote && item("Fetch", "refresh", { type: "fetch" });
+  const sync = st.behind && !st.ahead ? [pull, fetch, push] : st.ahead && !st.behind ? [push, fetch, pull]
+    : !st.upstream ? [push, fetch] : [fetch, pull, push];
+  return [
+    [...r.agents.slice(0, 3).map((a) => ({ ...item(`New ${a.name} tab`, a.icon ?? "plus", { type: "newTab", folder: r.path, name: a.name, argv: a.run }), image: Boolean(a.icon) && !a.tint })),
+      item("New terminal tab", "plus", { type: "newTab", folder: r.path })],
+    section(...sync),
+    st.dirty > 0 ? section(item("Commit…", "commit", { type: "commit", staged: st.staged > 0 }),
+      item("Stash uncommitted changes…", "stash", { type: "stash" }),
+      item("Reset uncommitted changes…", "reset", { type: "resetUncommitted" })) : [],
+    section(r.web && item(`Open on ${r.web.split("/")[2]}`, "cloud", { type: "openUrl", url: r.web }),
+      item("Copy path", "copy", { type: "copy", text: r.path }),
+      branch && item("Copy branch name", "copy", { type: "copy", text: branch })),
+  ].filter((s) => s.length).flatMap((s, i) => (i ? [{ separator: true }, ...s] : s));
+}
+
 export function dialogFor(action, ctx) {
   const cur = currentName(ctx), a = action;
   switch (a.type) {
@@ -205,6 +254,11 @@ export function dialogFor(action, ctx) {
     case "push": return { title: "Push branch", detail: `Push ${a.name}.`, choice: remoteChoice(ctx),
       checks: [{ id: "upstream", label: "Set as upstream", value: true }], confirm: "Push" };
     case "pushTag": return { title: "Push tag", detail: `Push the tag ${a.name}.`, choice: remoteChoice(ctx), confirm: "Push" };
+    case "commit": return { title: "Commit", detail: ctx.current ? `Commit to ${ctx.current}.` : "You're on a detached HEAD: the commit belongs to no branch until you create one.",
+      inputs: [{ id: "message", label: "Message", value: "", text: true }],
+      // With changes already staged, commit just those unless the person ticks this.
+      checks: [{ id: "all", label: "Stage every change first (untracked too)", value: !a.staged }], confirm: "Commit" };
+    case "pull": return { title: "Pull", detail: `Fast-forward ${cur} to ${a.upstream}? A pull that can't fast-forward changes nothing.`, confirm: "Pull" };
     case "stash": return { title: "Stash uncommitted changes", inputs: [{ id: "message", label: "Message", value: "", optional: true }],
       checks: [{ id: "untracked", label: "Include untracked files", value: true }], confirm: "Stash" };
     case "resetUncommitted": return { title: "Reset uncommitted changes", detail: "Reset the working tree to HEAD.", confirm: "Reset",
@@ -237,6 +291,7 @@ export function validate(action, v, ctx) {
     const text = String(v[input.id] ?? "").trim();
     if (input.optional) continue;
     if (!text) return `${input.label} is empty.`;
+    if (input.text) continue; // free text, passed as one argument after its option
     if (text.startsWith("-") || /\s/.test(text)) return `${input.label} can't start with "-" or contain spaces.`;
   }
   if (spec?.choice && !spec.choice.options.some((o) => o.value === v[spec.choice.id])) return `Pick a ${spec.choice.label.toLowerCase()}.`;
@@ -245,9 +300,23 @@ export function validate(action, v, ctx) {
 
 // The git commands an action runs, in order.
 export function commandsFor(a, v = {}, ctx = {}) {
+  // Validate again at the execution boundary, including actions without dialogs.
+  const hashes = ["checkoutCommit", "createBranch", "addTag", "cherryPick", "revert", "reset"];
+  const names = ["checkout", "checkoutRemote", "renameBranch", "deleteBranch", "deleteRemoteBranch", "deleteTag", "push", "pushTag"];
+  if (hashes.includes(a.type) && !objectId(a.hash)) throw new Error("Invalid commit identity");
+  if (names.includes(a.type) && !refName(a.name)) throw new Error("Invalid ref name");
+  if (["merge", "rebase"].includes(a.type) && !refName(a.ref)) throw new Error("Invalid ref name");
+  if (a.type === "deleteRemoteBranch" && (!refName(a.remote) || !refName(a.branch))) throw new Error("Invalid remote branch");
+  if (["checkoutRemote", "createBranch", "addTag", "renameBranch"].includes(a.type) && !refName(String(v.name ?? "").trim())) throw new Error("Invalid ref name");
+  if (["push", "pushTag"].includes(a.type) && (!refName(v.remote) || !ctx.remotes?.includes(v.remote))) throw new Error("Invalid remote");
+  if (a.type === "reset" && !["soft", "mixed", "hard"].includes(v.mode)) throw new Error("Invalid reset mode");
+  if (a.type === "resetUncommitted" && !["mixed", "hard"].includes(v.mode)) throw new Error("Invalid reset mode");
+  if (a.type === "commit" && !String(v.message ?? "").trim()) throw new Error("Empty commit message");
   const name = String(v.name ?? "").trim(), message = String(v.message ?? "").trim();
   switch (a.type) {
-    case "checkout": return [["checkout", a.name]];
+    // "--" ends the arguments: a branch deleted since the graph was drawn fails
+    // instead of naming a path to restore from the index.
+    case "checkout": return [["checkout", a.name, "--"]];
     case "checkoutRemote": return [["checkout", "-b", name, "--track", a.name]];
     case "checkoutCommit": return [["checkout", "--detach", a.hash]];
     case "createBranch": return [v.checkout ? ["checkout", "-b", name, a.hash] : ["branch", name, a.hash]];
@@ -263,10 +332,14 @@ export function commandsFor(a, v = {}, ctx = {}) {
     case "reset": return [["reset", `--${v.mode}`, a.hash]];
     case "push": return [["push", ...(v.upstream ? ["--set-upstream"] : []), v.remote, a.name]];
     case "pushTag": return [["push", v.remote, `refs/tags/${a.name}`]];
+    // The message is -m's own argument, so one starting with "-" stays a message.
+    case "commit": return [...(v.all ? [["add", "--all"]] : []), ["commit", "-m", message]];
+    // Fast-forward only, as manygit pulls: never a merge or a rebase.
+    case "pull": return [["pull", "--ff-only", "--quiet"]];
     case "stash": return [["stash", "push", ...(v.untracked ? ["--include-untracked"] : []), ...(message ? ["-m", message] : [])]];
     case "resetUncommitted": return [["reset", `--${v.mode}`, "HEAD"]];
     case "fetch": return [["fetch", "--all"]];
-    default: return [];
+    default: throw new Error("Unknown Git action");
   }
 }
 
@@ -289,6 +362,8 @@ export function doneText(a, v = {}) {
     case "reset": return `Reset to ${a.short} (${v.mode})`;
     case "push": return `Pushed ${a.name} to ${v.remote}`;
     case "pushTag": return `Pushed tag ${a.name} to ${v.remote}`;
+    case "commit": return "Committed";
+    case "pull": return `Pulled ${a.upstream}`;
     case "stash": return "Stashed uncommitted changes";
     case "resetUncommitted": return `Reset uncommitted changes (${v.mode})`;
     case "fetch": return "Fetched";
@@ -305,6 +380,7 @@ export function gitError(result) {
 // The files a commit changed against its first parent, joined from
 // --name-status and --numstat (renames off, so the paths match).
 export function fileArgs(commit) {
+  checkCommit(commit);
   const range = commit.parents.length ? [commit.parents[0], commit.hash] : null;
   const base = range ? ["diff", "--no-renames", "--no-ext-diff", ...range] : ["diff-tree", "--root", "--no-commit-id", "-r", "--no-renames", commit.hash];
   return { status: [...base, "--name-status"], numstat: [...base, "--numstat"] };
@@ -323,6 +399,7 @@ export function joinFiles(statusText, numstatText) {
 }
 
 export function diffArgs(commit, path) {
+  if (!commit.uncommitted) checkCommit(commit);
   const opts = ["--no-color", "--no-ext-diff", "--no-textconv"];
   if (commit.uncommitted) return ["diff", ...opts, "HEAD", "--", path];
   if (!commit.parents.length) return ["show", ...opts, "--format=", commit.hash, "--", path];

@@ -11,7 +11,7 @@ const POPUP_ROOTS: Record<string, number> = {
   help: 1,
   palette: 1,
   agents: 1,
-  "git-graph": 2,
+  "git-graph": 4,
 };
 const FRAMELESS = ["picker", "machine-add", "menu", "palette"];
 
@@ -19,6 +19,7 @@ function squareCorner(_match: string, side?: string): string {
   return side === "_full" ? ".rounded(0)" : `.rounded${side ?? ""}(0)`;
 }
 
+const GRAPH_RADIUS = ".rounded(paneFrame(layout())?.radius ?? 0)";
 const GIT_GRAPH: ModSource = { name: "git-graph", from: "repo" };
 
 export function squareFor(recipes: Recipe[]): Recipe {
@@ -54,6 +55,7 @@ export function squareFor(recipes: Recipe[]): Recipe {
         1,
       );
       pattern(ownMods.map(copy), corners, squareCorner);
+      exact(copy(GIT_GRAPH.name), GRAPH_RADIUS, ".rounded(0)");
       pattern(all, /●/g, "■");
       pattern(all, /○/g, "□");
       pattern(all, /openOverlay\(\{ mod: "([a-z-]+)", kind: "(?:popup|dialog)",/g, (whole, name) =>

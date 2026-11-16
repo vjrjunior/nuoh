@@ -183,6 +183,7 @@ describe("square", () => {
     }
     expect(square.mods["vjr-square-git-graph"]?.["menu.js"]).toContain(".bg(t.popover).border_1().border_color(t.border)");
     expect(square.mods["vjr-square-git-graph"]?.["dialog.js"]).toContain(".bg(t.popover).border_1().border_color(t.border)");
+    expect(square.mods["vjr-square-git-graph"]?.["settings.js"]).toContain(".bg(t.popover).border_1().border_color(t.border)");
     expect(square.mods["vjr-square-settings"]?.["main.js"]).toContain('.id("settings").bg(t.popover).border_1().border_color(t.border)');
   });
 
@@ -190,6 +191,10 @@ describe("square", () => {
     const settings = generateSquare().mods["vjr-square-settings"]?.["main.js"] ?? "";
     expect(meta(generateSquare(), "settings").overlay.frame).toBe("none");
     expect(settings).toMatch(/\.id\("settings"\)\.bg\(t\.popover\)/);
+  });
+
+  test("git-graph never asks GitHub for a new release", () => {
+    expect(readFileSync(join(repo, "mods/git-graph/update.js"), "utf8")).toContain("const CHECK = false;");
   });
 
   test("the square git-graph keeps its icons at the original path", () => {
