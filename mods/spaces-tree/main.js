@@ -72,7 +72,7 @@ export default class SpacesTree extends View {
     this.repos = {};
     this.pending = new Set();
     this.refreshing = false;
-    this.watching = new Set();
+    this.watching = new Map();
     this.lastPlaces = {};
     this.lastBusy = {};
     this.shown = new Set(spaces().map((space) => space.id));
@@ -198,12 +198,9 @@ export default class SpacesTree extends View {
         while (this.pending.size) {
           const batch = [...this.pending];
           this.pending.clear();
-          const repos = new Set();
-          for (const path of batch) {
-            const look = await this.lookAt(path);
-            if (look) repos.add(look.common);
-          }
-          for (const common of repos) await this.readRepo(common, cx);
+          const looks = await Promise.all(batch.map((path) => this.lookAt(path)));
+          const repos = new Set(looks.filter(Boolean).map((look) => look.common));
+          await Promise.all([...repos].map((common) => this.readRepo(common, cx)));
           cx.notify();
         }
         this.forget();
@@ -233,9 +230,11 @@ export default class SpacesTree extends View {
 
   async readRepo(common, cx) {
     try {
-      const list = await git(["worktree", "list", "--porcelain"], common);
+      const [list, refs] = await Promise.all([
+        git(["worktree", "list", "--porcelain"], common),
+        git(["for-each-ref", "--format=%(refname:short)%09%(upstream:track)%09%(committerdate:unix)", "refs/heads"], common),
+      ]);
       if (list.code !== 0) return;
-      const refs = await git(["for-each-ref", "--format=%(refname:short)%09%(upstream:track)%09%(committerdate:unix)", "refs/heads"], common);
       this.repos[common] = { common, name: repoName(common), checkouts: parseWorktrees(list.stdout), refs: refs.code === 0 ? parseRefs(refs.stdout) : {} };
       this.watch(common, cx);
     } catch {}
@@ -243,12 +242,14 @@ export default class SpacesTree extends View {
 
   watch(common, cx) {
     if (this.watching.has(common)) return;
-    this.watching.add(common);
+    this.watching.set(common, null);
     cx.spawn(async (cx) => {
       try {
         while (this.watching.has(common)) {
-          await watchFolder(common);
-          if (!this.watching.has(common)) break;
+          const watch = watchFolder(common);
+          this.watching.set(common, watch);
+          await watch;
+          if (this.watching.get(common) !== watch) break;
           const used = new Set(Object.values(this.lastPlaces));
           this.refresh(Object.keys(this.looks).filter((path) => used.has(path) && this.looks[path]?.common === common), cx);
         }
@@ -260,7 +261,11 @@ export default class SpacesTree extends View {
 
   forget() {
     const used = new Set(Object.values(this.lastPlaces).map((path) => this.looks[path]?.common).filter(Boolean));
-    for (const common of this.watching) if (!used.has(common)) this.watching.delete(common);
+    for (const [common, watch] of this.watching) {
+      if (used.has(common)) continue;
+      this.watching.delete(common);
+      watch?.cancel?.();
+    }
   }
 
   entries() {

@@ -1101,3 +1101,36 @@ describe("folder popups", () => {
     expect([timers, spawns]).toEqual([0, 0]);
   });
 });
+
+describe("git and folder watches", () => {
+  const live: Record<string, any> = { ...cx, spawn: (work: (cx: unknown) => unknown) => work(live) };
+
+  test("a repo no space is in any more stops being watched", () => {
+    const cancelled: string[] = [];
+    herdr.watchFolder = ((dir: string) => Object.assign(new Promise(() => {}), { cancel: () => cancelled.push(dir) })) as never;
+    const view = setup();
+    view.watch(common, live);
+    view.forget();
+    expect(cancelled).toEqual([]);
+    view.lastPlaces = { x: "/x" };
+    view.forget();
+    expect(cancelled).toEqual([common]);
+    expect(view.watching.has(common)).toBe(false);
+  });
+
+  test("a refresh looks at its folders at the same time", async () => {
+    let open = 0;
+    let most = 0;
+    herdr.exec = (async () => {
+      most = Math.max(most, ++open);
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      open -= 1;
+      return { code: 1, stdout: "", stderr: "" };
+    }) as never;
+    const view = setup();
+    view.refresh(["/a", "/b", "/c"], live);
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    expect(most).toBe(3);
+    expect(view.refreshing).toBe(false);
+  });
+});
