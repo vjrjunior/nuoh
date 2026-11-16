@@ -134,6 +134,42 @@
 **Priority:** P2
 **Depends on:** Nothing
 
+### Move a Claude that has no conversation yet
+
+**What:** When Move tab moves a Claude that never had a turn, start a new `claude` in the target with the same options instead of `claude --resume <id>`, or refuse with a toast that says there is nothing to resume.
+
+**Why:** A Claude with no turns has a session id in `~/.claude/sessions/<pid>.json` but no transcript in `~/.claude/projects/`, so the resumed one prints `No conversation found with session ID: …` and exits, leaving a bare shell in the new tab. The test panel run for the draft check hit it on 2026-11-16.
+
+**Context:** Comeback already checks the transcript before resuming (`transcriptOk` in `mods/comeback/main.js`, the `no saved conversation` reason). `readPane` in `mods/move-tab/move.js` only checks that the session file exists. A fresh start loses nothing, since there was no conversation; the moved note (`--append-system-prompt`) still applies.
+
+**Effort:** S
+**Priority:** P2
+**Depends on:** Nothing
+
+### Take a test panel answer's shot before the next step runs
+
+**What:** Make the shot each answer takes show the window as the person judged it, before the next step's `run` commands change the layout or the space.
+
+**Why:** In the draft run, the shot of the `vjr-desk-square` step showed `vjr-desk`: the next step's `layout.switch` had run first. A shot that shows the other layout can't be the Done shot for that layout.
+
+**Context:** `tools/test-panel/` takes the shot when the answer is recorded and opens the next step at the same moment. The shot needs to finish before the next step's `run` starts.
+
+**Effort:** S
+**Priority:** P2
+**Depends on:** Nothing
+
+### Share Comeback's and Move tab's Claude helpers in one module
+
+**What:** Move what `mods/comeback/logic.js` and `mods/move-tab/logic.js` both define (`quote`, `parseSession`, `isShell`, `keepArgs`, `resumeCommand`, the options list) into one shared module that `apply-layout` copies into each mod, as it copies `kit/kit.js`.
+
+**Why:** The two copies drifted once already: Comeback kept 5 options while Move tab kept 11, so a Claude came back from a reboot without `--agent` or `--effort`. A test now holds the option lists in step, but the functions around them can still drift.
+
+**Context:** One Herdr mod can't import another's files, so the generator would rewrite an import such as `../../lib/claude.js` to `./claude.js` and copy the file, as `installKit` in `scripts/generate-layout.ts` does for the kit. Comeback's list stays Move tab's without `--settings`, `--mcp-config` and `--plugin-dir`, since it reads a label anyone with `hc` can write; the shared module would mark those three instead of each mod listing its own.
+
+**Effort:** M
+**Priority:** P3
+**Depends on:** Nothing
+
 ## Completed
 
 ### Confirm the first real Herdr update

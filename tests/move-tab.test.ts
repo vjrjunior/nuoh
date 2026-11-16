@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { REASONS, SCHEDULE_TTL, SETTLE, atShell, checkoutOf, isClaude, keepArgs, leaves, matchingFolder, movedNote, parseSchedule, parseWorktrees, resumeArgv, runsSession, scheduleStep, spaceName, splitSteps, tabTree, targetsFor } from "../mods/move-tab/logic.js";
+import { REASONS, SCHEDULE_TTL, SETTLE, atShell, checkoutOf, isClaude, isDraft, keepArgs, leaves, matchingFolder, movedNote, parseSchedule, parseWorktrees, promptBox, resumeArgv, runsSession, scheduleStep, spaceName, splitSteps, tabTree, targetsFor } from "../mods/move-tab/logic.js";
 
 describe("move-tab logic", () => {
   test("keeps the allowed flags and their values", () => {
@@ -152,5 +152,42 @@ describe("move-tab logic", () => {
     const schedule = { to: "/r/wt", session: "abc-1", prompt: null, at: 0 };
     expect(scheduleStep({ schedule, status: "working", since: null, now: SCHEDULE_TTL + 1 })).toEqual({ drop: REASONS.stale() });
     expect(scheduleStep({ schedule, status: "working", since: null, now: SCHEDULE_TTL })).toEqual({ wait: null });
+  });
+});
+
+const RULE = "─".repeat(40);
+const claudeScreen = (input: string[]) => ["❯ an earlier prompt", "⏺ Done.", RULE, ...input, RULE, "  [Opus 5.5] │ repo git:(main)", "  ⏵⏵ bypass permissions on"].join("\n");
+
+describe("Claude's prompt box", () => {
+  test("finds the box under a rule and reads what is typed in it", () => {
+    expect(promptBox(claudeScreen(["❯\u00a0"]))).toEqual({ row: 3, column: 2, lines: 1, text: "", height: 7 });
+    expect(promptBox(claudeScreen(["❯\u00a0fix the login"]))).toEqual({ row: 3, column: 2, lines: 1, text: "fix the login", height: 7 });
+    expect(promptBox(claudeScreen(["❯\u00a0first line", "  second line"]))?.text).toBe("first line second line");
+    expect(promptBox(claudeScreen(['❯\u00a0Try "edit main.js to..."']))?.text).toBe('Try "edit main.js to..."');
+  });
+  test("has none without a prompt under a rule", () => {
+    expect(promptBox("❯ an earlier prompt\n$ ls")).toBeNull();
+    expect(promptBox("")).toBeNull();
+    expect(promptBox(null)).toBeNull();
+  });
+  test("calls text a draft only when the cursor is past the start of the input", () => {
+    const typed = promptBox(claudeScreen(["❯\u00a0hi"]));
+    const suggested = promptBox(claudeScreen(["❯\u00a0o CI passou?"]));
+    const lines = promptBox(claudeScreen(["❯\u00a0first line", "  "]));
+    expect(isDraft(typed, { row: 3, col: 4 })).toBe(true);
+    expect(isDraft(suggested, { row: 3, col: 2 })).toBe(false);
+    expect(isDraft(lines, { row: 4, col: 2 })).toBe(true);
+    expect(isDraft(promptBox(claudeScreen(["❯\u00a0"])), { row: 3, col: 2 })).toBe(false);
+    expect(isDraft(typed, null)).toBe(false);
+    expect(isDraft(null, { row: 3, col: 4 })).toBe(false);
+  });
+  test("with history above the screen, reads the column alone", () => {
+    expect(isDraft(promptBox(claudeScreen(["❯\u00a0o CI passou?"])), { row: 900, col: 2 })).toBe(false);
+    expect(isDraft(promptBox(claudeScreen(["❯\u00a0hi"])), { row: 900, col: 4 })).toBe(true);
+    expect(isDraft(promptBox(claudeScreen(["❯\u00a0first line", "  more"])), { row: 900, col: 2 })).toBe(true);
+  });
+  test("the refusal quotes the start of the draft", () => {
+    expect(REASONS.draft("this tab", "fix the login")).toBe('There\'s unsent text in Claude\'s prompt in this tab: "fix the login". Send or clear it, then move.');
+    expect(REASONS.draft("pane 2", "a".repeat(50))).toBe(`There's unsent text in Claude's prompt in pane 2: "${"a".repeat(40)}…". Send or clear it, then move.`);
   });
 });

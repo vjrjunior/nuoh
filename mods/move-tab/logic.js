@@ -33,6 +33,7 @@ const FILES = ["--mcp-config", "--settings"];
 export const REASONS = {
   working: (where) => `Claude is working in ${where}. Move it when the turn ends.`,
   blocked: (where) => `Claude is waiting for you in ${where}.`,
+  draft: (where, text) => `There's unsent text in Claude's prompt in ${where}: "${text.length > 40 ? `${text.slice(0, 40)}…` : text}". Send or clear it, then move.`,
   busy: (program, where) => `${program} is running in ${where}.`,
   subagents: (where) => `Claude has sub-agents running in ${where}.`,
   subagent: (where) => `Claude in ${where} is another agent's sub-agent.`,
@@ -168,6 +169,26 @@ export function isClaude(info) {
   const front = info?.foreground;
   if (front && base(front.argv?.[0] ?? "") === "claude") return true;
   return info?.status?.app === "claude-code" && !atShell(info);
+}
+
+const RULE = /^\s*─{8,}/;
+const PROMPT = /^(\s*)❯/;
+
+export function promptBox(screen) {
+  const lines = String(screen ?? "").split("\n");
+  const row = lines.findLastIndex((line, index) => index > 0 && PROMPT.test(line) && RULE.test(lines[index - 1]));
+  if (row < 0) return null;
+  const close = lines.findIndex((line, index) => index > row && RULE.test(line));
+  const input = lines.slice(row, close < 0 ? lines.length : close);
+  const text = [input[0].replace(PROMPT, ""), ...input.slice(1)].map((line) => line.trim()).filter(Boolean).join(" ");
+  return { row, column: PROMPT.exec(input[0])[1].length + 2, lines: input.length, text, height: lines.length };
+}
+
+export function isDraft(box, cursor) {
+  if (!box || box.text === "" || !cursor) return false;
+  const atStart = cursor.col === box.column;
+  if (cursor.row < box.height) return !(atStart && cursor.row === box.row);
+  return !(atStart && box.lines === 1);
 }
 
 export function movedNote({ from, fromBranch, to, toBranch }) {

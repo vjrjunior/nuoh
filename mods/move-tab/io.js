@@ -42,6 +42,27 @@ export function appIo(cx) {
         return null;
       }
     },
+    async screen(address) {
+      const text = await output("hc", ["read", address, "--json"]);
+      return text === null ? null : (parse(text)?.text ?? null);
+    },
+    async cursor(address) {
+      const at = (args) => exec("herdr-app", ["do", ...args, JSON.stringify({ terminal: address })]).catch(() => null);
+      await at(["terminal.clear_selection"]);
+      const asked = await exec("herdr-app", ["do", "terminal.select", JSON.stringify({ terminal: address, at: "cursor" })]).catch(() => null);
+      try {
+        if (asked?.code !== 0) return null;
+        for (let waited = 0; waited <= 1000; waited += 50) {
+          const selection = terminals().find((terminal) => terminal.address === address)?.selection;
+          const { start, end } = selection ?? {};
+          if (start && end && start.row === end.row && start.col === end.col) return { row: start.row, col: start.col };
+          await cx.sleep(50);
+        }
+        return null;
+      } finally {
+        await at(["terminal.clear_selection"]);
+      }
+    },
     worktrees: (folder) => output("git", ["worktree", "list", "--porcelain"], { cwd: folder }),
     async tree(tab) {
       const text = await output("sh", ["-c", 'printf "%s\\n" "$1" | hc connect', "sh", DOC_GET]);

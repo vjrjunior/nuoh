@@ -49,6 +49,8 @@ function world(changes: any = {}) {
     throwRaw: false,
     notifyThrows: false,
     onSignal: null as ((w: any) => void) | null,
+    screens: {} as Record<string, string | string[]>,
+    cursors: {} as Record<string, { row: number; col: number } | null>,
     ...changes,
   };
 }
@@ -87,6 +89,17 @@ function fakeIo(w: any) {
       return value[Math.min(read, value.length - 1)];
     },
     session: async (pid: number) => w.sessions[pid] ?? null,
+    screen: async (address: string) => {
+      const value = w.screens[address];
+      if (!Array.isArray(value)) return value ?? null;
+      const read = reads[`screen ${address}`] ?? 0;
+      reads[`screen ${address}`] = read + 1;
+      return value[Math.min(read, value.length - 1)];
+    },
+    cursor: async (address: string) => {
+      log.push(`cursor ${address}`);
+      return w.cursors[address] ?? null;
+    },
     worktrees: async (_folder: string) => w.worktrees,
     tree: async (tab: string) => w.trees[tab] ?? null,
     exists: async (folder: string) => w.folders.includes(folder),
@@ -159,7 +172,42 @@ async function move(w: any, request: any = {}) {
   return { io, result, notice: io.notices[0], acts: actsOf(io.log) };
 }
 
+const RULE = "─".repeat(40);
+const box = (input: string) => ["⏺ Done.", RULE, `❯\u00a0${input}`, RULE, "  [Opus 5.5] │ main"].join("\n");
+
 describe("moveTab", () => {
+  test("refuses a Claude whose prompt holds a draft and ends nothing", async () => {
+    const { io, notice, result } = await move(world({ screens: { t1: box("fix the login") }, cursors: { t1: { row: 2, col: 15 } } }));
+    expect(io.log).toEqual(["cursor t1"]);
+    expect(notice).toEqual({ title: "Can't move this tab", body: 'There\'s unsent text in Claude\'s prompt in this tab: "fix the login". Send or clear it, then move.', level: "warning" });
+    expect(result).toEqual({ moved: false });
+  });
+
+  test("moves a Claude whose prompt shows only a suggestion", async () => {
+    const { io, result } = await move(world({ screens: { t1: box("o CI passou?") }, cursors: { t1: { row: 2, col: 2 } } }));
+    expect(io.log).toContain("signal 11");
+    expect(result).toEqual({ moved: true });
+  });
+
+  test("reads the cursor only when the prompt has text, and moves when it can't", async () => {
+    const empty = await move(world({ screens: { t1: box("") } }));
+    expect(empty.io.log).not.toContain("cursor t1");
+    expect(empty.result).toEqual({ moved: true });
+    const unreadable = await move(world({ screens: { t1: box("hi") }, cursors: { t1: null } }));
+    expect(unreadable.io.log).toContain("cursor t1");
+    expect(unreadable.result).toEqual({ moved: true });
+    const noBox = await move(world({ screens: { t1: "$ " } }));
+    expect(noBox.io.log).not.toContain("cursor t1");
+    expect(noBox.result).toEqual({ moved: true });
+  });
+
+  test("a draft typed after the first check stops the move before Claude ends", async () => {
+    const { io, notice, result } = await move(world({ screens: { t1: [box(""), box("wait")] }, cursors: { t1: { row: 2, col: 6 } } }));
+    expect(io.log).not.toContain("signal 11");
+    expect(notice.body).toBe('There\'s unsent text in Claude\'s prompt in this tab: "wait". Send or clear it, then move.');
+    expect(result).toEqual({ moved: false });
+  });
+
   test("ends the old Claude before the new one starts", async () => {
     const { io, result, acts } = await move(world());
     const signalled = io.log.indexOf("signal 11");

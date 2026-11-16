@@ -1,4 +1,4 @@
-import { REASONS, atShell, base, checkoutOf, isClaude, keepArgs, leaves, matchingFolder, movedNote, parseWorktrees, placeOf, resumeArgv, resumeCommand, runsSession, spaceName, splitSteps } from "./logic.js";
+import { REASONS, atShell, base, checkoutOf, isClaude, isDraft, keepArgs, leaves, matchingFolder, movedNote, parseWorktrees, placeOf, promptBox, resumeArgv, resumeCommand, runsSession, spaceName, splitSteps } from "./logic.js";
 
 export const END_WAIT = 10000;
 export const POLL = 250;
@@ -137,6 +137,8 @@ async function readPane(block, where, io) {
     const state = info.status?.state;
     if (state === "working" || state === "blocked") return { reason: REASONS[state](where) };
     if (io.terminals().some((terminal) => terminal.parent === address && terminal.state === "live")) return { reason: REASONS.subagents(where) };
+    const box = promptBox(await io.screen(address));
+    if (box?.text && isDraft(box, await io.cursor(address))) return { reason: REASONS.draft(where, box.text) };
     const pid = info.foreground.pid;
     const found = await io.session(pid);
     if (!found) return { reason: REASONS.session(where) };
