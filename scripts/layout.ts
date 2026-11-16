@@ -16,7 +16,7 @@ const APP_WRITTEN = ["gpui-kit.d.ts", "jsconfig.json"];
 const EMPTY_RECORD: LayoutRecord = { version: "", mods: [], kept: [], files: [], sections: [] };
 const RELOAD_MS = 1500;
 const STATUS_TIMEOUT_MS = 3000;
-const CHECK_TIMEOUT_MS = 10000;
+const CHECK_TIMEOUT_MS = 60000;
 
 function recordPath(): string {
   return join(stateDir(), "layout.json");
@@ -150,11 +150,19 @@ function keySections(table: KeyTable, generated: Generated[]): KeyTable {
   return Object.fromEntries(generated.map((variant) => [`layout:${variant.layout}`, { ...deriveSection(global, variant.replacements), ...variant.keys }]));
 }
 
+const CHECK_ONE = 'out=$(herdr-app check "$1/$2" 2>&1) || printf "%s\\t%s\\n" "$2" "$(printf "%s" "$out" | tr "\\n" " " | cut -c1-400)"';
+const CHECKS_AT_ONCE = 8;
+
 function checkMods(build: string, mods: string[]): void {
-  for (const mod of mods) {
-    const result = Bun.spawnSync(["herdr-app", "check", join(build, mod)], { timeout: CHECK_TIMEOUT_MS });
-    if (!result.success) throw new Error(`${mod} failed herdr-app check: ${`${result.stdout}${result.stderr}`.trim()}`);
-  }
+  if (mods.length === 0) return;
+  const result = Bun.spawnSync(["xargs", "-P", String(CHECKS_AT_ONCE), "-n", "1", "sh", "-c", CHECK_ONE, "sh", build], {
+    stdin: Buffer.from(`${mods.join("\n")}\n`),
+    timeout: CHECK_TIMEOUT_MS,
+  });
+  if (!result.success) throw new Error("herdr-app check did not finish");
+  const failed = new Map(result.stdout.toString().split("\n").filter(Boolean).map((line) => line.split("\t") as [string, string]));
+  const first = mods.find((mod) => failed.has(mod));
+  if (first) throw new Error(`${first} failed herdr-app check: ${(failed.get(first) ?? "").trim()}`);
 }
 
 function windowStatus(): { layout?: unknown; errors?: unknown } | null {

@@ -58,7 +58,7 @@ describe("vjr-sync", () => {
   test("runs apply with the app's own version", async () => {
     await start({ version: "0.1.11", built: "0.1.10" });
 
-    expect(execCalls).toEqual([["/bin/bun", ["scripts/layout.ts", "apply", "--herdr-version", "0.1.11"], { cwd: "/repo" }]]);
+    expect(execCalls).toEqual([["/bin/bun", ["scripts/layout.ts", "apply", "--herdr-version", "0.1.11"], { cwd: "/repo", timeout: 120000 }]]);
   });
 
   test("stays silent on success", async () => {

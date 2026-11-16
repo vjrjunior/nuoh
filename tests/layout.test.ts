@@ -175,6 +175,16 @@ describe("apply", () => {
     expect(log().filter((line) => line.startsWith("check "))).toHaveLength(32);
   });
 
+  test("checks the mods side by side", () => {
+    const { apply, log } = setup();
+    const started = Date.now();
+
+    apply([], { FAKE_HERDR_CHECK_SLEEP: "0.5" });
+
+    expect(log().filter((line) => line.startsWith("check "))).toHaveLength(32);
+    expect(Date.now() - started).toBeLessThan(8000);
+  });
+
   test("records what it created", () => {
     const { apply, record } = setup();
 

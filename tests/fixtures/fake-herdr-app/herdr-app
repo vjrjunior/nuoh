@@ -5,6 +5,9 @@ case "$1" in
     echo "herdr-app ${FAKE_HERDR_VERSION:-0.1.10}"
     ;;
   check)
+    if [ -n "$FAKE_HERDR_CHECK_SLEEP" ]; then
+      sleep "$FAKE_HERDR_CHECK_SLEEP"
+    fi
     if [ -n "$FAKE_HERDR_CHECK_FAIL" ]; then
       case "$2" in
         *"$FAKE_HERDR_CHECK_FAIL")

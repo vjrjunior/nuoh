@@ -1,13 +1,15 @@
 import { View, div } from "gpui-kit";
 import { exec, notify, props, updates } from "herdr";
 
+const APPLY_TIMEOUT = 120000;
+
 export default class VjrSync extends View {
   init(_props, cx) {
     const { built, repo, bun } = props() ?? {};
     const version = updates().app.version;
     if (!built || version === built) return;
     cx.spawn(async () => {
-      const result = await exec(bun, ["scripts/layout.ts", "apply", "--herdr-version", version], { cwd: repo }).catch((error) => ({
+      const result = await exec(bun, ["scripts/layout.ts", "apply", "--herdr-version", version], { cwd: repo, timeout: APPLY_TIMEOUT }).catch((error) => ({
         code: 1,
         stderr: String(error),
       }));
