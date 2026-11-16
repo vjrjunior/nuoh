@@ -17,6 +17,7 @@ export default class Markdown extends View {
     this.reads = 0;
     this.watches = 0;
     this.dir = null;
+    this.watching = null;
     this.file = null;
     if (typeof file === "string" && file) this.show(file, cx);
   }
@@ -51,12 +52,16 @@ export default class Markdown extends View {
   watch(dir, cx) {
     if (this.dir === dir) return;
     this.dir = dir;
+    this.watching?.cancel?.();
+    this.watching = null;
     const mine = ++this.watches;
     cx.spawn(async (cx) => {
       for (;;) {
         let changed;
         try {
-          changed = await watchFolder(dir);
+          const watch = watchFolder(dir);
+          this.watching = watch;
+          changed = await watch;
         } catch {
           if (this.watches === mine) this.dir = null;
           return;

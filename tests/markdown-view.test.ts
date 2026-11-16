@@ -297,3 +297,16 @@ describe("links and buttons", () => {
     expect(reads).toEqual([FILE, FILE]);
   });
 });
+
+describe("leaving a folder", () => {
+  test("cancels the watch on it", async () => {
+    const cancelled: string[] = [];
+    herdr.watchFolder = ((dir: string) => Object.assign(new Promise((resolve) => watches.push({ dir, resolve })), { cancel: () => cancelled.push(dir) })) as never;
+    files["/Users/me/w/app/docs/plan.md"] = "# The plan";
+    const { view, cx } = await open();
+    linkHandler(view)("../docs/plan.md", cx);
+    await flush();
+    expect(cancelled).toEqual([DIR]);
+    expect(watches.map((watch) => watch.dir)).toEqual([DIR, "/Users/me/w/app/docs"]);
+  });
+});
