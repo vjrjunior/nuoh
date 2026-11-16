@@ -1,5 +1,6 @@
+import * as fs from "fs/promises";
 import { exec, home, notify, panes, readTextFile, spaces, terminals } from "herdr";
-import { LABEL, parseSession, tabTree } from "./logic.js";
+import { LABEL, parseSession, projectFolder, tabTree } from "./logic.js";
 
 const DOC_GET = JSON.stringify({ jsonrpc: "2.0", id: 1, method: "doc.get", params: { name: "herdr-app" } });
 
@@ -40,6 +41,20 @@ export function appIo(cx) {
         return parseSession(await readTextFile(`${home()}/.claude/sessions/${pid}.json`));
       } catch {
         return null;
+      }
+    },
+    async transcript(session, cwd) {
+      const root = `${home()}/.claude/projects`;
+      const file = `${session}.jsonl`;
+      try {
+        const own = projectFolder(cwd);
+        if (own && (await fs.exists(`${root}/${own}/${file}`))) return true;
+        for (const project of await fs.readdir(root)) {
+          if (await fs.exists(`${root}/${project}/${file}`)) return true;
+        }
+        return false;
+      } catch {
+        return true;
       }
     },
     async screen(address) {

@@ -196,6 +196,20 @@ export function movedNote({ from, fromBranch, to, toBranch }) {
   return `This session moved from ${from} (${branch(fromBranch)}) to ${to} (${branch(toBranch)}). Work in ${to} from now on; files under ${from} belong to another checkout.`;
 }
 
+export function projectFolder(cwd) {
+  return typeof cwd === "string" && cwd !== "" ? cwd.replace(/[^A-Za-z0-9]/g, "-") : null;
+}
+
+export function freshArgv({ args, prompt }) {
+  return typeof prompt === "string" && prompt !== "" ? ["claude", prompt, ...args] : ["claude", ...args];
+}
+
+export function freshCommand(note) {
+  const folder = quote(note.cwd);
+  if (folder === null) return null;
+  return [`cd ${folder} && claude`, ...note.args.map(quote)].join(" ");
+}
+
 export function resumeArgv({ session, args, note, prompt }) {
   if (typeof session !== "string" || !SESSION.test(session)) return null;
   const argv = ["claude", "--resume", session, ...args, ...(note ? ["--append-system-prompt", note] : [])];

@@ -51,6 +51,7 @@ function world(changes: any = {}) {
     onSignal: null as ((w: any) => void) | null,
     screens: {} as Record<string, string | string[]>,
     cursors: {} as Record<string, { row: number; col: number } | null>,
+    transcripts: ["new-id", "two-id"] as string[],
     ...changes,
   };
 }
@@ -96,6 +97,7 @@ function fakeIo(w: any) {
       reads[`screen ${address}`] = read + 1;
       return value[Math.min(read, value.length - 1)];
     },
+    transcript: async (session: string, _cwd: string) => w.transcripts.includes(session),
     cursor: async (address: string) => {
       log.push(`cursor ${address}`);
       return w.cursors[address] ?? null;
@@ -176,6 +178,39 @@ const RULE = "─".repeat(40);
 const box = (input: string) => ["⏺ Done.", RULE, `❯\u00a0${input}`, RULE, "  [Opus 5.5] │ main"].join("\n");
 
 describe("moveTab", () => {
+  test("starts a new Claude in the target when the old one had no conversation yet", async () => {
+    const { io, notice, result, acts } = await move(world({ transcripts: [] }));
+    expect(io.log).toContain("signal 11");
+    expect(acts[0]).toEqual({ name: "tab.new", args: { space: "s2", folder: "/r/wt", argv: ["claude", "--model", "opus"] } });
+    expect(notice).toEqual({ title: "Moved to feat/x", body: "Claude had no conversation yet, so a new one started.", level: "success", timeout: 4000 });
+    expect(result).toEqual({ moved: true });
+  });
+
+  test("a scheduled prompt is the new Claude's first turn, ahead of its options", async () => {
+    const { acts } = await move(world({ transcripts: [] }), { prompt: "Say pwd" });
+    expect(acts[0].args.argv).toEqual(["claude", "Say pwd", "--model", "opus"]);
+  });
+
+  test("a failure after a Claude with no conversation ended offers to start it, not to resume it", async () => {
+    const w = world({ transcripts: [], fail: { "space.new": "boom" } });
+    w.spaces = w.spaces.slice(0, 1);
+    w.panes = w.panes.slice(0, 1);
+    const { notice } = await move(w, { toSpace: null });
+    expect(notice).toEqual({
+      title: "Couldn't move the tab",
+      body: "boom. To start Claude again by hand: cd /r/main && claude --model opus",
+      level: "error",
+      action: { name: "tab.new", args: { space: "s1", folder: "/r/main", argv: ["claude", "--model", "opus"] } },
+    });
+  });
+
+  test("only the Claude without a conversation starts new", async () => {
+    const { acts, notice } = await move(twoClaudes({ transcripts: ["two-id"] }));
+    expect(acts[0].args.argv).toEqual(["claude", "--model", "opus"]);
+    expect(acts[2].args.argv).toEqual(resumeArgv({ session: "two-id", args: ["--effort", "high"], note: NOTE }));
+    expect(notice.body).toBe("Claude had no conversation yet, so a new one started.");
+  });
+
   test("refuses a Claude whose prompt holds a draft and ends nothing", async () => {
     const { io, notice, result } = await move(world({ screens: { t1: box("fix the login") }, cursors: { t1: { row: 2, col: 15 } } }));
     expect(io.log).toEqual(["cursor t1"]);

@@ -134,18 +134,6 @@
 **Priority:** P2
 **Depends on:** Nothing
 
-### Move a Claude that has no conversation yet
-
-**What:** When Move tab moves a Claude that never had a turn, start a new `claude` in the target with the same options instead of `claude --resume <id>`, or refuse with a toast that says there is nothing to resume.
-
-**Why:** A Claude with no turns has a session id in `~/.claude/sessions/<pid>.json` but no transcript in `~/.claude/projects/`, so the resumed one prints `No conversation found with session ID: …` and exits, leaving a bare shell in the new tab. The test panel run for the draft check hit it on 2026-11-16.
-
-**Context:** Comeback already checks the transcript before resuming (`transcriptOk` in `mods/comeback/main.js`, the `no saved conversation` reason). `readPane` in `mods/move-tab/move.js` only checks that the session file exists. A fresh start loses nothing, since there was no conversation; the moved note (`--append-system-prompt`) still applies.
-
-**Effort:** S
-**Priority:** P2
-**Depends on:** Nothing
-
 ### Take a test panel answer's shot before the next step runs
 
 **What:** Make the shot each answer takes show the window as the person judged it, before the next step's `run` commands change the layout or the space.

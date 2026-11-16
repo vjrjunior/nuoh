@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { REASONS, SCHEDULE_TTL, SETTLE, atShell, checkoutOf, isClaude, isDraft, keepArgs, leaves, matchingFolder, movedNote, parseSchedule, parseWorktrees, promptBox, resumeArgv, runsSession, scheduleStep, spaceName, splitSteps, tabTree, targetsFor } from "../mods/move-tab/logic.js";
+import { REASONS, SCHEDULE_TTL, SETTLE, atShell, checkoutOf, freshArgv, freshCommand, isClaude, isDraft, keepArgs, leaves, matchingFolder, movedNote, parseSchedule, parseWorktrees, projectFolder, promptBox, resumeArgv, runsSession, scheduleStep, spaceName, splitSteps, tabTree, targetsFor } from "../mods/move-tab/logic.js";
 
 describe("move-tab logic", () => {
   test("keeps the allowed flags and their values", () => {
@@ -189,5 +189,24 @@ describe("Claude's prompt box", () => {
   test("the refusal quotes the start of the draft", () => {
     expect(REASONS.draft("this tab", "fix the login")).toBe('There\'s unsent text in Claude\'s prompt in this tab: "fix the login". Send or clear it, then move.');
     expect(REASONS.draft("pane 2", "a".repeat(50))).toBe(`There's unsent text in Claude's prompt in pane 2: "${"a".repeat(40)}…". Send or clear it, then move.`);
+  });
+});
+
+describe("a Claude with no conversation yet", () => {
+  test("its project folder is the cwd with every other character a dash", () => {
+    expect(projectFolder("/Users/me/code/my-app")).toBe("-Users-me-code-my-app");
+    expect(projectFolder("/w/My App/a.b_c")).toBe("-w-My-App-a-b-c");
+    expect(projectFolder(null)).toBeNull();
+    expect(projectFolder("")).toBeNull();
+  });
+  test("starts with its options, and a prompt goes first so no option takes it", () => {
+    expect(freshArgv({ args: ["--model", "opus"], prompt: null })).toEqual(["claude", "--model", "opus"]);
+    expect(freshArgv({ args: ["--allowedTools", "Bash", "Edit"], prompt: "Say pwd" })).toEqual(["claude", "Say pwd", "--allowedTools", "Bash", "Edit"]);
+    expect(freshArgv({ args: [], prompt: "" })).toEqual(["claude"]);
+  });
+  test("its command by hand starts it in its folder", () => {
+    expect(freshCommand({ cwd: "/r/main", args: ["--model", "opus"] })).toBe("cd /r/main && claude --model opus");
+    expect(freshCommand({ cwd: "/r/My App", args: [] })).toBe("cd '/r/My App' && claude");
+    expect(freshCommand({ cwd: "/r/it's", args: [] })).toBeNull();
   });
 });

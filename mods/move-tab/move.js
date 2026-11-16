@@ -1,4 +1,4 @@
-import { REASONS, atShell, base, checkoutOf, isClaude, isDraft, keepArgs, leaves, matchingFolder, movedNote, parseWorktrees, placeOf, promptBox, resumeArgv, resumeCommand, runsSession, spaceName, splitSteps } from "./logic.js";
+import { REASONS, atShell, base, checkoutOf, freshArgv, freshCommand, isClaude, isDraft, keepArgs, leaves, matchingFolder, movedNote, parseWorktrees, placeOf, promptBox, resumeArgv, resumeCommand, runsSession, spaceName, splitSteps } from "./logic.js";
 
 export const END_WAIT = 10000;
 export const POLL = 250;
@@ -57,7 +57,7 @@ async function move(request, io, run) {
     const folder = matchingFolder(part.cwd, source.path, target.path);
     part.launch = { folder: (await io.exists(folder)) ? folder : target.path };
     if (part.kind !== "claude") continue;
-    part.launch.argv = resumeArgv({ session: part.session, args: part.args, note, prompt: request.prompt });
+    part.launch.argv = part.fresh ? freshArgv({ args: part.args, prompt: request.prompt }) : resumeArgv({ session: part.session, args: part.args, note, prompt: request.prompt });
     if (!part.launch.argv) return refused(REASONS.session(part.where));
   }
 
@@ -117,6 +117,7 @@ async function move(request, io, run) {
     await io.act("tab.select", { id: made[0].tab });
   }
   const notice = { title: `Moved to ${run.place}`, level: "success", timeout: 4000 };
+  if (run.ended.some((claude) => claude.fresh)) return { ...notice, body: "Claude had no conversation yet, so a new one started." };
   return run.ended.length > 0 ? { ...notice, body: "Claude's background jobs ended." } : notice;
 }
 
@@ -142,7 +143,8 @@ async function readPane(block, where, io) {
     const pid = info.foreground.pid;
     const found = await io.session(pid);
     if (!found) return { reason: REASONS.session(where) };
-    return { kind: "claude", block, address, where, pid, own: info.pid === pid, session: found.session, cwd: found.cwd, args: keepArgs(info.foreground.argv ?? [], found.cwd) };
+    const fresh = !(await io.transcript(found.session, found.cwd));
+    return { kind: "claude", block, address, where, pid, own: info.pid === pid, session: found.session, cwd: found.cwd, fresh, args: keepArgs(info.foreground.argv ?? [], found.cwd) };
   }
   if (atShell(info)) return { kind: "shell", where, cwd: info.cwd ?? info.foreground?.cwd ?? null };
   const pane = io.panes().find((candidate) => candidate.terminal === address);
@@ -203,12 +205,16 @@ function failed(message, run) {
   const unsure = [...run.unsure].map((claude) => `Claude from ${claude.where} may already be running in ${run.place}.`);
   const notice = { title: "Couldn't move the tab", body: [message, ...unsure].join(" "), level: "error" };
   if (offered.length === 0) return notice;
-  const commands = offered.map((claude) => resumeCommand({ cwd: claude.cwd, session: claude.session, args: claude.args }) ?? `claude --resume ${claude.session}`);
+  const commands = offered.map((claude) =>
+    claude.fresh ? (freshCommand({ cwd: claude.cwd, args: claude.args }) ?? "claude") : (resumeCommand({ cwd: claude.cwd, session: claude.session, args: claude.args }) ?? `claude --resume ${claude.session}`),
+  );
   const [first] = offered;
+  const how = offered.every((claude) => claude.fresh) ? "To start Claude again by hand" : "To resume Claude by hand";
+  const argv = first.fresh ? freshArgv({ args: first.args, prompt: null }) : resumeArgv({ session: first.session, args: first.args, note: null });
   return {
     ...notice,
-    body: `${notice.body} To resume Claude by hand: ${commands.join("; ")}`,
-    action: { name: "tab.new", args: { space: run.home, folder: first.cwd, argv: resumeArgv({ session: first.session, args: first.args, note: null }) } },
+    body: `${notice.body} ${how}: ${commands.join("; ")}`,
+    action: { name: "tab.new", args: { space: run.home, folder: first.cwd, argv } },
   };
 }
 
