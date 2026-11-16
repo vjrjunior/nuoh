@@ -6,6 +6,10 @@ describe("move-tab logic", () => {
     expect(keepArgs(["claude", "--resume", "old", "--model", "opus", "--effort", "high", "--mcp-config", "a.json", "b.json", "--plugin-dir", "p", "--plugin-dir", "q", "--append-system-prompt", "x", "--strict-mcp-config"]))
       .toEqual(["--model", "opus", "--effort", "high", "--mcp-config", "a.json", "b.json", "--plugin-dir", "p", "--plugin-dir", "q", "--strict-mcp-config"]);
   });
+  test("keeps the options that shape the session, with the Claude CLI's arity", () => {
+    expect(keepArgs(["claude", "--fallback-model", "sonnet", "--setting-sources", "user,project", "--name", "my run", "--allowedTools", "Bash(git:*)", "Edit", "--disallowed-tools", "WebFetch", "--allow-dangerously-skip-permissions", "--chrome", "--no-chrome", "--ide", "--brief", "--debug", "--system-prompt", "x"]))
+      .toEqual(["--fallback-model", "sonnet", "--setting-sources", "user,project", "--name", "my run", "--allowedTools", "Bash(git:*)", "Edit", "--disallowed-tools", "WebFetch", "--allow-dangerously-skip-permissions", "--chrome", "--no-chrome", "--ide", "--brief"]);
+  });
   test("drops a flag whose value can't be typed", () => {
     expect(keepArgs(["claude", "--model", "it's"])).toEqual([]);
   });

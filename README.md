@@ -145,7 +145,7 @@ It is third-party code that runs with your permissions, so it never updates by i
 
 ### Comeback
 
-When the Mac restarts, Herdr brings every terminal back as a bare shell. `mods/comeback/` notes which Claude Code conversation runs in each terminal and, when the window opens after a restart, types `claude --resume` back into each terminal that lost its Claude, with the same safe options, then shows a toast with what came back. It needs no hooks and edits no files outside Herdr's: it reads `hc`, `ps`, `sysctl` and `~/.claude/sessions/`, and keeps its notes as a `comeback` label on each terminal.
+When the Mac restarts, Herdr brings every terminal back as a bare shell. `mods/comeback/` notes which Claude Code conversation runs in each terminal and, when the window opens after a restart, types `claude --resume` back into each terminal that lost its Claude, with the options it started with, then shows a toast with what came back. Options that load code (`--settings`, `--mcp-config`, `--plugin-dir`) stay behind: Comeback reads its notes from a label that any program with `hc` can write, and what a label says runs unattended after a reboot. It needs no hooks and edits no files outside Herdr's: it reads `hc`, `ps`, `sysctl` and `~/.claude/sessions/`, and keeps its notes as a `comeback` label on each terminal.
 
 Each loss gets one automatic try. `herdr-app do vjr-square-comeback.resume` (or `vjr-comeback.resume` in `vjr-desk`) tries again. [`mods/comeback/RECIPE.md`](mods/comeback/RECIPE.md) describes it in full and is ready for herdr.dev.
 

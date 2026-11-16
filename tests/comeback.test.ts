@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
+import { ALLOWED as MOVE_TAB } from "../mods/move-tab/logic.js";
 import {
+  ALLOWED,
   autoCandidate,
   decodeNote,
   encodeNote,
@@ -71,8 +73,22 @@ describe("keepArgs", () => {
     expect(keepArgs(["claude", "--dangerously-skip-permissions", "--model", "opus", "fix the login"])).toEqual(["--dangerously-skip-permissions", "--model", "opus"]);
   });
 
+  test("keeps the options Move tab keeps that load no code", () => {
+    expect(keepArgs(["claude", "--agent", "reviewer", "--effort", "high", "--fallback-model", "sonnet", "--strict-mcp-config", "--disallowed-tools", "WebFetch", "--chrome"]))
+      .toEqual(["--agent", "reviewer", "--effort", "high", "--fallback-model", "sonnet", "--strict-mcp-config", "--disallowed-tools", "WebFetch", "--chrome"]);
+  });
+
+  test("never takes an option that loads code, since anything with hc can write the label", () => {
+    expect(keepArgs(["claude", "--settings", "s.json", "--mcp-config", "m.json", "--plugin-dir", "p", "--agent", "x"])).toEqual(["--agent", "x"]);
+  });
+
+  test("its list is Move tab's without the options that load code", () => {
+    const loadsCode = ["--settings", "--mcp-config", "--plugin-dir"];
+    expect(ALLOWED).toEqual(Object.fromEntries(Object.entries(MOVE_TAB).filter(([flag]) => !loadsCode.includes(flag))));
+  });
+
   test("drops prompts, pickers, print mode and unknown options", () => {
-    expect(keepArgs(["claude", "-p", "hi", "--resume", "x", "-c", "--session-id", "y", "--worktree", "--chrome", "do it"])).toEqual([]);
+    expect(keepArgs(["claude", "-p", "hi", "--resume", "x", "-c", "--session-id", "y", "--worktree", "--debug", "do it"])).toEqual([]);
   });
 
   test("keeps every folder of --add-dir and the = form", () => {
@@ -108,7 +124,7 @@ describe("the note", () => {
   });
 
   test("a note edited by hand comes back filtered", () => {
-    const edited = JSON.stringify({ ...note, args: ["--dangerously-skip-permissions", "rm -rf /", "--chrome"] });
+    const edited = JSON.stringify({ ...note, args: ["--dangerously-skip-permissions", "rm -rf /", "--settings", "/tmp/s.json", "--plugin-dir", "/tmp/p"] });
     expect(decodeNote(edited)?.args).toEqual(["--dangerously-skip-permissions"]);
   });
 

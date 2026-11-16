@@ -1,15 +1,27 @@
 const SHELLS = ["zsh", "bash", "fish", "sh", "dash", "ksh"];
-const ALLOWED = {
+export const ALLOWED = {
   "--dangerously-skip-permissions": 0,
+  "--allow-dangerously-skip-permissions": 0,
   "--permission-mode": 1,
   "--model": 1,
+  "--fallback-model": 1,
   "--add-dir": "many",
   "--verbose": 0,
   "--agent": 1,
   "--effort": 1,
+  "--name": 1,
+  "--setting-sources": 1,
+  "--allowedTools": "many",
+  "--allowed-tools": "many",
+  "--disallowedTools": "many",
+  "--disallowed-tools": "many",
+  "--strict-mcp-config": 0,
+  "--chrome": 0,
+  "--no-chrome": 0,
+  "--ide": 0,
+  "--brief": 0,
   "--settings": 1,
   "--mcp-config": "many",
-  "--strict-mcp-config": 0,
   "--plugin-dir": 1,
 };
 const PLAIN = /^[A-Za-z0-9_/.,:@%+=-]+$/;
