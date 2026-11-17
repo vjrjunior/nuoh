@@ -4,9 +4,9 @@ import { join, resolve } from "node:path";
 import type { Editor, Recipe } from "../recipes/recipe";
 import { localConfigPath } from "./paths";
 
-export type Extra = { path: string; options: Record<string, unknown> };
-export type LocalConfig = { extras: Extra[]; editor?: Editor };
-export type Loaded = { recipes: Recipe[]; icons: string[] };
+type Extra = { path: string; options: Record<string, unknown> };
+type LocalConfig = { extras: Extra[]; editor?: Editor };
+type Loaded = { recipes: Recipe[]; icons: string[] };
 
 function expand(path: string): string {
   return resolve(path === "~" || path.startsWith("~/") ? join(homedir(), path.slice(1)) : path);

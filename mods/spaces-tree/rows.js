@@ -29,17 +29,6 @@ export const withRows = (Base) =>
       return paint((shared("space.colors") ?? {})[space.id] ?? "ansi6", t);
     }
 
-    tile(color, size, glyph) {
-      return h_flex()
-        .size(size)
-        .flex_none()
-        .rounded(6)
-        .bg(color)
-        .items_center()
-        .justify_center()
-        .child(icon("folder", { size: glyph, color: "#ffffff" }));
-    }
-
     band(folder, entries, t) {
       const tail = folder.folded ? folderTail(entries, agents()) : null;
       const count = tail?.needs ? `${tail.needs} ${tail.needs === 1 ? "needs" : "need"} you` : String(entries.length);

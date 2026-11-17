@@ -5,7 +5,7 @@ import { herdrAppHome, stateDir } from "./paths";
 export const PANEL = "vjr-test-panel";
 export const PANEL_KIT = "vjr-kit";
 
-export type Step = { title: string; do?: string[]; expect?: string; run?: { command: string; args?: Record<string, unknown> }[] };
+type Step = { title: string; do?: string[]; expect?: string; run?: { command: string; args?: Record<string, unknown> }[] };
 export type Run = {
   id: string;
   title: string;

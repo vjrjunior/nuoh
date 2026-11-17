@@ -129,6 +129,11 @@ export function duePlaces({ places, lastPlaces, busy, lastBusy, paneSpace, looks
   return due;
 }
 
+export function leastUsed(taken) {
+  const uses = (color) => taken.filter((used) => used === color).length;
+  return PALETTE.reduce((best, color) => (uses(color) < uses(best) ? color : best));
+}
+
 export function assignColors(spaces, stored) {
   const ids = new Set(spaces.map((space) => space.id));
   const before = stored ?? {};
@@ -136,8 +141,7 @@ export function assignColors(spaces, stored) {
   let changed = Object.keys(colors).length !== Object.keys(before).length;
   for (const space of spaces) {
     if (colors[space.id] || space.name === "~") continue;
-    const uses = (color) => Object.values(colors).filter((used) => used === color).length;
-    colors[space.id] = PALETTE.reduce((best, color) => (uses(color) < uses(best) ? color : best));
+    colors[space.id] = leastUsed(Object.values(colors));
     changed = true;
   }
   return { colors, changed };

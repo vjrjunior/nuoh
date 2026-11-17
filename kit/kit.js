@@ -4,7 +4,7 @@ import { h_flex, v_flex } from "gpui-base";
 export const KIT = { name: "kit" };
 export const CONTROL = { tiny: 18, small: 22, regular: 24, square: 26, row: 28, large: 32 };
 export const TEXT = { xs: 10.5, sm: 11, md: 11.5, base: 12, lg: 12.5, xl: 13, title: 13.5 };
-export const RADIUS = { chip: 3, pill: 4, control: 5, card: 6, row: 8, block: 10, round: 9 };
+export const RADIUS = { chip: 3, pill: 4, control: 5, card: 6, round: 9 };
 export const ICON_SIZE = { sm: 11, md: 12, lg: 14 };
 export const ICONS = [
   "arrow-left",
@@ -115,7 +115,7 @@ export function link(id, { label, icon: iconName, onClick }, t) {
     .gap(4)
     .items_center()
     .text_size(TEXT.sm)
-    .text_color(t.ansi12 ?? t.accent)
+    .text_color(t.ansi12)
     .hover((s) => s.text_color(t.foreground))
     .on_click((_e, cx) => onClick?.(cx))
     .child(label)
@@ -139,7 +139,7 @@ export function chip(text, { mark: kind, color }, t) {
 }
 
 export function pill(text, t) {
-  return h_flex().flex_none().h(18).px(6).items_center().rounded(RADIUS.pill).text_size(TEXT.xs).font_bold().bg(t.accent).text_color(t.accent_foreground ?? t.chrome).child(text);
+  return h_flex().flex_none().h(18).px(6).items_center().rounded(RADIUS.pill).text_size(TEXT.xs).font_bold().bg(t.accent).text_color(t.accent_foreground).child(text);
 }
 
 export function popupRow(id, { icon: iconName, dot, label, detail, selected = false, check = false, color, onClick }, t) {

@@ -1,4 +1,4 @@
-import { View, div } from "gpui-kit";
+import { View } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 import { theme } from "herdr";
 import { ICONS, TEXT, button, card, chip, heading, icon, iconButton, line, link, pill, popupRow, stepNode, statusDot } from "../../kit/kit.js";

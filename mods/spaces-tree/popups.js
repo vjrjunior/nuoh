@@ -29,7 +29,7 @@ export function openNameDialog(extra) {
 export function startPopup(view, cx) {
   const p = props() ?? {};
   view.overlay = p.overlay ?? null;
-  view.handle = cx?.focus_handle?.() ?? null;
+  view.handle = cx.focus_handle();
   if (view.role !== "name") return;
   const state = readState();
   const folder = state.folders.find((known) => known.id === p.folder) ?? null;
@@ -39,7 +39,7 @@ export function startPopup(view, cx) {
   view.input.on("change", (_e, cx) => cx.notify());
   view.input.on("submit", () => saveName(view));
   view.input.focus();
-  cx?.timer?.after?.(600, () => view.input.focus());
+  cx.timer.after(600, () => view.input.focus());
 }
 
 function closePopup(view) {
@@ -195,7 +195,7 @@ function nameView(view, t) {
               view.color === color,
               (cx) => {
                 view.color = color;
-                cx?.notify?.();
+                cx.notify();
               },
               t,
             ),

@@ -29,7 +29,7 @@ export default class Markdown extends View {
     this.missing = false;
     this.reload(cx);
     this.watch(folderOf(file), cx);
-    cx?.notify?.();
+    cx.notify();
   }
 
   reload(cx) {
@@ -52,7 +52,7 @@ export default class Markdown extends View {
   watch(dir, cx) {
     if (this.dir === dir) return;
     this.dir = dir;
-    this.watching?.cancel?.();
+    this.watching?.cancel();
     this.watching = null;
     const mine = ++this.watches;
     cx.spawn(async (cx) => {

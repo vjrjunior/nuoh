@@ -23,11 +23,6 @@ function mtimes(home: string): Record<string, number> {
   return Object.fromEntries(allFiles(home).map((path) => [relative(home, path), statSync(path).mtimeMs]));
 }
 
-function setupWithBase() {
-  const homes = makeHomes();
-  return { ...setup(copyRepo(), homes), base: homes.base };
-}
-
 function setup(root = copyRepo(), homes = makeHomes()) {
   const home = homes.herdrApp;
   makeHerdrHome(home);

@@ -163,7 +163,7 @@ export default class TestPanel extends View {
       .children(
         plan.steps.map((step, index) => {
           const result = state.results.find((item) => item.step === index);
-          const node = result?.verdict === "passed" ? "done" : result?.verdict === "failed" ? "bad" : "later";
+          const node = result?.verdict === "passed" ? "done" : result?.verdict === "failed" ? "bad" : "todo";
           return h_flex()
             .gap(8)
             .items_center()

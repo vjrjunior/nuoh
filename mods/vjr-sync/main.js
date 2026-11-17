@@ -10,7 +10,6 @@ export default class VjrSync extends View {
     const { built, repo, bun, square } = props() ?? {};
     this.repo = repo;
     this.bun = bun;
-    this.built = built;
     this.square = square === true;
     this.busy = false;
     if (checking() || !built) return;

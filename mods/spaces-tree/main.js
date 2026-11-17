@@ -231,7 +231,7 @@ export default class SpacesTree extends withRail(withRows(withActions(View))) {
     for (const [common, watch] of this.watching) {
       if (used.has(common)) continue;
       this.watching.delete(common);
-      watch?.cancel?.();
+      watch?.cancel();
     }
   }
 
@@ -304,7 +304,7 @@ export default class SpacesTree extends withRail(withRows(withActions(View))) {
   }
 
   render(cx) {
-    if (this.role) return renderPopup(this, cx);
+    if (this.role) return renderPopup(this);
     const t = theme();
     const { colors, changed } = assignColors(spaces(), shared("space.colors") ?? {});
     if (changed) setShared("space.colors", colors);

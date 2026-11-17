@@ -36,7 +36,7 @@ beforeEach(() => {
       if (slow) return new Promise((resolve) => slow?.push(resolve));
       return Promise.resolve(path in files ? files[path] : null);
     },
-    watchFolder: (dir: string) => new Promise((resolve) => watches.push({ dir, resolve })),
+    watchFolder: (dir: string) => Object.assign(new Promise((resolve) => watches.push({ dir, resolve })), { cancel() {} }),
     exec: async (command: string, args: string[]) => {
       execs.push([command, args]);
       return { code: 0, stdout: "", stderr: "" };
@@ -176,9 +176,9 @@ describe("watching, after review", () => {
     herdr.watchFolder = ((dir: string) => {
       if (fail) {
         fail = false;
-        return Promise.reject(new Error("too many folders"));
+        return Object.assign(Promise.reject(new Error("too many folders")), { cancel() {} });
       }
-      return new Promise((resolve) => watches.push({ dir, resolve }));
+      return Object.assign(new Promise((resolve) => watches.push({ dir, resolve })), { cancel() {} });
     }) as never;
     const { view, cx } = await open();
     expect(watches).toEqual([]);

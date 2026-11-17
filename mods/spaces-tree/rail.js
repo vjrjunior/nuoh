@@ -3,12 +3,23 @@ import { h_flex } from "gpui-base";
 import { spaces, agents } from "herdr";
 import { paint, rowsOf } from "./tree.js";
 import { folderTail } from "./folders.js";
-import { statusDot } from "../../kit/kit.js";
+import { icon, statusDot } from "../../kit/kit.js";
 
 const COMPACT = 26;
 
 export const withRail = (Base) =>
   class extends Base {
+    tile(color, size, glyph) {
+      return h_flex()
+        .size(size)
+        .flex_none()
+        .rounded(6)
+        .bg(color)
+        .items_center()
+        .justify_center()
+        .child(icon("folder", { size: glyph, color: "#ffffff" }));
+    }
+
     compactFolder(folder, entries, t) {
       const tail = folder.folded ? folderTail(entries, agents()) : null;
       const needs = tail?.status === "blocked" || tail?.status === "done";
@@ -38,7 +49,7 @@ export const withRail = (Base) =>
         const active = Boolean(row.space.active);
         return h_flex()
           .id(`compact-${row.key}`)
-          .h(26)
+          .h(COMPACT)
           .flex_none()
           .justify_center()
           .gap(4)

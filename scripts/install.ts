@@ -18,7 +18,7 @@ import { dirname, join } from "node:path";
 import { configHome, herdrAppHome, stateDir } from "./paths";
 
 type Target = { app: string; home: string; file: string; source: string };
-type Entry = { path: string; mode: "copy"; fingerprint: string; backup: string | null; createdThemes: boolean };
+type Entry = { path: string; fingerprint: string; backup: string | null; createdThemes: boolean };
 type InstallRecord = { targets: Record<string, Entry> };
 
 const root = join(import.meta.dir, "..");
@@ -117,7 +117,7 @@ function installTarget(target: Target, record: InstallRecord): boolean {
   const temp = join(target.home, `${TEMP_PREFIX}${process.pid}`);
   copyFileSync(target.source, temp);
   mkdirSync(themes, { recursive: true });
-  record.targets[target.app] = { path, mode: "copy", fingerprint: wanted, backup, createdThemes };
+  record.targets[target.app] = { path, fingerprint: wanted, backup, createdThemes };
   writeRecord(record);
   swapIn(temp, path);
   return true;

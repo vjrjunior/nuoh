@@ -7,9 +7,9 @@ import { type Generated, generateVariant } from "./generate-layout";
 import { deriveSection, type KeyTable, keysText, readKeys, withoutSections, withSections } from "./layout-keys";
 import { herdrAppHome, stateDir } from "./paths";
 
-export type ApplyResult = "applied" | "unchanged" | "busy";
-export type LayoutRecord = { version: string; mods: string[]; kept: string[]; files: string[]; sections: string[]; square: boolean };
-export type ApplyOptions = { herdrVersion?: string; square?: boolean };
+type ApplyResult = "applied" | "unchanged" | "busy";
+type LayoutRecord = { version: string; mods: string[]; kept: string[]; files: string[]; sections: string[]; square: boolean };
+type ApplyOptions = { herdrVersion?: string; square?: boolean };
 
 const root = join(import.meta.dir, "..");
 const REPO_MODS = ["vjr-sync", "git-graph"];
@@ -69,8 +69,7 @@ function removeLeftovers(home: string): void {
 
 function readRecord(): LayoutRecord {
   if (!existsSync(recordPath())) return EMPTY_RECORD;
-  const { version, mods, kept, files, sections, square } = { ...EMPTY_RECORD, ...JSON.parse(readFileSync(recordPath(), "utf8")) };
-  return { version, mods, kept, files, sections, square: square === true };
+  return JSON.parse(readFileSync(recordPath(), "utf8"));
 }
 
 function writeRecord(record: LayoutRecord): void {
@@ -290,7 +289,7 @@ function writeLog(line: string): void {
   appendFileSync(join(stateDir(), "layout.log"), `${new Date().toISOString()} ${line.replace(/\s+/g, " ")}\n`);
 }
 
-export function apply(options: ApplyOptions = {}): ApplyResult {
+function apply(options: ApplyOptions = {}): ApplyResult {
   mkdirSync(stateDir(), { recursive: true });
   if (!takeLock()) return "busy";
   const started = Date.now();
@@ -313,7 +312,7 @@ function leaveOurLayout(record: LayoutRecord): void {
   if (record.files.includes(`layouts/${shown}.json`)) Bun.spawnSync(["herdr-app", "do", "layout.switch", JSON.stringify({ name: "main" })]);
 }
 
-export function uninstall(): void {
+function uninstall(): void {
   if (!existsSync(recordPath())) return;
   const home = herdrAppHome();
   const keysPath = join(home, "keys.json");

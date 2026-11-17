@@ -1,4 +1,4 @@
-import { mostUrgent, PALETTE, rowsOf } from "./tree.js";
+import { holdsActive, leastUsed, mostUrgent, PALETTE, rowsOf } from "./tree.js";
 
 const NEEDS = new Set(["blocked", "done"]);
 
@@ -43,8 +43,7 @@ export function newFolderId(time) {
 }
 
 export function nextColor(state) {
-  const uses = (color) => state.folders.filter((folder) => folder.color === color).length;
-  return PALETTE.reduce((best, color) => (uses(color) < uses(best) ? color : best));
+  return leastUsed(state.folders.map((folder) => folder.color));
 }
 
 export function createFolder(state, { id, name, color, unit }) {
@@ -88,11 +87,10 @@ export function entryOfSpace(entries, spaceId) {
 }
 
 export function activeChild({ folders, loose }, narrow) {
-  const active = (entry) => rowsOf(entry).some((row) => row.space?.active);
   if (!narrow) {
-    const card = folders.findIndex(({ entries }) => entries.some(active));
+    const card = folders.findIndex(({ entries }) => entries.some(holdsActive));
     if (card >= 0) return { at: card, folded: folders[card].folder.folded };
-    const free = loose.findIndex(active);
+    const free = loose.findIndex(holdsActive);
     return { at: free < 0 ? -1 : folders.length + free, folded: false };
   }
   const spacesOf = (entries) => entries.flatMap(rowsOf).filter((row) => row.space);

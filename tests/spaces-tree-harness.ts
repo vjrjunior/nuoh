@@ -48,7 +48,7 @@ export function reset() {
       app.shared[key] = value;
       return null;
     },
-    watchFolder: () => new Promise(() => {}),
+    watchFolder: () => Object.assign(new Promise(() => {}), { cancel() {} }),
     window: () => ({ active: true }),
     nextCommand: () => new Promise(() => {}),
     layout: () => ({ id: "root", children: [{ id: "sidebar", size: { px: app.sidebar } }] }),
@@ -59,7 +59,7 @@ export const { default: SpacesTree } = await import("../mods/spaces-tree/main.js
 export const { DRAG_GRACE } = await import("../mods/spaces-tree/tree.js");
 
 export const common = "/r/app/.git";
-export const cx = { timer: { every() {} }, spawn() {}, notify() {} };
+export const cx = { timer: { every() {}, after() {} }, spawn() {}, notify() {}, focus_handle: () => ({ focus() {} }) };
 export const space = (id: string, over = {}) => ({ id, index: 1, name: id, named: false, folder: "", machine: null, branch: null, active: false, status: null, tabs: [], ...over });
 
 export function setup(checkouts = [{ path: "/r/app", branch: "main", main: true }, { path: "/w/app/one", branch: "one", main: false }]) {

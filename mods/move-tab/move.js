@@ -2,8 +2,8 @@ import { base, checkoutOf, parseWorktrees, placeOf } from "../../lib/checkouts.j
 import { resumeCommand } from "../../lib/claude.js";
 import { REASONS, atShell, freshArgv, freshCommand, isClaude, isDraft, keepArgs, leaves, matchingFolder, movedNote, promptBox, resumeArgv, runsSession, spaceName, splitSteps } from "./logic.js";
 
-export const END_WAIT = 10000;
-export const POLL = 250;
+const END_WAIT = 10000;
+const POLL = 250;
 const PANE_WAIT = 2000;
 
 export async function moveTab(request, io) {

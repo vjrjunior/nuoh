@@ -1,6 +1,6 @@
 import { type Copy, exact, type Recipe } from "./recipe";
 
-export const DEFAULT_EDITOR = 'const EDITOR = { name: "Open", argv: ["open"] };';
+const DEFAULT_EDITOR = 'const EDITOR = { name: "Open", argv: ["open"] };';
 
 export const markdown: Recipe = {
   name: "markdown",

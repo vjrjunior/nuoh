@@ -47,13 +47,12 @@ describe("install", () => {
     expect(readdirSync(homes.ghostty)).toEqual(["themes"]);
   });
 
-  test("records what it installed and the mode", () => {
+  test("records what it installed", () => {
     const { homes, install, record } = setup();
 
     install();
 
     expect(record().targets["herdr-app"].path).toBe(homes.herdrAppTheme);
-    expect(record().targets["herdr-app"].mode).toBe("copy");
     expect(record().targets.ghostty.path).toBe(homes.ghosttyTheme);
     expect(record().targets.ghostty.backup).toBeNull();
   });
