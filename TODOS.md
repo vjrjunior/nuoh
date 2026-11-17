@@ -30,9 +30,9 @@
 
 **What:** Publish `mods/comeback/` as a community mod: a public repo or folder in Herdr's format with `mods/comeback/`, its `RECIPE.md` and a `preview.png`, and the `herdr-mod` topic.
 
-**Why:** The other resume mods need hooks or only run on Linux; this one is just a folder.
+**Why:** The other resume mods need hooks or only run on Linux; this one is a folder and two helper files.
 
-**Context:** `RECIPE.md` is ready. Missing: `preview.png` (a window with a resumed conversation and the toast, no private data) and the package folder. The install step asks people to add a floating block to a cloned layout.
+**Context:** `RECIPE.md` is written. The mod imports `lib/claude.js` and `lib/checkouts.js`, so the package needs them copied in and the imports changed to `./`, as `apply-layout` does. Missing: `preview.png` (a window with a resumed conversation and the toast, no private data) and the package folder. The install step asks people to add a floating block to a cloned layout.
 
 **Effort:** S
 **Priority:** P3
@@ -138,7 +138,7 @@
 
 **What:** Make the shot each answer takes show the window as the person judged it, before the next step's `run` commands change the layout or the space.
 
-**Why:** In the draft run, the shot of the `vjr-desk-square` step showed `vjr-desk`: the next step's `layout.switch` had run first. A shot that shows the other layout can't be the Done shot for that layout.
+**Why:** In a draft run, the shot of one step showed the window after the next step's `run` commands had already changed it. A shot that shows another state can't be the Done shot for that step.
 
 **Context:** `tools/test-panel/` takes the shot when the answer is recorded and opens the next step at the same moment. The shot needs to finish before the next step's `run` starts.
 
@@ -177,6 +177,18 @@
 **Why:** A Herdr mod that calls `run("app.settings", { section })` directly, the machine login note in `spaces` for example, opens Herdr's own Settings. It has no toggle, so the person sees two Settings that differ.
 
 **Context:** `recipes/look.ts` redirects the sidebar's gear in `workspace-chrome`, the palette's Settings entry and the key `global` binds to `app.settings` to `mod.open:vjr-settings`. `mod.open` takes no `section`, so a redirect of the other calls would also need a way to open the copy on a given section.
+
+**Effort:** S
+**Priority:** P3
+**Depends on:** Nothing
+
+### Share what Comeback and Move tab both work out about a Claude
+
+**What:** Move into `lib/claude.js` the two things both mods compute by themselves: whether Claude is the program in front of a terminal, and where a session's file and transcript are.
+
+**Why:** A fix to one copy can miss the other, as the option list and the session parser could before they moved to `lib/`.
+
+**Context:** `judge` in `mods/comeback/logic.js` and `atShell`/`isClaude` in `mods/move-tab/logic.js` answer the first, with different inputs (`terminal.app` against `info.status.app`) and a different answer when no program is in front, so the shared function has to take both shapes and keep each caller's behaviour. `mods/comeback/main.js` and `mods/move-tab/io.js` each build the session path and look the transcript up. The shared keys `move-tab.drag` and `move-tab.request` are also written out in `mods/spaces-tree/actions.js`, `mods/move-tab/main.js` and `recipes/move-tab.ts`.
 
 **Effort:** S
 **Priority:** P3

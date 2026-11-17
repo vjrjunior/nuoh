@@ -155,9 +155,9 @@ It is third-party code that runs with your permissions, so it never updates by i
 
 ### Comeback
 
-When the Mac restarts, Herdr brings every terminal back as a bare shell. `mods/comeback/` notes which Claude Code conversation runs in each terminal and, when the window opens after a restart, types `claude --resume` back into each terminal that lost its Claude, with the options it started with, then shows a toast with what came back. Options that load code (`--settings`, `--mcp-config`, `--plugin-dir`) stay behind: Comeback reads its notes from a label that any program with `hc` can write, and what a label says runs unattended after a reboot. It needs no hooks and edits no files outside Herdr's: it reads `hc`, `ps`, `sysctl` and `~/.claude/sessions/`, and keeps its notes as a `comeback` label on each terminal.
+When the Mac restarts, Herdr brings every terminal back as a bare shell. `mods/comeback/` notes which Claude Code conversation runs in each terminal and, when the window opens after a restart, types `claude --resume` back into each terminal that lost its Claude, with the options it started with, then shows a toast with what came back. Options that load code (`--settings`, `--mcp-config`, `--plugin-dir`) stay behind: Comeback reads its notes from a label that any program with `hc` can write, and what a label says runs unattended after a reboot. It needs no hooks and edits no files outside Herdr's: it reads `hc`, `ps`, `sysctl`, `test` and `~/.claude/sessions/`, and keeps its notes as a `comeback` label on each terminal.
 
-Each loss gets one automatic try. `herdr-app do vjr-comeback.resume` tries again. [`mods/comeback/RECIPE.md`](mods/comeback/RECIPE.md) describes it in full and is ready for herdr.dev.
+Each loss gets one automatic try. `herdr-app do vjr-comeback.resume` tries again. [`mods/comeback/RECIPE.md`](mods/comeback/RECIPE.md) describes it in full.
 
 ### Markdown viewer
 
@@ -207,7 +207,7 @@ Both looks show the same folders, kept with their fold in `spaces.folders` in He
 
 ## Kit
 
-`kit/kit.js` is the UI kit of this repo's mods (the Spaces tree, the Markdown viewer and Move tab): tokens (sizes, text, radii), components (`button`, `iconButton`, `link`, `chip`, `pill`, `card`, `heading`, `line`, `popupRow`, `mark`, `statusDot`, `stepNode`, `icon`) and the SVG icons in `kit/icons/`. A mod imports it as `../../kit/kit.js`, and `apply-layout` copies `kit.js` into each installed mod that imports it. The icons are installed once, in the `kit` mod's `icons/` folder, where the kit reads them. A layout whose mods use the kit must include the `kit` recipe; the generator refuses otherwise.
+`kit/kit.js` is the UI kit of this repo's mods (the Spaces tree, the Markdown viewer and Move tab): tokens (sizes, text, radii), components (`button`, `iconButton`, `link`, `chip`, `pill`, `card`, `heading`, `line`, `popupRow`, `mark`, `statusDot`, `stepNode`, `icon`, `toneColor`) and the SVG icons in `kit/icons/`. A mod imports it as `../../kit/kit.js`, and `apply-layout` copies `kit.js` into each installed mod that imports it. The icons are installed once, in the `kit` mod's `icons/` folder, where the kit reads them. A layout whose mods use the kit must include the `kit` recipe; the generator refuses otherwise.
 
 `lib/` holds what more than one mod needs and no window shows: `checkouts.js` (a repo's worktrees and the checkout a folder is in) and `claude.js` (a Claude Code session, the options worth keeping, the command that resumes it). Herdr refuses an import from outside a mod's folder, so a mod imports a module as `../../lib/<name>.js` and `apply-layout` copies it, and what it imports, next to the mod's own files. A mod can't have a file with the name of a module it takes from `lib/`.
 

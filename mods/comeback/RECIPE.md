@@ -1,13 +1,13 @@
 # Comeback
 
-When the machine restarts, Herdr brings every terminal back as a bare shell in its last folder, and the Claude Code conversations that were open there are gone. Comeback brings them back by itself: as soon as the window opens, each terminal that lost its Claude gets it again, on the same conversation and with the same safe options, and a toast says what came back. Nothing to install besides this folder: no hooks, no shell startup edits, no Node or Python.
+When the machine restarts, Herdr brings every terminal back as a bare shell in its last folder, and the Claude Code conversations that were open there are gone. Comeback brings them back by itself: as soon as the window opens, each terminal that lost its Claude gets it again, on the same conversation and with the same safe options, and a toast says what came back. Nothing to install besides this folder and the two helper files it imports: no hooks, no shell startup edits, no Node or Python.
 
 ![Comeback](preview.png)
 
 ## Installing it (for the agent doing it)
 
-1. Read every file in this folder before copying anything. Tell the person that the mod runs `hc`, `ps` and `sysctl`, reads `~/.claude/sessions/*.json` and lists `~/.claude/projects/`, writes nothing but a `comeback` label on terminals, and types into a terminal only to resume a lost conversation.
-2. Copy this folder to `~/.config/herdr-app/mods/comeback`, without `RECIPE.md`.
+1. Read every file in this folder before copying anything. Tell the person that the mod runs `hc`, `ps`, `sysctl` and `test`, reads `~/.claude/sessions/*.json` and lists `~/.claude/projects/`, writes nothing but a `comeback` label on terminals, and types into a terminal only to resume a lost conversation.
+2. Copy this folder to `~/.config/herdr-app/mods/comeback`, without `RECIPE.md`. Copy `lib/claude.js` and `lib/checkouts.js` from this repo into it too, and change the `../../lib/` imports in `main.js` and `logic.js` to `./`. In this repo `bun run apply-layout` does both.
 3. Run `herdr-app check ~/.config/herdr-app/mods/comeback`. It must pass.
 4. The mod has `"place": "none"`, so it only runs where a layout puts it. Herdr's own layouts are read-only: clone the one the person uses (`herdr-app do layout.clone '{"name":"main","as":"my-desk"}'`) and add this to the root's `floating` list of the clone:
    `{ "id": "comeback", "content": { "mod": "comeback" }, "edge": "left", "align": "end" }`
@@ -44,8 +44,10 @@ When the machine restarts, Herdr brings every terminal back as a bare shell in i
 
 - `mod.json`: `{ "place": "none", "title": "Comeback" }`.
 - A floating block in the layout's root: `{ "id": "comeback", "content": { "mod": "comeback" }, "edge": "left", "align": "end" }`.
-- `logic.js`: pure functions, no imports. `parseBoot`, `parseEtime`, `parseSession`, `isShell`, `keepArgs`, `quote`, `resumeCommand`, `encodeNote`, `decodeNote`, `lastLine`, `judge(terminal, boot)` → `running | quit | lost | busy | none`, `triedNow`, `markTried`, `planPass(lost, ctx)` → `{todo, skipped}`, `summary(outcome, manual)`.
-- `main.js`: the View. `herdr`: `agents`, `terminals`, `exec`, `home`, `readTextFile`, `notify`, `nextCommand`, `shared`, `setShared`. `fs/promises`: `readdir`, `exists`. Programs: `hc get|label|send|read`, `ps -o lstart=|etime=`, `env TZ=UTC ps -o pid=,lstart=`, `sysctl -n kern.boottime`, `test -d`. Waits use `cx.sleep` inside a spawned task (mods have no `setTimeout`).
+- `lib/claude.js` and `lib/checkouts.js`: pure functions shared with Move tab. `parseSession`, `isShell`, `quote`, `keepOptions`, `resumeCommand`, `base`.
+
+- `logic.js`: pure functions that import only those two. `parseBoot`, `parseEtime`, `parseProcess`, `keepArgs`, `encodeNote`, `decodeNote`, `lastLine`, `judge(terminal, boot)` → `running | quit | lost | busy | none`, `triedNow`, `markTried`, `autoCandidate`, `planPass(lost, ctx)` → `{todo, skipped}`, `summary(outcome, manual)`.
+- `main.js`: the View. `herdr`: `agents`, `terminals`, `exec`, `home`, `readTextFile`, `notify`, `nextCommand`, `shared`, `setShared`, `checking`. `fs/promises`: `readdir`, `exists`. Programs: `hc get|label|send|read`, `ps -o lstart=|etime=`, `env TZ=UTC ps -o pid=,lstart=`, `sysctl -n kern.boottime`, `test -d`. Waits use `cx.sleep` inside a spawned task (mods have no `setTimeout`).
 
 ## Watch out
 

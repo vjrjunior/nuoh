@@ -62,7 +62,7 @@ Nothing here is a frozen copy of Herdr. `recipes/` holds small edits, and `scrip
 - **`markdown`:** copies `mods/markdown/` and changes nothing in the layout: the person opens it as a pane.
 - `mods/markdown/`: this repo's own mod. It reads the file in its props with `readTextFile`, watches its folder with `watchFolder` and keeps only the newest read, and runs `open`, or the editor from the local config.
 - **`kit`:** copies `mods/kit/`, a gallery that shows every component and icon of the kit; the person opens it as a pane with `herdr-app do pane.split --direction right --mod vjr-kit`.
-- `kit/kit.js` and `kit/icons/`: the UI kit that the Spaces tree, the Markdown viewer and Move tab draw with. `mods/kit/` is its gallery, opened by the person with `herdr-app do pane.split --direction right --mod vjr-kit`.
+- `kit/kit.js` and `kit/icons/`: the UI kit that the Spaces tree, the Markdown viewer and Move tab draw with. `mods/kit/` is its gallery.
 - `~/.config/vjr-herdr/config.json`, read by `scripts/config.ts` on every apply: `editor` (`{ name, argv }`) replaces the Markdown viewer's `EDITOR` constant, and `extras` are folders whose `recipes/index.ts` exports more recipes, run in both looks after the ones above, and before `square` when the corners are square. Without the file nothing changes.
 - **`square`** takes every `from: "repo"` mod of the recipes before it, so a new mod needs no entry there; a recipe names its popups in its `square` field (`popupRoots`, `frameless`).
 - `themes/vjr.json`: generated from `palette/vjr.toml`.
@@ -73,11 +73,11 @@ Nothing here is a frozen copy of Herdr. `recipes/` holds small edits, and `scrip
 - The mods in `~/.config/herdr-app/mods/vjr-*` are generated. Edit `recipes/`, not them, then run `bun run apply-layout`.
 - `herdr-app check` loads a mod without props, so `vjr-sync` must cope with `props()` being null.
 - `exec("bun")` fails inside the app: its PATH doesn't reach `~/.bun/bin`. The layout stores the absolute path, and the repo's path too, so moving the repo needs a new `apply-layout`.
-- `exec` has a 30 s limit, and a full rebuild took 3.6 s on 0.1.11. `layout.log` records how long each run takes.
+- `exec` has a 30 s limit, and a full rebuild takes a few seconds. `layout.log` records how long each run takes.
 - `herdr-app status` is only a safety check: if it hangs or its output can't be read, the update goes on without it.
 - A block with `hidden: true` never starts its mod. `vjr-sync` floats and renders an empty `div()`, which shows nothing.
 - The app writes `gpui-kit.d.ts` and `jsconfig.json` into every mod folder. Comparing a generated mod with an installed one must ignore them.
-- `frame: "none"` removes the border with the corners, so a mod that uses it must draw its own. It removes the background too: Settings draws none of its own (Herdr 0.1.14), so the square copy paints its root `popover`, the color Herdr's frame gives it. Don't set it on a popup with no copy: the palette opens Herdr's `prompt`, which has no border.
+- `frame: "none"` removes the border with the corners, so a mod that uses it must draw its own. It removes the background too: Settings draws none of its own, so the square copy paints its root `popover`, the color Herdr's frame gives it. Don't set it on a popup with no copy: the palette opens Herdr's `prompt`, which has no border.
 - The app opens `prompt`, `confirm`, `toast` and `peek` itself, so renaming, close confirmations, notifications and peek stay rounded. So do Welcome, What's new, the feedback window and Add machine's terminal dialog.
 - The layout redirects its own keys and buttons only. `app.palette`, `app.settings` and `app.help` still open Herdr's originals, for example from `herdr-app do`.
 - Settings is the layout's copy in both looks, and only the copy has `Square corners`. A Herdr mod that calls `app.settings` itself, the machine login note in `spaces` for example, opens Herdr's own Settings, which has no toggle.

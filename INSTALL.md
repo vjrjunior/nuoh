@@ -12,7 +12,7 @@ bun --version          # https://bun.sh
 git --version
 ```
 
-If one is missing, say which and stop: installing Herdr or Bun is the person's call. Built and tested on macOS with herdr-app 0.1.15.
+If one is missing, say which and stop: installing Herdr or Bun is the person's call. Built and tested on macOS with herdr-app 0.1.16.
 
 ## 2. Tell the person what it runs
 
@@ -22,8 +22,8 @@ Before installing, tell them this, as Herdr's guide asks. Mods are trusted code 
 |---|---|---|---|
 | Spaces tree | `git` in each repository | each repository's git folder | no |
 | Git Graph (third party, MIT, pinned to a commit) | `git` in the focused repository, also on other machines; `find` under a folder that is not a repository | the folders open in other panes | only through git: Fetch, Push, deleting a remote branch |
-| Comeback | `hc`, `ps`, `sysctl` | `~/.claude/sessions/`, and which conversations `~/.claude/projects/` holds | no |
-| Move tab | `git`, `ps`, `kill`, `test`, `hc`, `herdr-app do`, `sh` | `~/.claude/sessions/`, and which conversations `~/.claude/projects/` holds | no |
+| Comeback | `hc`, `ps`, `sysctl`, `test` | `~/.claude/sessions/`, and which conversations `~/.claude/projects/` holds | no |
+| Move tab | `git`, `ps`, `kill`, `test`, `hc`, `herdr-app do`, `sh`, `jq` | `~/.claude/sessions/`, and which conversations `~/.claude/projects/` holds | no |
 | Markdown viewer | `open`, or the editor the person configures | the file it shows and the files it links to | no |
 | `vjr-sync` | `bun scripts/layout.ts apply` in the clone, after each Herdr update | the clone | no |
 
