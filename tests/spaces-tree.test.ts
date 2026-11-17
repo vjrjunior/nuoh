@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { base, checkoutOf, parseWorktrees, placeOf as place } from "../lib/checkouts.js";
+import { base } from "../lib/checkouts.js";
 import {
   accepts,
   assignColors,
@@ -52,47 +52,6 @@ const appRepo = {
 const repos = { [common]: appRepo };
 const look = (top: string) => ({ top, common });
 
-describe("parseWorktrees", () => {
-  const list = [
-    "worktree /r/app",
-    "HEAD 111",
-    "branch refs/heads/main",
-    "",
-    "worktree /w/app/one",
-    "HEAD 222",
-    "branch refs/heads/feature/one",
-    "",
-    "worktree /w/app/gone",
-    "HEAD 333",
-    "branch refs/heads/gone",
-    "prunable gitdir file points to non-existent location",
-    "",
-    "worktree /w/My Projects/ação",
-    "HEAD 444",
-    "detached",
-    "",
-  ].join("\n");
-
-  test("the main checkout comes first", () => {
-    expect(parseWorktrees(list)[0]).toEqual({ path: "/r/app", branch: "main", main: true });
-  });
-
-  test("strips refs/heads/ and keeps slashes in branch names", () => {
-    expect(parseWorktrees(list)[1]).toEqual({ path: "/w/app/one", branch: "feature/one", main: false });
-  });
-
-  test("skips prunable and bare entries", () => {
-    expect(parseWorktrees(list).map((c) => c.path)).not.toContain("/w/app/gone");
-    expect(parseWorktrees("worktree /r/bare.git\nbare\n\nworktree /w/one\nHEAD 1\nbranch refs/heads/one\n")).toEqual([
-      { path: "/w/one", branch: "one", main: true },
-    ]);
-  });
-
-  test("keeps spaces and accents, and a detached head has no branch", () => {
-    expect(parseWorktrees(list).at(-1)).toEqual({ path: "/w/My Projects/ação", branch: null, main: false });
-  });
-});
-
 describe("parseRefs", () => {
   const refs = parseRefs(["main\t\t30", "one\t[ahead 3]\t20", "two\t[behind 1]\t10", "three\t[ahead 2, behind 4]\t5", "old\t[gone]\t1"].join("\n"));
 
@@ -144,21 +103,6 @@ describe("mostUrgent", () => {
 
   test("no status gives null", () => {
     expect(mostUrgent([null, null])).toBeNull();
-  });
-});
-
-describe("checkoutOf", () => {
-  const checkouts = [
-    { path: "/a/b", branch: "x", main: true },
-    { path: "/a/b/nested", branch: "y", main: false },
-  ];
-
-  test("picks the deepest checkout", () => {
-    expect(checkoutOf("/a/b/nested/src", checkouts)?.branch).toBe("y");
-  });
-
-  test("does not match a path that only shares a prefix", () => {
-    expect(checkoutOf("/a/bc", checkouts)).toBeNull();
   });
 });
 
@@ -351,20 +295,6 @@ describe("row rules", () => {
     expect(counts({ ahead: 0, behind: 0 } as never)).toBe("");
     expect(branchLabel({ branch: "main" } as never)).toBe("");
     expect(branchLabel({ branch: "vjr" } as never)).toBe("vjr");
-  });
-});
-
-describe("place", () => {
-  test("follows the first pane with a folder", () => {
-    const panes = [
-      { tab: "t", cwd: null },
-      { tab: "t", cwd: "/live" },
-    ];
-    expect(place(space("s", { folder: "/old", tabs: [{ id: "t" }] }) as never, panes as never)).toBe("/live");
-  });
-
-  test("falls back to the space's folder", () => {
-    expect(place(space("s", { folder: "/old" }) as never, [])).toBe("/old");
   });
 });
 

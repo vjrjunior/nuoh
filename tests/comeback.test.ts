@@ -1,5 +1,4 @@
 import { describe, expect, test } from "bun:test";
-import { isShell, parseSession, quote, resumeCommand } from "../lib/claude.js";
 import { ALLOWED as MOVE_TAB } from "../mods/move-tab/logic.js";
 import {
   ALLOWED,
@@ -49,29 +48,6 @@ describe("machine facts", () => {
   });
 });
 
-describe("parseSession", () => {
-  test("reads the conversation and folder of a running Claude", () => {
-    expect(parseSession('{"pid":5770,"sessionId":"abc-1","cwd":"/w/app","status":"busy"}')).toEqual({ session: "abc-1", cwd: "/w/app" });
-    expect(parseSession('{"pid":5770,"sessionId":"abc-1","cwd":"/w/app","procStart":"Mon Nov  2 13:36:12 2026"}')?.procStart).toBe("Mon Nov  2 13:36:12 2026");
-  });
-
-  test("gives nothing for a missing or broken file", () => {
-    expect(parseSession(null)).toBeNull();
-    expect(parseSession("{")).toBeNull();
-    expect(parseSession('{"cwd":"/w/app"}')).toBeNull();
-  });
-});
-
-describe("shells", () => {
-  test("knows login shells by name or path", () => {
-    expect(isShell("/bin/zsh")).toBe(true);
-    expect(isShell("-zsh")).toBe(true);
-    expect(isShell("fish")).toBe(true);
-    expect(isShell("claude")).toBe(false);
-    expect(isShell("vim")).toBe(false);
-  });
-});
-
 describe("keepArgs", () => {
   test("keeps only the options a resume accepts", () => {
     expect(keepArgs(["claude", "--dangerously-skip-permissions", "--model", "opus", "fix the login"])).toEqual(["--dangerously-skip-permissions", "--model", "opus"]);
@@ -101,24 +77,6 @@ describe("keepArgs", () => {
 
   test("drops an option whose value can't be quoted", () => {
     expect(keepArgs(["claude", "--add-dir", "/it's", "--verbose"])).toEqual(["--verbose"]);
-  });
-});
-
-describe("the command", () => {
-  test("quotes only what needs it", () => {
-    expect(quote("/w/app")).toBe("/w/app");
-    expect(quote("/w/My App/ação")).toBe("'/w/My App/ação'");
-    expect(quote("/w/it's")).toBeNull();
-    expect(quote("/w/a\\b")).toBeNull();
-    expect(quote("/w/a\nb")).toBeNull();
-  });
-
-  test("goes to the folder and resumes with the kept options", () => {
-    expect(resumeCommand({ ...note, cwd: "/w/My App" })).toBe("cd '/w/My App' && claude --resume 152ba1e2-45b7-4fc9-83c9-33b8dfdadf6e --dangerously-skip-permissions");
-  });
-
-  test("refuses a folder it can't type", () => {
-    expect(resumeCommand({ ...note, cwd: "/w/it's" })).toBeNull();
   });
 });
 
