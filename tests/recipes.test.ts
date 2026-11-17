@@ -2,12 +2,12 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Variant } from "../recipes/recipe";
-import { LEFT_ROUNDED, variantsWith } from "../recipes/variants";
-
-const VARIANTS = variantsWith();
+import { LEFT_ROUNDED } from "../recipes/variants";
 import { generateVariant } from "../scripts/generate-layout";
-import { removeTempDirs, repo, tempDir } from "./helpers";
+import { bothLooks, removeTempDirs, repo, tempDir } from "./helpers";
 import { makeHerdrHome, SHIPPED_MODS } from "./herdr-home";
+
+const VARIANTS = bothLooks();
 
 afterEach(removeTempDirs);
 

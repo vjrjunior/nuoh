@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { variantsWith } from "../recipes/variants";
+import { variantWith } from "../recipes/variants";
 import { loadExtras, readLocalConfig } from "../scripts/config";
 import { generateVariant } from "../scripts/generate-layout";
-import { copyRepo, makeHomes, removeTempDirs, repo, run, tempDir } from "./helpers";
+import { bothLooks, copyRepo, makeHomes, removeTempDirs, repo, run, tempDir } from "./helpers";
 import { makeHerdrHome } from "./herdr-home";
 
 afterEach(removeTempDirs);
@@ -15,7 +15,7 @@ function generateWith(options: Record<string, unknown> = {}) {
   const home = tempDir();
   makeHerdrHome(home);
   const extras = loadExtras([{ path: EXTRA, options }]);
-  return variantsWith(extras.recipes).map((variant) => generateVariant(variant, { home, version: "0.1.10", repo, bun: "/bin/bun", icons: extras.icons }));
+  return bothLooks(extras.recipes).map((variant) => generateVariant(variant, { home, version: "0.1.10", repo, bun: "/bin/bun", icons: extras.icons }));
 }
 
 function configFile(text: string): string {
@@ -71,8 +71,8 @@ describe("extras", () => {
 
   test("an extra can't take a recipe name that exists", () => {
     const [recipe] = loadExtras([{ path: EXTRA, options: {} }]).recipes;
-    expect(() => variantsWith([{ ...recipe!, name: "markdown" }])).toThrow(/markdown, which is taken/);
-    expect(() => variantsWith([recipe!, recipe!])).toThrow(/hello, which is taken/);
+    expect(() => variantWith([{ ...recipe!, name: "markdown" }], false)).toThrow(/markdown, which is taken/);
+    expect(() => variantWith([recipe!, recipe!], false)).toThrow(/hello, which is taken/);
   });
 
   test("a folder without recipes/index.ts, or one that exports no recipes, names the folder", () => {

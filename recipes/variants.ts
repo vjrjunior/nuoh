@@ -21,10 +21,6 @@ export function variantWith(extras: Recipe[], square: boolean): Variant {
   return { layout: "vjr-desk", prefix: "vjr-", preview: "layouts/vjr-desk.svg", square, recipes: square ? [...recipes, squareFor(recipes)] : recipes };
 }
 
-export function variantsWith(extras: Recipe[] = []): Variant[] {
-  return [variantWith(extras, false), variantWith(extras, true)];
-}
-
 export const LEFT_ROUNDED = ["prompt", "confirm", "toast", "peek", "win98", "terminals-bar", "terminals-pane"];
 
 export const REPLACED = ["spaces"];
