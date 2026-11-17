@@ -42,6 +42,30 @@ function installKit(source: ModSource, options: GenerateOptions, files: Record<s
   }
 }
 
+const LIB_SPECIFIER = /(["'`])\.\.\/\.\.\/lib\/([a-z-]+\.js)\1/g;
+const LIB_SIBLING = /(["'`])\.\/([a-z-]+\.js)\1/g;
+
+function installLib(source: ModSource, options: GenerateOptions, files: Record<string, string>): void {
+  const wanted: string[] = [];
+  for (const [file, text] of Object.entries(files)) {
+    files[file] = text.replace(LIB_SPECIFIER, (_whole, quote: string, name: string) => {
+      wanted.push(name);
+      return `${quote}./${name}${quote}`;
+    });
+  }
+  const own = new Set(Object.keys(files));
+  const added = new Set<string>();
+  while (wanted.length > 0) {
+    const name = wanted.pop() as string;
+    if (added.has(name)) continue;
+    if (own.has(name)) throw new RecipeError(`${source.name}/${name} has the name of a module in lib/`);
+    const text = readFileSync(join(options.repo, "lib", name), "utf8");
+    added.add(name);
+    files[name] = text;
+    for (const match of text.matchAll(LIB_SIBLING)) wanted.push(match[2] as string);
+  }
+}
+
 function readCopy(source: ModSource, options: GenerateOptions): Copy {
   const folder = sourceFolder(source, options);
   if (!existsSync(join(folder, "main.js"))) throw new RecipeError(`mod ${source.name} not found in ${folder}`);
@@ -49,7 +73,10 @@ function readCopy(source: ModSource, options: GenerateOptions): Copy {
   for (const name of readdirSync(folder)) {
     if (name.endsWith(".js") || name.endsWith(".sh")) files[name] = readFileSync(join(folder, name), "utf8");
   }
-  if (source.from === "repo") installKit(source, options, files);
+  if (source.from === "repo") {
+    installKit(source, options, files);
+    installLib(source, options, files);
+  }
   return { name: source.name, files, meta: JSON.parse(readFileSync(join(folder, "mod.json"), "utf8")) };
 }
 

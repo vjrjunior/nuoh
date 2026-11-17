@@ -199,6 +199,8 @@ Both layouts show the same folders, kept with their fold in `spaces.folders` in 
 
 `kit/kit.js` is the UI kit of this repo's mods (the Spaces tree, the Markdown viewer and Move tab): tokens (sizes, text, radii), components (`button`, `iconButton`, `link`, `chip`, `pill`, `card`, `heading`, `line`, `popupRow`, `mark`, `statusDot`, `stepNode`, `icon`) and the SVG icons in `kit/icons/`. A mod imports it as `../../kit/kit.js`, and `apply-layout` copies `kit.js` into each installed mod that imports it. The icons are installed once per layout, in the `kit` mod's `icons/` folder, where the kit reads them. A layout whose mods use the kit must include the `kit` recipe; the generator refuses otherwise.
 
+`lib/` holds what more than one mod needs and no window shows: `checkouts.js` (a repo's worktrees and the checkout a folder is in) and `claude.js` (a Claude Code session, the options worth keeping, the command that resumes it). Herdr refuses an import from outside a mod's folder, so a mod imports a module as `../../lib/<name>.js` and `apply-layout` copies it, and what it imports, next to the mod's own files. A mod can't have a file with the name of a module it takes from `lib/`.
+
 `mods/kit/` is a gallery that shows every component and icon. Open it beside the focused terminal:
 
 ```sh

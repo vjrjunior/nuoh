@@ -1,34 +1,11 @@
-const SHELLS = ["zsh", "bash", "fish", "sh", "dash", "ksh"];
-export const ALLOWED = {
-  "--dangerously-skip-permissions": 0,
-  "--allow-dangerously-skip-permissions": 0,
-  "--permission-mode": 1,
-  "--model": 1,
-  "--fallback-model": 1,
-  "--add-dir": "many",
-  "--verbose": 0,
-  "--agent": 1,
-  "--effort": 1,
-  "--name": 1,
-  "--setting-sources": 1,
-  "--allowedTools": "many",
-  "--allowed-tools": "many",
-  "--disallowedTools": "many",
-  "--disallowed-tools": "many",
-  "--strict-mcp-config": 0,
-  "--chrome": 0,
-  "--no-chrome": 0,
-  "--ide": 0,
-  "--brief": 0,
-  "--settings": 1,
-  "--mcp-config": "many",
-  "--plugin-dir": 1,
-};
-const PLAIN = /^[A-Za-z0-9_/.,:@%+=-]+$/;
-const UNTYPABLE = /['\\\u0000-\u001f\u007f]/;
-const SESSION = /^[A-Za-z0-9-]+$/;
-const PATHS = ["--add-dir", "--plugin-dir"];
-const FILES = ["--mcp-config", "--settings"];
+import { base, checkoutOf, placeOf } from "../../lib/checkouts.js";
+import { LOADS_CODE, OPTIONS, SESSION, isShell, keepOptions, quote } from "../../lib/claude.js";
+
+export { base, checkoutOf, parseWorktrees, placeOf } from "../../lib/checkouts.js";
+export { isShell, parseSession, quote, resumeCommand } from "../../lib/claude.js";
+
+export const ALLOWED = { ...OPTIONS, ...LOADS_CODE };
+export const keepArgs = (argv, cwd) => keepOptions(argv, ALLOWED, cwd);
 
 export const REASONS = {
   working: (where) => `Claude is working in ${where}. Move it when the turn ends.`,
@@ -56,31 +33,6 @@ export const SCHEDULE_TTL = 4 * 60 * 60 * 1000;
 export const SETTLE = 2000;
 const READY = ["idle", "done"];
 
-export function base(path) {
-  return path.replace(/\/+$/, "").split("/").pop() ?? "";
-}
-
-export function parseWorktrees(text) {
-  const out = [];
-  for (const block of text.split(/\n\s*\n/)) {
-    const lines = block.split("\n");
-    const path = lines.find((line) => line.startsWith("worktree "))?.slice(9);
-    if (!path || lines.some((line) => line === "bare" || line.startsWith("prunable"))) continue;
-    const branch = lines.find((line) => line.startsWith("branch "))?.slice(7).replace(/^refs\/heads\//, "") ?? null;
-    out.push({ path, branch, main: out.length === 0 });
-  }
-  return out;
-}
-
-export function checkoutOf(folder, checkouts) {
-  let best = null;
-  for (const checkout of checkouts) {
-    const path = checkout.path.replace(/\/+$/, "");
-    if ((folder === path || folder.startsWith(`${path}/`)) && (!best || path.length > best.path.length)) best = checkout;
-  }
-  return best;
-}
-
 export function matchingFolder(cwd, fromRoot, toRoot) {
   const from = fromRoot.replace(/\/+$/, "");
   const to = toRoot.replace(/\/+$/, "");
@@ -88,75 +40,6 @@ export function matchingFolder(cwd, fromRoot, toRoot) {
   const path = cwd.replace(/\/+$/, "");
   if (path === from) return to;
   return path.startsWith(`${from}/`) ? `${to}${path.slice(from.length)}` : to;
-}
-
-export function parseSession(text) {
-  if (typeof text !== "string") return null;
-  try {
-    const data = JSON.parse(text);
-    if (typeof data?.sessionId !== "string" || typeof data.cwd !== "string") return null;
-    return { session: data.sessionId, cwd: data.cwd, procStart: typeof data.procStart === "string" ? data.procStart : undefined };
-  } catch {
-    return null;
-  }
-}
-
-export function isShell(argv0) {
-  return SHELLS.includes(base(argv0 ?? "").replace(/^-/, ""));
-}
-
-export function quote(value) {
-  if (typeof value !== "string" || value === "") return null;
-  if (PLAIN.test(value)) return value;
-  if (UNTYPABLE.test(value)) return null;
-  return `'${value}'`;
-}
-
-function resolvePath(value, cwd) {
-  if (typeof cwd !== "string" || !cwd.startsWith("/") || value === "" || value.startsWith("/") || value.startsWith("~")) return value;
-  const parts = [];
-  for (const part of `${cwd}/${value}`.split("/")) {
-    if (part === "" || part === ".") continue;
-    if (part === "..") parts.pop();
-    else parts.push(part);
-  }
-  return `/${parts.join("/")}`;
-}
-
-function keptValue(flag, value, cwd) {
-  if (PATHS.includes(flag) || (FILES.includes(flag) && !value.trim().startsWith("{"))) return resolvePath(value, cwd);
-  return value;
-}
-
-export function keepArgs(argv, cwd) {
-  const list = argv.slice(1);
-  const out = [];
-  for (let i = 0; i < list.length; i++) {
-    let flag = list[i];
-    let inline = null;
-    if (flag.startsWith("--") && flag.includes("=")) {
-      inline = flag.slice(flag.indexOf("=") + 1);
-      flag = flag.slice(0, flag.indexOf("="));
-    }
-    if (!Object.hasOwn(ALLOWED, flag)) continue;
-    const arity = ALLOWED[flag];
-    const values = [];
-    if (inline !== null) values.push(inline);
-    else if (arity === 1 && i + 1 < list.length && !list[i + 1].startsWith("-")) values.push(list[++i]);
-    else if (arity === "many") while (i + 1 < list.length && !list[i + 1].startsWith("-")) values.push(list[++i]);
-    if (arity === 0 && values.length > 0) continue;
-    if (arity !== 0 && values.length === 0) continue;
-    const kept = values.map((value) => keptValue(flag, value, cwd));
-    if (kept.some((value) => quote(value) === null)) continue;
-    out.push(flag, ...kept);
-  }
-  return out;
-}
-
-export function resumeCommand(note) {
-  const folder = quote(note.cwd);
-  if (folder === null || !SESSION.test(note.session)) return null;
-  return [`cd ${folder} && claude --resume ${note.session}`, ...note.args.map(quote)].join(" ");
 }
 
 export function atShell(info) {
@@ -293,12 +176,6 @@ export function splitSteps(node) {
   };
   walk(node, 0);
   return steps;
-}
-
-export function placeOf(space, panes) {
-  const tabs = new Set((space.tabs ?? []).map((tab) => tab.id));
-  const pane = panes.find((candidate) => tabs.has(candidate.tab) && candidate.cwd);
-  return pane?.cwd ?? space.folder ?? null;
 }
 
 export function targetsFor({ checkouts, spaces, panes, from }) {

@@ -1,24 +1,12 @@
-const URGENCY = ["blocked", "done", "working", "idle"];
+import { base, checkoutOf } from "../../lib/checkouts.js";
 
-export function base(path) {
-  return path.replace(/\/+$/, "").split("/").pop() ?? "";
-}
+export { base, checkoutOf, parseWorktrees, placeOf as place } from "../../lib/checkouts.js";
+
+const URGENCY = ["blocked", "done", "working", "idle"];
 
 export function repoName(common) {
   const folder = common.endsWith("/.git") ? common.slice(0, -5) : common;
   return base(folder).replace(/\.git$/, "");
-}
-
-export function parseWorktrees(text) {
-  const out = [];
-  for (const block of text.split(/\n\s*\n/)) {
-    const lines = block.split("\n");
-    const path = lines.find((line) => line.startsWith("worktree "))?.slice(9);
-    if (!path || lines.some((line) => line === "bare" || line.startsWith("prunable"))) continue;
-    const branch = lines.find((line) => line.startsWith("branch "))?.slice(7).replace(/^refs\/heads\//, "") ?? null;
-    out.push({ path, branch, main: out.length === 0 });
-  }
-  return out;
 }
 
 export function parseRefs(text) {
@@ -43,15 +31,6 @@ export function readLook(result) {
 
 export function mostUrgent(statuses) {
   return URGENCY.find((status) => statuses.includes(status)) ?? null;
-}
-
-export function checkoutOf(top, checkouts) {
-  let best = null;
-  for (const checkout of checkouts) {
-    const path = checkout.path.replace(/\/+$/, "");
-    if ((top === path || top.startsWith(`${path}/`)) && (!best || path.length > best.path.length)) best = checkout;
-  }
-  return best;
 }
 
 function treeRow(checkout, repo, space, main) {
@@ -125,11 +104,6 @@ export function paint(color, t) {
 }
 const FALLBACK = 60000;
 const OPENING = 3000;
-
-export function place(space, panes) {
-  const tabs = new Set((space.tabs ?? []).map((tab) => tab.id));
-  return panes.find((pane) => tabs.has(pane.tab) && pane.cwd)?.cwd || space.folder;
-}
 
 export function duePlaces({ places, lastPlaces, busy, lastBusy, paneSpace, looks, unsure, checked, time, active, folded }) {
   const due = new Set();

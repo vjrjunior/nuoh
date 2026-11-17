@@ -261,3 +261,35 @@ describe("layout", () => {
     expect(Object.keys(generated.mods).filter((name) => name === "test-tabs")).toHaveLength(1);
   });
 });
+
+describe("shared modules", () => {
+  function withLib(main: string) {
+    const made = setup();
+    mkdirSync(join(made.repo, "lib"), { recursive: true });
+    writeFileSync(join(made.repo, "lib/paths.js"), 'export const base = "base";\n');
+    writeFileSync(join(made.repo, "lib/claude.js"), 'import { base } from "./paths.js";\nexport const claude = base;\n');
+    writeFileSync(join(made.repo, "mods/user/main.js"), `import { KIT } from "../../kit/kit.js";\n${main}export default class Mod {}\n`);
+    return made;
+  }
+
+  test("a mod that imports from lib gets a copy of the module and of what it imports", () => {
+    const { generate } = withLib('import { claude } from "../../lib/claude.js";\nexport { base } from "../../lib/paths.js";\n');
+    const user = generate(variantWith(withKit, userRecipe)).mods["test-user"];
+    expect(user?.["main.js"]).toContain('import { claude } from "./claude.js"');
+    expect(user?.["main.js"]).toContain('export { base } from "./paths.js"');
+    expect(user?.["main.js"]).not.toContain("../../lib/");
+    expect(user?.["claude.js"]).toContain("export const claude");
+    expect(user?.["paths.js"]).toContain("export const base");
+  });
+
+  test("a mod that imports nothing from lib gets none of it", () => {
+    const { generate } = withLib("");
+    expect(Object.keys(generate(variantWith(withKit, userRecipe)).mods["test-user"] ?? {}).sort()).toEqual(["kit.js", "main.js", "mod.json"]);
+  });
+
+  test("a mod with a file named like a lib module refuses", () => {
+    const { repo, generate } = withLib('import { claude } from "../../lib/claude.js";\n');
+    writeFileSync(join(repo, "mods/user/paths.js"), "export const mine = 1;\n");
+    expect(() => generate(variantWith(withKit, userRecipe))).toThrow("user/paths.js has the name of a module in lib/");
+  });
+});
