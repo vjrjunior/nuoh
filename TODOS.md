@@ -146,19 +146,35 @@
 **Priority:** P2
 **Depends on:** Nothing
 
-### Share Comeback's and Move tab's Claude helpers in one module
+### Group the Spaces tree's spaces by machine
 
-**What:** Move what `mods/comeback/logic.js` and `mods/move-tab/logic.js` both define (`quote`, `parseSession`, `isShell`, `keepArgs`, `resumeCommand`, the options list) into one shared module that `apply-layout` copies into each mod, as it copies `kit/kit.js`.
+**What:** Give the Spaces tree a header per machine once a space lives on another one, as Herdr's `spaces` has: the machine's name and state, its `+`, the `hc machine login <name>` line with Copy for one that needs a login, and Connect for one that was rebuilt.
 
-**Why:** The two copies drifted once already: Comeback kept 5 options while Move tab kept 11, so a Claude came back from a reboot without `--agent` or `--effort`. A test now holds the option lists in step, but the functions around them can still drift.
+**Why:** The tree lists a space on another machine as a loose row with nothing saying where it runs, and it reads no git for it. Someone who adds a machine loses what Herdr's own sidebar shows them.
 
-**Context:** One Herdr mod can't import another's files, so the generator would rewrite an import such as `../../lib/claude.js` to `./claude.js` and copy the file, as `installKit` in `scripts/generate-layout.ts` does for the kit. Comeback's list stays Move tab's without `--settings`, `--mcp-config` and `--plugin-dir`, since it reads a label anyone with `hc` can write; the shared module would mark those three instead of each mod listing its own.
+**Context:** `current()` in `mods/spaces-tree/main.js` skips spaces whose `machine` is set, so they get no repository and no worktrees. Herdr's `mods/spaces/main.js` is the prior art: it reads `hc machine ls --json`, runs git with `exec(..., { on })`, groups rows by machine and keeps the folded machines in `localStorage`. Folders hold repositories by their git common dir, which is only unique per machine. It was left out of the audit follow-ups because no machine was set up to see it in the window.
 
-**Effort:** M
+**Effort:** L
 **Priority:** P3
+**Depends on:** A second machine in `hc machine ls` to check it against
+
+### See the Spaces tree scroll to the active space in the window
+
+**What:** With more spaces than the sidebar fits, switch to one below the fold by its key and watch the list bring it into view, in `vjr-desk` and `vjr-desk-square`, wide and as the narrow rail.
+
+**Why:** The scroll is covered by tests against a fake `ScrollHandle`. What `scroll_to_item` does with a folder card taller than the list was not seen: it could show the card's top while the active row sits below.
+
+**Context:** `bringActive` in `mods/spaces-tree/main.js` reveals a direct child of the list, and a folder card is one child. The window had fewer spaces than the sidebar fits when this was built, so nothing scrolled. A test panel run with enough spaces open is the check.
+
+**Effort:** S
+**Priority:** P2
 **Depends on:** Nothing
 
 ## Completed
+
+### Share Comeback's and Move tab's Claude helpers in one module
+
+**Completed:** 2026-11-16. `lib/claude.js` and `lib/checkouts.js` hold the helpers, and `installLib` in `scripts/generate-layout.ts` copies each module a mod imports into the installed mod. Comeback's option list is the shared base; Move tab adds `--settings`, `--mcp-config` and `--plugin-dir`.
 
 ### Confirm the first real Herdr update
 
