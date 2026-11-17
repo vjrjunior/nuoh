@@ -1,12 +1,11 @@
 import { describe, expect, test } from "bun:test";
+import { base, checkoutOf, parseWorktrees, placeOf as place } from "../lib/checkouts.js";
 import {
   accepts,
   assignColors,
-  base,
   branchLabel,
   buildTree,
   canOpen,
-  checkoutOf,
   counts,
   DRAG_TTL,
   dropTarget,
@@ -17,8 +16,6 @@ import {
   liveFolds,
   mostUrgent,
   parseRefs,
-  parseWorktrees,
-  place,
   readLook,
   repoName,
 } from "../mods/spaces-tree/tree.js";

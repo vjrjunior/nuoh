@@ -31,7 +31,7 @@ Read the Watch out section of the one that matches the area you touch:
 
 ## Recipes that patch a Herdr copy
 
-Several recipes patch the same copies (`grep -n 'copies\.' recipes/*.ts`). Each gets the copy with the edits of the recipes before it in `VARIANTS`.
+Several recipes patch the same copies (`grep -n 'copies\.' recipes/*.ts`). Each gets the copy with the edits of the recipes before it in `OWN` (`recipes/variants.ts`).
 
 - **Anchors.** `exact` fails when its text shows up a different number of times. Anchor on Herdr's own text that no earlier recipe rewrites.
 - **The test home.** A new anchor also goes in the fake copy in `tests/herdr-home.ts`.

@@ -2,7 +2,9 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Variant } from "../recipes/recipe";
-import { LEFT_ROUNDED, VARIANTS } from "../recipes/variants";
+import { LEFT_ROUNDED, variantsWith } from "../recipes/variants";
+
+const VARIANTS = variantsWith();
 import { generateVariant } from "../scripts/generate-layout";
 import { removeTempDirs, repo, tempDir } from "./helpers";
 import { makeHerdrHome, SHIPPED_MODS } from "./herdr-home";
@@ -125,7 +127,7 @@ describe("git-graph-panel", () => {
     expect(graphChild(generateDesk())).toEqual({ id: "graph", type: "block", content: { mod: "git-graph" } });
   });
 
-  test("vjr-desk-square opens its square git-graph in the panel", () => {
+  test("with square corners the panel opens the square git-graph", () => {
     expect(graphChild(generateSquare()).content.mod).toBe("vjr-git-graph");
   });
 
@@ -360,12 +362,13 @@ describe("spaces-tree", () => {
   });
 
   test("the square copy has no rounded corner left", () => {
-    const main = generateSquare().mods["vjr-spaces-tree"]?.["main.js"] ?? "";
-    expect(main).not.toMatch(/\.rounded(_[a-z]+)?\((?!0\))/);
+    const files = Object.entries(generateSquare().mods["vjr-spaces-tree"] ?? {}).filter(([name]) => name.endsWith(".js"));
+    expect(files.map(([name]) => name)).toEqual(expect.arrayContaining(["main.js", "rows.js", "rail.js", "actions.js"]));
+    for (const [, text] of files) expect(text).not.toMatch(/\.rounded(_[a-z]+)?\((?!0\))/);
   });
 
   test("the rounded copy keeps its corners", () => {
-    expect(generateDesk().mods["vjr-spaces-tree"]?.["main.js"]).toMatch(/\.rounded\(8\)/);
+    expect(generateDesk().mods["vjr-spaces-tree"]?.["rows.js"]).toMatch(/\.rounded\(8\)/);
   });
 
   test("both layouts put Move to folder… in the space menu, before Close", () => {
@@ -388,10 +391,10 @@ describe("spaces-tree", () => {
 
   test("the tree opens its own folder popups, frameless and bordered in the square layout", () => {
     const desk = generateDesk().mods["vjr-spaces-tree"] ?? {};
-    expect(desk["main.js"]).toContain('openOverlay({ mod: "vjr-spaces-tree", kind: "popup", width: FOLDER_MENU.width');
+    expect(desk["actions.js"]).toContain('openOverlay({ mod: "vjr-spaces-tree", kind: "popup", width: FOLDER_MENU.width');
     expect(desk["popups.js"]).toContain('openOverlay({ mod: "vjr-spaces-tree", kind: "dialog", width: NAME_DIALOG.width');
     const square = generateSquare().mods["vjr-spaces-tree"] ?? {};
-    expect(square["main.js"]).toContain('openOverlay({ mod: "vjr-spaces-tree", kind: "popup", frame: "none",');
+    expect(square["actions.js"]).toContain('openOverlay({ mod: "vjr-spaces-tree", kind: "popup", frame: "none",');
     expect(square["popups.js"]).toContain('openOverlay({ mod: "vjr-spaces-tree", kind: "dialog", frame: "none",');
     expect(square["popups.js"]?.split(".bg(t.popover).border_1().border_color(t.border)")).toHaveLength(4);
     expect(square["popups.js"]).not.toMatch(/\.rounded(_[a-z]+)?\((?!0\))/);

@@ -1,7 +1,5 @@
 import { base, checkoutOf } from "../../lib/checkouts.js";
 
-export { base, checkoutOf, parseWorktrees, placeOf as place } from "../../lib/checkouts.js";
-
 const URGENCY = ["blocked", "done", "working", "idle"];
 
 export function repoName(common) {
@@ -96,7 +94,7 @@ export function buildTree(spaces, looks, repos) {
 }
 
 export const PALETTE = ["ansi6", "ansi3", "ansi4", "ansi5", "ansi2", "ansi1"];
-export const MARK = { ansi6: "#22a99a", ansi3: "#e3814f", ansi4: "#5b8def", ansi5: "#8b7cf6", ansi2: "#3fae6a", ansi1: "#d9649a" };
+const MARK = { ansi6: "#22a99a", ansi3: "#e3814f", ansi4: "#5b8def", ansi5: "#8b7cf6", ansi2: "#3fae6a", ansi1: "#d9649a" };
 
 export function paint(color, t) {
   if (typeof color === "string" && color.startsWith("#")) return color;

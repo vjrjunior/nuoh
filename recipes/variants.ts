@@ -25,8 +25,6 @@ export function variantsWith(extras: Recipe[] = []): Variant[] {
   return [variantWith(extras, false), variantWith(extras, true)];
 }
 
-export const VARIANTS: Variant[] = variantsWith();
-
 export const LEFT_ROUNDED = ["prompt", "confirm", "toast", "peek", "win98", "terminals-bar", "terminals-pane"];
 
 export const REPLACED = ["spaces"];
