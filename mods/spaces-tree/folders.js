@@ -87,6 +87,25 @@ export function entryOfSpace(entries, spaceId) {
   return entries.find((entry) => rowsOf(entry).some((row) => row.space?.id === spaceId)) ?? null;
 }
 
+export function activeChild({ folders, loose }, narrow) {
+  const active = (entry) => rowsOf(entry).some((row) => row.space?.active);
+  if (!narrow) {
+    const card = folders.findIndex(({ entries }) => entries.some(active));
+    if (card >= 0) return { at: card, folded: folders[card].folder.folded };
+    const free = loose.findIndex(active);
+    return { at: free < 0 ? -1 : folders.length + free, folded: false };
+  }
+  const spacesOf = (entries) => entries.flatMap(rowsOf).filter((row) => row.space);
+  let at = 0;
+  for (const { folder, entries } of folders) {
+    const inside = spacesOf(entries).findIndex((row) => row.space.active);
+    if (inside >= 0) return { at: folder.folded ? at : at + 1 + inside, folded: folder.folded };
+    at += 1 + (folder.folded ? 0 : spacesOf(entries).length);
+  }
+  const free = spacesOf(loose).findIndex((row) => row.space.active);
+  return { at: free < 0 ? -1 : at + free, folded: false };
+}
+
 export function folderTail(entries, agents) {
   const rows = entries.flatMap(rowsOf);
   const ids = new Set(rows.map((row) => row.space?.id).filter(Boolean));

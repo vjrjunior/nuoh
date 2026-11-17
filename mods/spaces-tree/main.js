@@ -1,5 +1,5 @@
 import { View, div } from "gpui-kit";
-import { v_flex, h_flex } from "gpui-base";
+import { v_flex, h_flex, ScrollHandle } from "gpui-base";
 import { spaces, panes, agents, run, openOverlay, exec, theme, shared, setShared, watchFolder, window, nextCommand, layout, props } from "herdr";
 import {
   accepts,
@@ -23,7 +23,7 @@ import {
   repoName,
   rowsOf,
 } from "./tree.js";
-import { arrange, entryOfSpace, fileUnit, folderOf, folderTail, revealFor, toggleFolder } from "./folders.js";
+import { activeChild, arrange, entryOfSpace, fileUnit, folderOf, folderTail, revealFor, toggleFolder } from "./folders.js";
 import { FOLDER_MENU, movePopupHeight, openNameDialog, readState, renderPopup, saveState, startPopup } from "./popups.js";
 import { CONTROL, ICON_SIZE, TEXT, icon, iconButton, statusDot, toneColor } from "../../kit/kit.js";
 
@@ -87,6 +87,9 @@ export default class SpacesTree extends View {
     this.overFolder = null;
     this.revealed = spaces().find((space) => space.active)?.id ?? null;
     this.revealing = null;
+    this.scroll = ScrollHandle.new();
+    this.inView = null;
+    this.picked = null;
     cx.timer.every(250, (cx) => this.tick(cx));
     cx.spawn(async (cx) => {
       for (;;) {
@@ -282,6 +285,7 @@ export default class SpacesTree extends View {
 
   open(row) {
     if (row.space) {
+      this.picked = row.space.id;
       run("space.select", { id: row.space.id });
       return;
     }
@@ -289,6 +293,17 @@ export default class SpacesTree extends View {
     if (!row.path || !canOpen(this.opening, row.path, time)) return;
     this.opening[row.path] = time;
     run("space.new", { folder: row.path, machine: "" });
+  }
+
+  bringActive(groups, narrow) {
+    const id = spaces().find((space) => space.active)?.id ?? null;
+    const { at, folded } = activeChild(groups, narrow);
+    const key = `${id}:${at}:${folded}:${narrow}`;
+    if (key === this.inView) return;
+    this.inView = key;
+    if (id === this.picked) return;
+    this.picked = null;
+    if (at >= 0) this.scroll.scroll_to_item(at);
   }
 
   endDrag() {
@@ -857,6 +872,7 @@ export default class SpacesTree extends View {
     const narrow = this.narrow();
     const groups = arrange(this.entries(), readState());
     const blocks = this.style() === "blocks";
+    this.bringActive(groups, narrow);
     const draw = (entry, inFolder = false, last = false) => (blocks ? this.blockEntry(entry, t, inFolder, last) : this.graphEntry(entry, t, inFolder));
     return v_flex()
       .size_full()
@@ -874,6 +890,7 @@ export default class SpacesTree extends View {
           .pb(14)
           .overflow_y_scrollbar()
           .mode("always")
+          .track_scroll(this.scroll)
           .on_mouse_up("left", (_e, cx) => {
             this.pressed = null;
             this.over = null;

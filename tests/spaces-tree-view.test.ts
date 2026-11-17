@@ -1134,3 +1134,56 @@ describe("git and folder watches", () => {
     expect(view.refreshing).toBe(false);
   });
 });
+
+describe("bringing the active space into view", () => {
+  const FOLDERS = "spaces.folders";
+  const shownBy = (view: { scroll: { shown: number[] } }) => view.scroll.shown;
+  const activate = (id: string) => {
+    app.spaces = app.spaces.map((known) => ({ ...known, active: known.id === id }));
+  };
+
+  test("the first draw scrolls to the active space, and a redraw leaves the list where it is", () => {
+    const view = setup();
+    view.render();
+    view.render();
+    expect(shownBy(view)).toEqual([1]);
+  });
+
+  test("a space made active from outside the tree is scrolled to", () => {
+    const view = setup();
+    view.render();
+    activate("m");
+    view.render();
+    expect(shownBy(view)).toEqual([1, 0]);
+  });
+
+  test("a space picked in the tree stays where the pointer is", () => {
+    const view = setup();
+    view.render();
+    view.open({ space: { id: "m" } });
+    activate("m");
+    view.render();
+    expect(shownBy(view)).toEqual([1]);
+    activate("x");
+    view.render();
+    expect(shownBy(view)).toEqual([1, 1]);
+  });
+
+  test("a folder counts as one item, and unfolding it scrolls again", () => {
+    app.shared[FOLDERS] = { folders: [{ id: "f1", name: "Clients", color: "ansi4", folded: true }], members: { x: "f1" } };
+    const view = setup();
+    view.render();
+    expect(shownBy(view)).toEqual([0]);
+    app.shared[FOLDERS] = { folders: [{ id: "f1", name: "Clients", color: "ansi4", folded: false }], members: { x: "f1" } };
+    view.render();
+    expect(shownBy(view)).toEqual([0, 0]);
+  });
+
+  test("the narrow rail counts each folder tile and each space", () => {
+    app.sidebar = 60;
+    app.shared[FOLDERS] = { folders: [{ id: "f1", name: "Clients", color: "ansi4", folded: false }], members: { [common]: "f1" } };
+    const view = setup();
+    view.render();
+    expect(shownBy(view)).toEqual([2]);
+  });
+});

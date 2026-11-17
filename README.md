@@ -193,7 +193,7 @@ Each folder is a card: its name sits on a gray band with a folder icon in its co
 - **Folding:** click a folder's band. A folded folder is only its band and shows `N need you`, counting the agents in it that are blocked or done (or how many it holds when none are), and a dot in its most urgent status. When the space in front changes to one inside a folded folder, by a click, a key, `agent.next`, a toast or a script, the folder opens; folding it again while that space is in front keeps it folded.
 - **Editing:** right-click a folder for its colors (applied at once), `Rename…` and `Delete folder`. Deleting gives its repositories and spaces back to the list; no space closes.
 
-Both layouts show the same folders, kept with their fold in `spaces.folders` in Herdr's shared state, and so do restarts. Below 160px the rail shows each folder as its tile, followed by the numbers of its spaces while it's open. The space menu item is in the layouts' copy of Herdr's menu (`vjr-menu`, `vjr-square-menu`), and only shows when the Spaces tree opens that menu.
+Both layouts show the same folders, kept with their fold in `spaces.folders` in Herdr's shared state, and so do restarts. A space that becomes active from outside the tree unfolds its folder and is scrolled into view. Below 160px the rail shows each folder as its tile, followed by the numbers of its spaces while it's open. The space menu item is in the layouts' copy of Herdr's menu (`vjr-menu`, `vjr-square-menu`), and only shows when the Spaces tree opens that menu.
 
 ## Kit
 
