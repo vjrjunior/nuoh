@@ -55,18 +55,18 @@ describe("extras", () => {
   });
 
   test("square corners square an extra's mod and frame its popup", () => {
-    const [desk, square] = generateWith();
-    expect(desk?.mods["vjr-hello"]?.["main.js"]).toContain(".bg(t.popover).rounded(6)");
+    const [round, square] = generateWith();
+    expect(round?.mods["vjr-hello"]?.["main.js"]).toContain(".bg(t.popover).rounded(6)");
     expect(square?.mods["vjr-hello"]?.["main.js"]).toContain(".bg(t.popover).border_1().border_color(t.border).rounded(0)");
     expect(JSON.parse(square?.mods["vjr-hello"]?.["mod.json"] ?? "{}").overlay).toEqual({ frame: "none" });
   });
 
   test("an extra's mod gets the kit, and its icons join the kit's", () => {
-    const [desk] = generateWith();
-    expect(desk?.mods["vjr-hello"]?.["main.js"]).toContain('from "./kit.js"');
-    expect(desk?.mods["vjr-hello"]?.["kit.js"]).toContain('export const KIT = { name: "vjr-kit" };');
-    expect(Object.keys(desk?.mods["vjr-kit"] ?? {})).toContain("icons/hello.svg");
-    expect(Object.keys(desk?.mods["vjr-kit"] ?? {})).toContain("icons/plus.svg");
+    const [round] = generateWith();
+    expect(round?.mods["vjr-hello"]?.["main.js"]).toContain('from "./kit.js"');
+    expect(round?.mods["vjr-hello"]?.["kit.js"]).toContain('export const KIT = { name: "vjr-kit" };');
+    expect(Object.keys(round?.mods["vjr-kit"] ?? {})).toContain("icons/hello.svg");
+    expect(Object.keys(round?.mods["vjr-kit"] ?? {})).toContain("icons/plus.svg");
   });
 
   test("an extra can't take a recipe name that exists", () => {
