@@ -3,7 +3,8 @@ import { h_flex, v_flex } from "gpui-base";
 import { agents, closeOverlay, focused, notify, panes, props, setShared, shared, spaces, terminals, theme } from "herdr";
 import { CONTROL, RADIUS, TEXT, heading, icon } from "../../kit/kit.js";
 import { appIo } from "./io.js";
-import { LABEL, REASONS, parseSchedule, parseWorktrees, placeOf, scheduleStep, targetsFor } from "./logic.js";
+import { parseWorktrees, placeOf } from "../../lib/checkouts.js";
+import { LABEL, REASONS, parseSchedule, scheduleStep, targetsFor } from "./logic.js";
 import { moveTab } from "./move.js";
 
 const KEY = "move-tab.request";

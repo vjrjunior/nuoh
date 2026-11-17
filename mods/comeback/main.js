@@ -1,6 +1,7 @@
 import { View, div } from "gpui-kit";
 import * as fs from "fs/promises";
 import { agents, terminals, exec, home, readTextFile, notify, nextCommand, shared, setShared, checking } from "herdr";
+import { parseSession, resumeCommand } from "../../lib/claude.js";
 import {
   autoCandidate,
   decodeNote,
@@ -11,9 +12,7 @@ import {
   markTried,
   parseBoot,
   parseProcess,
-  parseSession,
   planPass,
-  resumeCommand,
   summary,
   triedNow,
 } from "./logic.js";

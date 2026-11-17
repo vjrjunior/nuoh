@@ -1,6 +1,7 @@
 import * as fs from "fs/promises";
 import { exec, home, notify, panes, readTextFile, spaces, terminals } from "herdr";
-import { LABEL, parseSession, projectFolder, tabTree } from "./logic.js";
+import { parseSession } from "../../lib/claude.js";
+import { LABEL, projectFolder, tabTree } from "./logic.js";
 
 const DOC_GET = JSON.stringify({ jsonrpc: "2.0", id: 1, method: "doc.get", params: { name: "herdr-app" } });
 

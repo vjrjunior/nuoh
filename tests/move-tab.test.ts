@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { REASONS, SCHEDULE_TTL, SETTLE, atShell, checkoutOf, freshArgv, freshCommand, isClaude, isDraft, keepArgs, leaves, matchingFolder, movedNote, parseSchedule, parseWorktrees, projectFolder, promptBox, resumeArgv, runsSession, scheduleStep, spaceName, splitSteps, tabTree, targetsFor } from "../mods/move-tab/logic.js";
+import { checkoutOf, parseWorktrees } from "../lib/checkouts.js";
+import { REASONS, SCHEDULE_TTL, SETTLE, atShell, freshArgv, freshCommand, isClaude, isDraft, keepArgs, leaves, matchingFolder, movedNote, parseSchedule, projectFolder, promptBox, resumeArgv, runsSession, scheduleStep, spaceName, splitSteps, tabTree, targetsFor } from "../mods/move-tab/logic.js";
 
 describe("move-tab logic", () => {
   test("keeps the allowed flags and their values", () => {

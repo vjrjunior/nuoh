@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
+import { isShell, parseSession, quote, resumeCommand } from "../lib/claude.js";
 import { ALLOWED as MOVE_TAB } from "../mods/move-tab/logic.js";
 import {
   ALLOWED,
   autoCandidate,
   decodeNote,
   encodeNote,
-  isShell,
   judge,
   keepArgs,
   lastLine,
@@ -13,10 +13,7 @@ import {
   parseBoot,
   parseEtime,
   parseProcess,
-  parseSession,
   planPass,
-  quote,
-  resumeCommand,
   summary,
 } from "../mods/comeback/logic.js";
 

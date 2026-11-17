@@ -1,9 +1,6 @@
 import { base, checkoutOf, placeOf } from "../../lib/checkouts.js";
 import { LOADS_CODE, OPTIONS, SESSION, isShell, keepOptions, quote } from "../../lib/claude.js";
 
-export { base, checkoutOf, parseWorktrees, placeOf } from "../../lib/checkouts.js";
-export { isShell, parseSession, quote, resumeCommand } from "../../lib/claude.js";
-
 export const ALLOWED = { ...OPTIONS, ...LOADS_CODE };
 export const keepArgs = (argv, cwd) => keepOptions(argv, ALLOWED, cwd);
 
