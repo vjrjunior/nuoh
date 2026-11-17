@@ -82,7 +82,6 @@ Nothing here is a frozen copy of Herdr. `recipes/` holds small edits, and `scrip
 - The layout redirects its own keys and buttons only. `app.palette`, `app.settings` and `app.help` still open Herdr's originals, for example from `herdr-app do`.
 - Settings is the layout's copy in both looks, and only the copy has `Square corners`. A Herdr mod that calls `app.settings` itself, the machine login note in `spaces` for example, opens Herdr's own Settings, which has no toggle.
 - The look is not an app command: `layout.switch` and a key can't flip it. It changes through the shared key `vjr.square`, which `vjr-sync` follows, or through `apply --square on|off`.
-- The first apply after the move from two layouts to one removes `layouts/vjr-desk-square.json` and `.svg`, the `vjr-square-*` mods and the `layout:vjr-desk-square` section of `keys.json`. A window showing `vjr-desk-square` is switched to `vjr-desk` with square corners on; otherwise the corners stay round. Panel sizes Herdr kept for the old layout are not carried over.
 - The spinner is a round SVG and stays round.
 - The window's outer corners belong to macOS.
 - Keys are derived when `apply-layout` runs. Rerun it after changing a shortcut for the palette, Settings, help or search.

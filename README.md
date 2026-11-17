@@ -99,8 +99,6 @@ The choice is kept in `~/.local/state/vjr-herdr/layout.json` (`"square": true` o
 
 In both looks, Settings is the layout's copy of Herdr's, which has the toggle: the sidebar's gear, the palette's Settings entry and the Settings key (`cmd-,`, or whichever key `global` binds to it) open it. Other places where one of Herdr's mods opens Settings by itself, a machine's login note for example, open Herdr's own, which has no toggle.
 
-If you had `vjr-desk-square` from an earlier version, the first `apply-layout` removes it, with its `vjr-square-*` mods and its section of `keys.json`. A window that was showing it moves to `vjr-desk` with square corners on; otherwise the corners stay round. Panel sizes Herdr kept for the old layout are not carried over.
-
 With square corners, these stay rounded, because the app draws them or opens them by itself: renaming, close confirmations, notifications, peek, Welcome, What's new, the feedback window, Add machine's terminal dialog, the spinner and the window's outer corners.
 
 ### How it stays current

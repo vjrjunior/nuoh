@@ -43,10 +43,8 @@ function setup(root = copyRepo(), homes = makeHomes()) {
     keys: () => JSON.parse(readFileSync(join(home, "keys.json"), "utf8")),
     record: () => JSON.parse(readFileSync(join(homes.state, "layout.json"), "utf8")),
     writeRecord: (record: unknown) => writeFileSync(join(homes.state, "layout.json"), JSON.stringify(record)),
-    layout: (name: string) => JSON.parse(readFileSync(join(home, "layouts", `${name}.json`), "utf8")),
-    syncProps(name: string) {
-      return JSON.parse(readFileSync(join(home, "layouts", `${name}.json`), "utf8")).floating.at(-1).content.props;
-    },
+    layout: () => JSON.parse(readFileSync(join(home, "layouts/vjr-desk.json"), "utf8")),
+    syncProps: () => JSON.parse(readFileSync(join(home, "layouts/vjr-desk.json"), "utf8")).floating.at(-1).content.props,
     modMeta: (name: string) => JSON.parse(readFileSync(join(home, "mods", name, "mod.json"), "utf8")),
     simulateAppFiles() {
       for (const name of readdirSync(join(home, "mods")).filter((entry) => /^(vjr-|git-graph)/.test(entry))) {
@@ -90,7 +88,7 @@ describe("apply", () => {
 
     apply();
 
-    expect(syncProps("vjr-desk")).toEqual({ built: "0.1.10", repo: root, bun: process.execPath, square: false });
+    expect(syncProps()).toEqual({ built: "0.1.10", repo: root, bun: process.execPath, square: false });
   });
 
   test("writes the key sections", () => {
@@ -159,7 +157,7 @@ describe("apply", () => {
 
     apply(["--herdr-version", "9.9.9"]);
 
-    expect(syncProps("vjr-desk").built).toBe("9.9.9");
+    expect(syncProps().built).toBe("9.9.9");
   });
 
   test("reads the version from the installed app otherwise", () => {
@@ -167,7 +165,7 @@ describe("apply", () => {
 
     apply([], { FAKE_HERDR_VERSION: "1.2.3" });
 
-    expect(syncProps("vjr-desk").built).toBe("1.2.3");
+    expect(syncProps().built).toBe("1.2.3");
   });
 
   test("checks every mod it installs", () => {
@@ -222,7 +220,7 @@ describe("apply", () => {
     expect(apply(["--herdr-version", "0.1.11"]).stdout).toContain("applied");
 
     expect(modMeta("vjr-tabs").cloned_from.version).toBe("0.1.11");
-    expect(syncProps("vjr-desk").built).toBe("0.1.11");
+    expect(syncProps().built).toBe("0.1.11");
   });
 
   test("a change in a shipped mod reaches its copy", () => {
@@ -297,7 +295,7 @@ describe("apply", () => {
 
     expect(apply().code).toBe(0);
 
-    expect(syncProps("vjr-desk").repo).toBe(root);
+    expect(syncProps().repo).toBe(root);
   });
 
   test("with square corners, warns about shipped mods with corners that no recipe covers", () => {
@@ -354,7 +352,7 @@ describe("failures", () => {
     expect(result.code).toBe(1);
     expect(result.stderr).toContain("vjr-tabs");
     expect(ours(home)).toEqual(before);
-    expect(syncProps("vjr-desk").built).toBe("0.1.10");
+    expect(syncProps().built).toBe("0.1.10");
   });
 
   test("new errors after the swap restore the previous copies", () => {
@@ -367,11 +365,11 @@ describe("failures", () => {
     expect(result.code).toBe(1);
     expect(result.stderr).toContain("boom");
     expect(modMeta("vjr-tabs").cloned_from.version).toBe("0.1.10");
-    expect(syncProps("vjr-desk").built).toBe("0.1.10");
+    expect(syncProps().built).toBe("0.1.10");
     expect(ours(home)).toEqual(before);
   });
 
-  test("a copy the shown layout still uses goes only after the new layouts", () => {
+  test("a copy the shown layout still uses goes only after the new layout", () => {
     const { home, apply, record, writeRecord } = setup();
     apply(["--square", "on"]);
     cpSync(join(home, "mods/vjr-tabs"), join(home, "mods/vjr-old"), { recursive: true });
@@ -392,7 +390,7 @@ describe("failures", () => {
 
     expect(apply([], { FAKE_HERDR_WINDOW: "vjr-desk", FAKE_HERDR_STATUS_ERROR_ALWAYS: "old" }).code).toBe(0);
 
-    expect(syncProps("vjr-desk").built).toBe("0.1.10");
+    expect(syncProps().built).toBe("0.1.10");
   });
 
   test("invalid keys.json stops before any write", () => {
@@ -445,7 +443,7 @@ describe("failures", () => {
 
     expect(result.code).toBe(0);
     expect(result.stderr).toContain("status");
-    expect(syncProps("vjr-desk").built).toBe("0.1.10");
+    expect(syncProps().built).toBe("0.1.10");
   });
 
   test("a status with unexpected errors does not block the update", () => {
@@ -474,7 +472,7 @@ describe("failures", () => {
     expect(existsSync(join(home, "layouts/vjr-desk.json"))).toBe(false);
 
     expect(apply().code).toBe(0);
-    expect(syncProps("vjr-desk").built).toBe("0.1.10");
+    expect(syncProps().built).toBe("0.1.10");
   });
 
   test("a copy moved aside by a killed run comes back", () => {
@@ -578,12 +576,12 @@ describe("square corners", () => {
     expect(apply(["--square", "on"]).stdout).toContain("applied");
 
     expect(ourMods(home)).toHaveLength(22);
-    expect(radius(layout("vjr-desk"))).toBe("0");
+    expect(radius(layout())).toBe("0");
     expect(record().square).toBe(true);
-    expect(syncProps("vjr-desk").square).toBe(true);
+    expect(syncProps().square).toBe(true);
     expect(apply().stdout).toContain("unchanged");
     expect(apply(["--herdr-version", "0.1.11"]).stdout).toContain("applied");
-    expect(syncProps("vjr-desk")).toMatchObject({ built: "0.1.11", square: true });
+    expect(syncProps()).toMatchObject({ built: "0.1.11", square: true });
   });
 
   test("--square off goes back and takes the square copies with it", () => {
@@ -603,48 +601,6 @@ describe("square corners", () => {
     expect(result.code).toBe(1);
     expect(result.stderr).toContain("--square takes on or off");
   });
-
-  function oldInstall() {
-    const made = setup();
-    made.apply();
-    const { home } = made;
-    cpSync(join(home, "layouts/vjr-desk.json"), join(home, "layouts/vjr-desk-square.json"));
-    cpSync(join(home, "layouts/vjr-desk.svg"), join(home, "layouts/vjr-desk-square.svg"));
-    cpSync(join(home, "mods/vjr-tabs"), join(home, "mods/vjr-square-tabs"), { recursive: true });
-    writeFileSync(join(home, "keys.json"), JSON.stringify({ ...made.keys(), "layout:vjr-desk-square": { "cmd-,": "mod.open:vjr-square-settings" } }));
-    const { square: _square, ...record } = made.record();
-    made.writeRecord({
-      ...record,
-      mods: [...record.mods, "vjr-square-tabs"],
-      files: [...record.files, "layouts/vjr-desk-square.json", "layouts/vjr-desk-square.svg"],
-      sections: [...record.sections, "layout:vjr-desk-square"],
-    });
-    return made;
-  }
-
-  test("a window on the old square layout moves to vjr-desk with square corners", () => {
-    const { home, apply, record, keys, log } = oldInstall();
-
-    expect(apply([], { FAKE_HERDR_WINDOW: "vjr-desk-square" }).code).toBe(0);
-
-    expect(record().square).toBe(true);
-    expect(log()).toContain('do layout.switch {"name":"vjr-desk"}');
-    expect(readdirSync(join(home, "layouts")).filter((name) => name.startsWith("vjr-")).sort()).toEqual(["vjr-desk.json", "vjr-desk.svg"]);
-    expect(existsSync(join(home, "mods/vjr-square-tabs"))).toBe(false);
-    expect(keys()["layout:vjr-desk-square"]).toBeUndefined();
-    expect(record().files.sort()).toEqual(["layouts/vjr-desk.json", "layouts/vjr-desk.svg"]);
-  });
-
-  test("a window on any other layout keeps round corners and stays where it is", () => {
-    const { home, apply, record, log } = oldInstall();
-
-    expect(apply([], { FAKE_HERDR_WINDOW: "vjr-desk" }).code).toBe(0);
-
-    expect(record().square).toBe(false);
-    expect(log().filter((line) => line.startsWith("do "))).toEqual([]);
-    expect(existsSync(join(home, "layouts/vjr-desk-square.json"))).toBe(false);
-    expect(existsSync(join(home, "mods/vjr-square-tabs"))).toBe(false);
-  });
 });
 
 describe("uninstall", () => {
@@ -658,9 +614,8 @@ describe("uninstall", () => {
     expect(readdirSync(join(home, "mods")).filter((name) => name.startsWith("vjr-"))).toEqual([]);
     expect(existsSync(join(home, "mods/git-graph"))).toBe(false);
     expect(existsSync(join(home, "layouts/vjr-desk.json"))).toBe(false);
-    expect(existsSync(join(home, "layouts/vjr-desk-square.svg"))).toBe(false);
+    expect(existsSync(join(home, "layouts/vjr-desk.svg"))).toBe(false);
     expect(keys()["layout:vjr-desk"]).toBeUndefined();
-    expect(keys()["layout:vjr-desk-square"]).toBeUndefined();
     expect(keys().global).toEqual(global);
     expect(existsSync(join(home, "themes/vjr.json"))).toBe(true);
     expect(existsSync(join(home, "mods/tabs/main.js"))).toBe(true);
