@@ -160,7 +160,7 @@
 
 ### See the Spaces tree scroll to the active space in the window
 
-**What:** With more spaces than the sidebar fits, switch to one below the fold by its key and watch the list bring it into view, in `vjr-desk` and `vjr-desk-square`, wide and as the narrow rail.
+**What:** With more spaces than the sidebar fits, switch to one below the fold by its key and watch the list bring it into view, with round and with square corners, wide and as the narrow rail.
 
 **Why:** The scroll is covered by tests against a fake `ScrollHandle`. What `scroll_to_item` does with a folder card taller than the list was not seen: it could show the card's top while the active row sits below.
 
@@ -168,6 +168,18 @@
 
 **Effort:** S
 **Priority:** P2
+**Depends on:** Nothing
+
+### Show Square corners in the Settings that Herdr's own mods open
+
+**What:** Make every way into Settings open the layout's copy, which has the Square corners toggle, including the entries Herdr's mods open by themselves.
+
+**Why:** A Herdr mod that calls `run("app.settings", { section })` directly, the machine login note in `spaces` for example, opens Herdr's own Settings. It has no toggle, so the person sees two Settings that differ.
+
+**Context:** `recipes/look.ts` redirects the sidebar's gear in `workspace-chrome`, the palette's Settings entry and the key `global` binds to `app.settings` to `mod.open:vjr-settings`. `mod.open` takes no `section`, so a redirect of the other calls would also need a way to open the copy on a given section.
+
+**Effort:** S
+**Priority:** P3
 **Depends on:** Nothing
 
 ## Completed

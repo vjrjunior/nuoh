@@ -1,19 +1,21 @@
 import { appendFileSync, closeSync, cpSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync, writeSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import type { Variant } from "../recipes/recipe";
-import { LEFT_ROUNDED, REPLACED, variantsWith } from "../recipes/variants";
+import { LEFT_ROUNDED, REPLACED, variantWith } from "../recipes/variants";
 import { loadExtras, readLocalConfig } from "./config";
 import { type Generated, generateVariant } from "./generate-layout";
 import { deriveSection, type KeyTable, keysText, readKeys, withoutSections, withSections } from "./layout-keys";
 import { herdrAppHome, stateDir } from "./paths";
 
 export type ApplyResult = "applied" | "unchanged" | "busy";
-export type LayoutRecord = { version: string; mods: string[]; kept: string[]; files: string[]; sections: string[] };
+export type LayoutRecord = { version: string; mods: string[]; kept: string[]; files: string[]; sections: string[]; square: boolean };
+export type ApplyOptions = { herdrVersion?: string; square?: boolean };
 
 const root = join(import.meta.dir, "..");
 const REPO_MODS = ["vjr-sync", "git-graph"];
 const APP_WRITTEN = ["gpui-kit.d.ts", "jsconfig.json"];
-const EMPTY_RECORD: LayoutRecord = { version: "", mods: [], kept: [], files: [], sections: [] };
+const EMPTY_RECORD: LayoutRecord = { version: "", mods: [], kept: [], files: [], sections: [], square: false };
+const OLD_SQUARE = "vjr-desk-square";
 const RELOAD_MS = 1500;
 const STATUS_TIMEOUT_MS = 3000;
 const CHECK_TIMEOUT_MS = 60000;
@@ -68,8 +70,8 @@ function removeLeftovers(home: string): void {
 
 function readRecord(): LayoutRecord {
   if (!existsSync(recordPath())) return EMPTY_RECORD;
-  const { version, mods, kept, files, sections } = { ...EMPTY_RECORD, ...JSON.parse(readFileSync(recordPath(), "utf8")) };
-  return { version, mods, kept, files, sections };
+  const { version, mods, kept, files, sections, square } = { ...EMPTY_RECORD, ...JSON.parse(readFileSync(recordPath(), "utf8")) };
+  return { version, mods, kept, files, sections, square: square === true };
 }
 
 function writeRecord(record: LayoutRecord): void {
@@ -206,7 +208,11 @@ function warnUncovered(home: string, variants: Variant[]): void {
   }
 }
 
-function applyAll(options: { herdrVersion?: string }): ApplyResult {
+function shownOldSquare(record: LayoutRecord): boolean {
+  return record.files.includes(`layouts/${OLD_SQUARE}.json`) && windowStatus()?.layout === OLD_SQUARE;
+}
+
+function applyAll(options: ApplyOptions): ApplyResult {
   const home = herdrAppHome();
   const state = stateDir();
   if (!existsSync(join(home, "themes/vjr.json"))) throw new Error("the vjr theme is not installed: run bun run install-theme first");
@@ -216,7 +222,9 @@ function applyAll(options: { herdrVersion?: string }): ApplyResult {
   const record = readRecord();
   const config = readLocalConfig();
   const extras = loadExtras(config.extras);
-  const variants = variantsWith(extras.recipes);
+  const moving = shownOldSquare(record);
+  const square = options.square ?? (moving || record.square);
+  const variants = [variantWith(extras.recipes, square)];
   const generated = variants.map((variant) => generateVariant(variant, { home, version, repo: root, bun: process.execPath, editor: config.editor, icons: extras.icons }));
   const build = join(state, `build-${process.pid}`);
   const previous = join(state, `previous-${process.pid}`);
@@ -235,12 +243,13 @@ function applyAll(options: { herdrVersion?: string }): ApplyResult {
     refuseForeign(Object.keys(files), record.files, home);
 
     const sections = keySections(table, generated);
-    const keys = keysText(withSections(table, sections));
+    const keys = keysText(withSections(withoutSections(table, record.sections.filter((name) => !Object.hasOwn(sections, name))), sections));
     const changedMods = mods.filter((mod) => !sameFolder(join(build, mod), join(home, "mods", mod), APP_WRITTEN));
     const staleMods = record.mods.filter((mod) => !mods.includes(mod));
+    const staleFiles = record.files.filter((path) => !Object.hasOwn(files, path));
     const changedFiles = Object.keys(files).filter((path) => !existsSync(join(home, path)) || readFileSync(join(home, path), "utf8") !== files[path]);
     const keysChanged = !existsSync(keysPath) || readFileSync(keysPath, "utf8") !== keys;
-    if (changedMods.length + staleMods.length + changedFiles.length === 0 && !keysChanged && existsSync(recordPath())) return "unchanged";
+    if (changedMods.length + staleMods.length + changedFiles.length + staleFiles.length === 0 && !keysChanged && record.square === square && existsSync(recordPath())) return "unchanged";
 
     checkMods(build, changedMods);
 
@@ -252,6 +261,7 @@ function applyAll(options: { herdrVersion?: string }): ApplyResult {
       kept,
       files: union(record.files, Object.keys(files)),
       sections: union(record.sections, Object.keys(sections)),
+      square: record.square,
     });
     mkdirSync(previous, { recursive: true });
     const installed: string[] = [];
@@ -274,12 +284,14 @@ function applyAll(options: { herdrVersion?: string }): ApplyResult {
     if (keysChanged) writeThrough(join(state, "keys.tmp"), keysPath, keys);
     const ordered = [...changedFiles].sort((a, b) => Number(a.endsWith(".json")) - Number(b.endsWith(".json")));
     for (const path of ordered) writeThrough(join(state, "file.tmp"), join(home, path), files[path] as string);
+    if (moving) Bun.spawnSync(["herdr-app", "do", "layout.switch", JSON.stringify({ name: variants[0]?.layout })], { timeout: STATUS_TIMEOUT_MS });
     if (staleMods.length > 0) {
       if (before !== null) Bun.sleepSync(RELOAD_MS);
       for (const mod of staleMods) rmSync(join(home, "mods", mod), { recursive: true, force: true });
     }
-    writeRecord({ version, mods, kept, files: Object.keys(files), sections: Object.keys(sections) });
-    warnUncovered(home, variants);
+    for (const path of staleFiles) rmSync(join(home, path), { force: true });
+    writeRecord({ version, mods, kept, files: Object.keys(files), sections: Object.keys(sections), square });
+    if (square) warnUncovered(home, variants);
     return "applied";
   } finally {
     rmSync(build, { recursive: true, force: true });
@@ -291,7 +303,7 @@ function writeLog(line: string): void {
   appendFileSync(join(stateDir(), "layout.log"), `${new Date().toISOString()} ${line.replace(/\s+/g, " ")}\n`);
 }
 
-export function apply(options: { herdrVersion?: string } = {}): ApplyResult {
+export function apply(options: ApplyOptions = {}): ApplyResult {
   mkdirSync(stateDir(), { recursive: true });
   if (!takeLock()) return "busy";
   const started = Date.now();
@@ -332,12 +344,18 @@ function flag(args: string[], name: string): string | undefined {
   return index < 0 ? undefined : args[index + 1];
 }
 
+function squareFlag(value: string | undefined): boolean | undefined {
+  if (value === undefined) return undefined;
+  if (value !== "on" && value !== "off") throw new Error("--square takes on or off");
+  return value === "on";
+}
+
 if (import.meta.main) {
   try {
     const [command, ...args] = process.argv.slice(2);
-    if (command === "apply") console.log(apply({ herdrVersion: flag(args, "--herdr-version") }));
+    if (command === "apply") console.log(apply({ herdrVersion: flag(args, "--herdr-version"), square: squareFlag(flag(args, "--square")) }));
     else if (command === "uninstall") uninstall();
-    else throw new Error("usage: layout.ts apply [--herdr-version X] | uninstall");
+    else throw new Error("usage: layout.ts apply [--herdr-version X] [--square on|off] | uninstall");
   } catch (error) {
     console.error(`error: ${(error as Error).message}`);
     process.exit(1);

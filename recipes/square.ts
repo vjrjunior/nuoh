@@ -13,7 +13,7 @@ const POPUP_ROOTS: Record<string, number> = {
   agents: 1,
   "git-graph": 4,
 };
-const FRAMELESS = ["picker", "machine-add", "menu", "palette"];
+const FRAMELESS = ["picker", "machine-add", "menu", "palette", "settings"];
 
 function squareCorner(_match: string, side?: string): string {
   return side === "_full" ? ".rounded(0)" : `.rounded${side ?? ""}(0)`;
@@ -37,10 +37,9 @@ export function squareFor(recipes: Recipe[]): Recipe {
   return {
     name: "square",
     mods: [
-      ...["workspace-chrome", "agents", "files", "changes", "pane", "menu", "new-menu", "picker", "worktree", "machine-add", "help"].map(
+      ...["agents", "files", "changes", "pane", "menu", "new-menu", "picker", "worktree", "machine-add", "help"].map(
         (name) => ({ name, from: "mods" as const }),
       ),
-      { name: "settings", from: "frame" },
       ...own.values(),
     ],
     apply({ copies, layout, replacements }) {
@@ -65,21 +64,17 @@ export function squareFor(recipes: Recipe[]): Recipe {
       for (const [name, count] of Object.entries(popupRoots)) exact(copy(name), POPOVER, `${POPOVER}${BORDER}`, count);
       exact(copy("settings"), '.id("settings")', `.id("settings")${POPOVER}${BORDER}`);
 
-      exact(copy("workspace-chrome"), 'run("app.settings")', 'run("mod.open", { name: "settings" })');
-      exact(copy("palette"), '["app.settings", {}, "App", "Settings"', '["mod.open", { name: "settings" }, "App", "Settings"');
       exact(copy("palette"), '["app.help", {}, "App", "Keys"', '["mod.open", { name: "help" }, "App", "Keys"');
       exact(copy("palette"), '  "app.palette", "app.hide",', '  "app.palette", "app.help", "app.hide",');
       pattern([copy("menu")], /else run\(it\[1\], it\[2\]\);/g, 'else if (it[1] === "app.help") run("mod.open", { name: "help" });\n    else run(it[1], it[2]);');
 
       for (const name of frameless) copy(name).meta.overlay = { ...(copy(name).meta.overlay as object | undefined), frame: "none" };
       copy("help").meta.overlay = { kind: "dialog", width: 520, height: 0.7, frame: "none" };
-      copy("settings").meta.overlay = { kind: "dialog", width: 880, height: 620, frame: "none" };
 
       const content = findNode(layout, "main").content as LayoutNode;
       (content.pane as LayoutNode).radius = 0;
       layout.terminal_menu = "menu";
 
-      replacements["app.settings"] = "settings";
       replacements["app.help"] = "help";
       replacements["mod.open:picker"] = "picker";
     },

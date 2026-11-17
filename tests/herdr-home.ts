@@ -133,8 +133,18 @@ export default class Tabs extends View {
     const bound = keys().find((b) => b.section === "global" && b.action === want);
     const clone = () => openOverlay({ mod: "prompt", kind: "dialog", width: 380, props: {} });
     return v_flex().bg(t.popover).rounded(9);`),
-  "frame/settings/main.js": script(`    const add = () => run("mod.open", { name: "machine-add" });
-    return h_flex().id("settings").rounded(8).bg(t.popover);`),
+  "frame/settings/main.js": `import { View } from "gpui-kit";
+import { layouts, shared, appHome, props } from "herdr";
+export default class Mod extends View {
+  render() {
+    const add = () => run("mod.open", { name: "machine-add" });
+    const look = v_flex()
+      .child(this.layoutPicker(t, cx))
+      .child(this.heading(t, "Theme"));
+    return h_flex().id("settings").rounded(8).bg(t.popover);
+  }
+}
+`,
   "frame/settings/release-notes.js": "export const notes = () => div().rounded(4);\n",
 };
 

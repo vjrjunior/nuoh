@@ -9,21 +9,20 @@ import { makeHerdrHome, SHIPPED_MODS } from "./herdr-home";
 
 afterEach(removeTempDirs);
 
-function generate(layout: string, overrides: Record<string, string> = {}) {
+function generate(square: boolean, overrides: Record<string, string> = {}) {
   const home = tempDir();
   makeHerdrHome(home, overrides);
-  const variant = VARIANTS.find((candidate) => candidate.layout === layout);
-  if (!variant) throw new Error(`no variant ${layout}`);
+  const variant = VARIANTS.find((candidate) => candidate.square === square) as Variant;
   return generateVariant(variant, { home, version: "0.1.10", repo, bun: "/bin/bun" });
 }
 
-const generateDesk = (overrides?: Record<string, string>) => generate("vjr-desk", overrides);
-const generateSquare = (overrides?: Record<string, string>) => generate("vjr-desk-square", overrides);
+const generateDesk = (overrides?: Record<string, string>) => generate(false, overrides);
+const generateSquare = (overrides?: Record<string, string>) => generate(true, overrides);
 const allJs = (generated: ReturnType<typeof generate>) =>
   Object.values(generated.mods)
     .flatMap((files) => Object.entries(files).filter(([name]) => name.endsWith(".js")).map(([, text]) => text))
     .join("\n");
-const meta = (generated: ReturnType<typeof generate>, mod: string) => JSON.parse(generated.mods[`vjr-square-${mod}`]?.["mod.json"] ?? "{}");
+const meta = (generated: ReturnType<typeof generate>, mod: string) => JSON.parse(generated.mods[`vjr-${mod}`]?.["mod.json"] ?? "{}");
 
 function findNode(node: unknown, id: string): Record<string, any> | null {
   if (node === null || typeof node !== "object") return null;
@@ -45,11 +44,17 @@ function modsIn(node: unknown): string[] {
 const graphChild = (generated: ReturnType<typeof generate>) => findNode(JSON.parse(generated.layoutText), "panel-body")?.children.at(-1);
 
 describe("variants", () => {
-  test("vjr-desk copies the palette, the status bar, the tab bar, the spaces tree, comeback, the kit and the markdown viewer, the menu and the move-tab popup", () => {
-    expect(Object.keys(generateDesk().mods).sort()).toEqual(["vjr-comeback", "vjr-kit", "vjr-markdown", "vjr-menu", "vjr-move-tab", "vjr-palette", "vjr-spaces-tree", "vjr-tabs", "vjr-workspace-status"]);
+  test("both looks are the same layout with the same mod names", () => {
+    expect(VARIANTS.map((variant) => [variant.layout, variant.prefix, variant.square])).toEqual([["vjr-desk", "vjr-", false], ["vjr-desk", "vjr-", true]]);
+    expect(generateSquare().layout).toBe("vjr-desk");
+    for (const mod of Object.keys(generateDesk().mods)) expect(Object.keys(generateSquare().mods)).toContain(mod);
   });
 
-  test("vjr-desk-square copies twenty-one mods", () => {
+  test("with round corners it copies eleven mods", () => {
+    expect(Object.keys(generateDesk().mods).sort()).toEqual(["vjr-comeback", "vjr-kit", "vjr-markdown", "vjr-menu", "vjr-move-tab", "vjr-palette", "vjr-settings", "vjr-spaces-tree", "vjr-tabs", "vjr-workspace-chrome", "vjr-workspace-status"]);
+  });
+
+  test("with square corners it copies twenty-one mods", () => {
     expect(Object.keys(generateSquare().mods)).toHaveLength(21);
   });
 
@@ -73,7 +78,7 @@ describe("list-vjr-theme", () => {
 
   test("the palette shows keys from its own layout section", () => {
     expect(generateDesk().mods["vjr-palette"]?.["main.js"]).toContain('b.section === "layout:vjr-desk"');
-    expect(generateSquare().mods["vjr-square-palette"]?.["main.js"]).toContain('b.section === "layout:vjr-desk-square"');
+    expect(generateSquare().mods["vjr-palette"]?.["main.js"]).toContain('b.section === "layout:vjr-desk"');
   });
 
   test("the status bar opens the copied palette", () => {
@@ -91,7 +96,7 @@ describe("list-vjr-theme", () => {
   });
 
   test("the palette key opens the copy", () => {
-    expect(generateDesk().replacements).toEqual({ "app.palette": "mod.open:vjr-palette" });
+    expect(generateDesk().replacements["app.palette"]).toBe("mod.open:vjr-palette");
   });
 
   test("a palette that changed fails the recipe", () => {
@@ -103,7 +108,7 @@ describe("git-graph-panel", () => {
   test("both layouts show a Graph button", () => {
     for (const [generated, tabs] of [
       [generateDesk(), "vjr-tabs"],
-      [generateSquare(), "vjr-square-tabs"],
+      [generateSquare(), "vjr-tabs"],
     ] as const) {
       expect(generated.mods[tabs]?.["main.js"]).toContain('panelButton("graph", "Graph", "mods/git-graph/icons/graph.svg")');
       expect(generated.mods[tabs]?.["main.js"]).toContain('[...(shared("workspace.panels") ?? ["files", "changes"]), "graph"]');
@@ -121,7 +126,7 @@ describe("git-graph-panel", () => {
   });
 
   test("vjr-desk-square opens its square git-graph in the panel", () => {
-    expect(graphChild(generateSquare()).content.mod).toBe("vjr-square-git-graph");
+    expect(graphChild(generateSquare()).content.mod).toBe("vjr-git-graph");
   });
 
   test("a layout without panel-body fails the recipe", () => {
@@ -136,15 +141,54 @@ describe("git-graph-panel", () => {
 describe("kit", () => {
   test("both layouts install the kit", () => {
     expect(Object.keys(generateDesk().mods)).toContain("vjr-kit");
-    expect(Object.keys(generateSquare().mods)).toContain("vjr-square-kit");
+    expect(Object.keys(generateSquare().mods)).toContain("vjr-kit");
   });
 
   test("the square layout's kit has only square corners", () => {
     const mods = generateSquare().mods;
-    const files = [mods["vjr-square-kit"]?.["main.js"] ?? "", ...Object.entries(mods).filter(([name]) => name.startsWith("vjr-square-")).map(([, f]) => f["kit.js"] ?? "")];
+    const files = [mods["vjr-kit"]?.["main.js"] ?? "", ...Object.entries(mods).filter(([name]) => name.startsWith("vjr-")).map(([, f]) => f["kit.js"] ?? "")];
     const rounded = files.flatMap((text) => text.match(/\.rounded(_[a-z]+)?\([^()]*\)/g) ?? []);
     expect(rounded.length).toBeGreaterThan(0);
     for (const call of rounded) expect(call).toMatch(/\.rounded(_[a-z]+)?\(0\)/);
+  });
+});
+
+describe("look", () => {
+  const settingsOf = (generated: ReturnType<typeof generate>) => generated.mods["vjr-settings"]?.["main.js"] ?? "";
+  const overlayOf = (generated: ReturnType<typeof generate>) => JSON.parse(generated.mods["vjr-settings"]?.["mod.json"] ?? "{}").overlay;
+
+  test("Settings shows Square corners under the layout picker, only in this layout", () => {
+    for (const generated of [generateDesk(), generateSquare()]) {
+      const settings = settingsOf(generated);
+      expect(settings).toContain('.child(this.layoutPicker(t, cx))\n      .when(shared("layout") === "vjr-desk", (el) => el.child(this.row(t, "Square corners",');
+      expect(settings).toContain('this.toggle(t, "st-square", shared("vjr.square") === true, () => setShared("vjr.square", !(shared("vjr.square") === true)))');
+      expect(settings).toContain(" shared, setShared, appHome,");
+    }
+  });
+
+  test("the copy opens as Herdr's dialog with round corners, and draws its own frame with square ones", () => {
+    expect(overlayOf(generateDesk())).toEqual({ kind: "dialog", width: 880, height: 620 });
+    expect(overlayOf(generateSquare())).toEqual({ kind: "dialog", width: 880, height: 620, frame: "none" });
+    expect(settingsOf(generateDesk())).toContain('.id("settings").rounded(8)');
+  });
+
+  test("the sidebar, the palette and the key open the copy in both looks", () => {
+    for (const generated of [generateDesk(), generateSquare()]) {
+      expect(generated.mods["vjr-workspace-chrome"]?.["main.js"]).toContain('run("mod.open", { name: "vjr-settings" })');
+      expect(generated.mods["vjr-palette"]?.["main.js"]).toContain('["mod.open", { name: "vjr-settings" }, "App", "Settings"');
+      expect(generated.replacements["app.settings"]).toBe("mod.open:vjr-settings");
+    }
+    expect(JSON.parse(generateDesk().layoutText).children[0].children[0].content.mod).toBe("vjr-workspace-chrome");
+  });
+
+  test("the layout tells vjr-sync which look it was built with", () => {
+    const sync = (generated: ReturnType<typeof generate>) => JSON.parse(generated.layoutText).floating.find((block: { id: string }) => block.id === "vjr-sync").content.props;
+    expect(sync(generateDesk()).square).toBe(false);
+    expect(sync(generateSquare()).square).toBe(true);
+  });
+
+  test("a Settings that changed fails the recipe", () => {
+    expect(() => generateDesk({ "frame/settings/main.js": "changed" })).toThrow(/recipe look:/);
   });
 });
 
@@ -158,7 +202,7 @@ describe("square", () => {
   });
 
   test("keeps the side of a one-sided corner", () => {
-    expect(generateSquare().mods["vjr-square-agents"]?.["main.js"]).toContain(".rounded_bl(0)");
+    expect(generateSquare().mods["vjr-agents"]?.["main.js"]).toContain(".rounded_bl(0)");
   });
 
   test("swaps the round status glyphs", () => {
@@ -169,26 +213,26 @@ describe("square", () => {
   });
 
   test("drops the frame of popups with a copy", () => {
-    expect(generateSquare().mods["vjr-square-tabs"]?.["main.js"]).toContain('mod: "vjr-square-menu", kind: "popup", frame: "none"');
+    expect(generateSquare().mods["vjr-tabs"]?.["main.js"]).toContain('mod: "vjr-menu", kind: "popup", frame: "none"');
   });
 
   test("keeps the frame of the shipped prompt", () => {
-    expect(generateSquare().mods["vjr-square-palette"]?.["main.js"]).toContain('openOverlay({ mod: "prompt", kind: "dialog", width: 380');
+    expect(generateSquare().mods["vjr-palette"]?.["main.js"]).toContain('openOverlay({ mod: "prompt", kind: "dialog", width: 380');
   });
 
   test("borders every popup root", () => {
     const square = generateSquare();
     for (const mod of ["menu", "new-menu", "picker", "machine-add", "help", "palette", "agents"]) {
-      expect(square.mods[`vjr-square-${mod}`]?.["main.js"]).toContain(".bg(t.popover).border_1().border_color(t.border)");
+      expect(square.mods[`vjr-${mod}`]?.["main.js"]).toContain(".bg(t.popover).border_1().border_color(t.border)");
     }
-    expect(square.mods["vjr-square-git-graph"]?.["menu.js"]).toContain(".bg(t.popover).border_1().border_color(t.border)");
-    expect(square.mods["vjr-square-git-graph"]?.["dialog.js"]).toContain(".bg(t.popover).border_1().border_color(t.border)");
-    expect(square.mods["vjr-square-git-graph"]?.["settings.js"]).toContain(".bg(t.popover).border_1().border_color(t.border)");
-    expect(square.mods["vjr-square-settings"]?.["main.js"]).toContain('.id("settings").bg(t.popover).border_1().border_color(t.border)');
+    expect(square.mods["vjr-git-graph"]?.["menu.js"]).toContain(".bg(t.popover).border_1().border_color(t.border)");
+    expect(square.mods["vjr-git-graph"]?.["dialog.js"]).toContain(".bg(t.popover).border_1().border_color(t.border)");
+    expect(square.mods["vjr-git-graph"]?.["settings.js"]).toContain(".bg(t.popover).border_1().border_color(t.border)");
+    expect(square.mods["vjr-settings"]?.["main.js"]).toContain('.id("settings").bg(t.popover).border_1().border_color(t.border)');
   });
 
   test("the frameless settings paints its own background, which Herdr's frame drew", () => {
-    const settings = generateSquare().mods["vjr-square-settings"]?.["main.js"] ?? "";
+    const settings = generateSquare().mods["vjr-settings"]?.["main.js"] ?? "";
     expect(meta(generateSquare(), "settings").overlay.frame).toBe("none");
     expect(settings).toMatch(/\.id\("settings"\)\.bg\(t\.popover\)/);
   });
@@ -198,13 +242,13 @@ describe("square", () => {
   });
 
   test("the square git-graph keeps its icons at the original path", () => {
-    expect(generateSquare().mods["vjr-square-git-graph"]?.["menu.js"]).toContain("mods/git-graph/icons/");
+    expect(generateSquare().mods["vjr-git-graph"]?.["menu.js"]).toContain("mods/git-graph/icons/");
   });
 
   test("the square git-graph opens its own menu and dialogs", () => {
     const square = generateSquare();
-    expect(square.mods["vjr-square-git-graph"]?.["graph.js"]).toContain('mod: "vjr-square-git-graph", kind: "popup", frame: "none"');
-    expect(square.mods["vjr-square-git-graph"]?.["act.js"]).toContain('mod: "vjr-square-git-graph", kind: "dialog", frame: "none"');
+    expect(square.mods["vjr-git-graph"]?.["graph.js"]).toContain('mod: "vjr-git-graph", kind: "popup", frame: "none"');
+    expect(square.mods["vjr-git-graph"]?.["act.js"]).toContain('mod: "vjr-git-graph", kind: "dialog", frame: "none"');
   });
 
   test("sizes the copied dialogs", () => {
@@ -222,18 +266,18 @@ describe("square", () => {
   });
 
   test("hides app.help from the generic commands", () => {
-    expect(generateSquare().mods["vjr-square-palette"]?.["main.js"]).toContain('"app.palette", "app.help", "app.hide",');
+    expect(generateSquare().mods["vjr-palette"]?.["main.js"]).toContain('"app.palette", "app.help", "app.hide",');
   });
 
   test("the palette opens the copied settings, help and picker", () => {
-    const palette = generateSquare().mods["vjr-square-palette"]?.["main.js"];
-    expect(palette).toContain('["mod.open", { name: "vjr-square-settings" }, "App", "Settings"');
-    expect(palette).toContain('["mod.open", { name: "vjr-square-help" }, "App", "Keys"');
-    expect(palette).toContain('["mod.open", { name: "vjr-square-picker" }, "Tab"');
+    const palette = generateSquare().mods["vjr-palette"]?.["main.js"];
+    expect(palette).toContain('["mod.open", { name: "vjr-settings" }, "App", "Settings"');
+    expect(palette).toContain('["mod.open", { name: "vjr-help" }, "App", "Keys"');
+    expect(palette).toContain('["mod.open", { name: "vjr-picker" }, "Tab"');
   });
 
   test("the context menu opens the copied help", () => {
-    expect(generateSquare().mods["vjr-square-menu"]?.["main.js"]).toContain('if (it[1] === "app.help") run("mod.open", { name: "vjr-square-help" });');
+    expect(generateSquare().mods["vjr-menu"]?.["main.js"]).toContain('if (it[1] === "app.help") run("mod.open", { name: "vjr-help" });');
   });
 
   test("a context menu that changed still generates", () => {
@@ -253,17 +297,17 @@ describe("square", () => {
   });
 
   test("opens the copied settings from the sidebar", () => {
-    expect(generateSquare().mods["vjr-square-workspace-chrome"]?.["main.js"]).toContain('run("mod.open", { name: "vjr-square-settings" })');
+    expect(generateSquare().mods["vjr-workspace-chrome"]?.["main.js"]).toContain('run("mod.open", { name: "vjr-settings" })');
   });
 
   test("settings opens the copied Add machine", () => {
-    expect(generateSquare().mods["vjr-square-settings"]?.["main.js"]).toContain('{ name: "vjr-square-machine-add" }');
+    expect(generateSquare().mods["vjr-settings"]?.["main.js"]).toContain('{ name: "vjr-machine-add" }');
   });
 
   test("zeroes the pane radius and sets the terminal menu", () => {
     const layout = JSON.parse(generateSquare().layoutText);
     expect(findNode(layout, "main")?.content.pane.radius).toBe(0);
-    expect(layout.terminal_menu).toBe("vjr-square-menu");
+    expect(layout.terminal_menu).toBe("vjr-menu");
   });
 
   test("keeps the pane radius in vjr-desk", () => {
@@ -272,10 +316,10 @@ describe("square", () => {
 
   test("replaces the four key actions", () => {
     expect(generateSquare().replacements).toEqual({
-      "app.palette": "mod.open:vjr-square-palette",
-      "app.settings": "mod.open:vjr-square-settings",
-      "app.help": "mod.open:vjr-square-help",
-      "mod.open:picker": "mod.open:vjr-square-picker",
+      "app.palette": "mod.open:vjr-palette",
+      "app.settings": "mod.open:vjr-settings",
+      "app.help": "mod.open:vjr-help",
+      "mod.open:picker": "mod.open:vjr-picker",
     });
   });
 
@@ -304,7 +348,7 @@ describe("square", () => {
 describe("spaces-tree", () => {
   test("both layouts show the tree in the spaces block", () => {
     expect(findNode(JSON.parse(generateDesk().layoutText), "spaces")?.content.mod).toBe("vjr-spaces-tree");
-    expect(findNode(JSON.parse(generateSquare().layoutText), "spaces")?.content.mod).toBe("vjr-square-spaces-tree");
+    expect(findNode(JSON.parse(generateSquare().layoutText), "spaces")?.content.mod).toBe("vjr-spaces-tree");
   });
 
   test("the copy brings its pure logic along", () => {
@@ -312,11 +356,11 @@ describe("spaces-tree", () => {
   });
 
   test("no shipped spaces copy is left in the square layout", () => {
-    expect(generateSquare().mods["vjr-square-spaces"]).toBeUndefined();
+    expect(generateSquare().mods["vjr-spaces"]).toBeUndefined();
   });
 
   test("the square copy has no rounded corner left", () => {
-    const main = generateSquare().mods["vjr-square-spaces-tree"]?.["main.js"] ?? "";
+    const main = generateSquare().mods["vjr-spaces-tree"]?.["main.js"] ?? "";
     expect(main).not.toMatch(/\.rounded(_[a-z]+)?\((?!0\))/);
   });
 
@@ -327,7 +371,7 @@ describe("spaces-tree", () => {
   test("both layouts put Move to folder… in the space menu, before Close", () => {
     for (const [generated, copy] of [
       [generateDesk(), "vjr-menu"],
-      [generateSquare(), "vjr-square-menu"],
+      [generateSquare(), "vjr-menu"],
     ] as const) {
       const menu = generated.mods[copy]?.["main.js"] ?? "";
       expect(menu).toContain('        ...(p.folder ? [["Move to folder…", "spaces-folder", p.folder]] : []),\n        ["Close", "space.close", { id: tg.id }],');
@@ -339,16 +383,16 @@ describe("spaces-tree", () => {
     expect(generateDesk().mods["vjr-menu"]?.["main.js"]).toContain(
       '    closeOverlay(props()?.overlay);\n    if (it[1] === "spaces-folder") return openOverlay({ mod: "vjr-spaces-tree", kind: "popup", width: 240, height: it[2].height, props: { ...it[2], role: "folders" } });',
     );
-    expect(generateSquare().mods["vjr-square-menu"]?.["main.js"]).toContain('openOverlay({ mod: "vjr-square-spaces-tree", kind: "popup", frame: "none", width: 240,');
+    expect(generateSquare().mods["vjr-menu"]?.["main.js"]).toContain('openOverlay({ mod: "vjr-spaces-tree", kind: "popup", frame: "none", width: 240,');
   });
 
   test("the tree opens its own folder popups, frameless and bordered in the square layout", () => {
     const desk = generateDesk().mods["vjr-spaces-tree"] ?? {};
     expect(desk["main.js"]).toContain('openOverlay({ mod: "vjr-spaces-tree", kind: "popup", width: FOLDER_MENU.width');
     expect(desk["popups.js"]).toContain('openOverlay({ mod: "vjr-spaces-tree", kind: "dialog", width: NAME_DIALOG.width');
-    const square = generateSquare().mods["vjr-square-spaces-tree"] ?? {};
-    expect(square["main.js"]).toContain('openOverlay({ mod: "vjr-square-spaces-tree", kind: "popup", frame: "none",');
-    expect(square["popups.js"]).toContain('openOverlay({ mod: "vjr-square-spaces-tree", kind: "dialog", frame: "none",');
+    const square = generateSquare().mods["vjr-spaces-tree"] ?? {};
+    expect(square["main.js"]).toContain('openOverlay({ mod: "vjr-spaces-tree", kind: "popup", frame: "none",');
+    expect(square["popups.js"]).toContain('openOverlay({ mod: "vjr-spaces-tree", kind: "dialog", frame: "none",');
     expect(square["popups.js"]?.split(".bg(t.popover).border_1().border_color(t.border)")).toHaveLength(4);
     expect(square["popups.js"]).not.toMatch(/\.rounded(_[a-z]+)?\((?!0\))/);
   });
@@ -362,7 +406,7 @@ describe("comeback", () => {
   test("both layouts float the comeback copy", () => {
     for (const [generated, copy] of [
       [generateDesk(), "vjr-comeback"],
-      [generateSquare(), "vjr-square-comeback"],
+      [generateSquare(), "vjr-comeback"],
     ] as const) {
       const floating = JSON.parse(generated.layoutText).floating;
       expect(floating).toContainEqual({ id: "comeback", content: { mod: copy }, edge: "left", align: "end" });
@@ -376,7 +420,7 @@ describe("markdown viewer", () => {
   test("both layouts install the viewer without placing it", () => {
     for (const [generated, copy] of [
       [generateDesk(), "vjr-markdown"],
-      [generateSquare(), "vjr-square-markdown"],
+      [generateSquare(), "vjr-markdown"],
     ] as const) {
       expect(Object.keys(generated.mods[copy] ?? {}).sort()).toEqual(["kit.js", "logic.js", "main.js", "mod.json"]);
       expect(modsIn(JSON.parse(generated.layoutText))).not.toContain(copy);
@@ -385,7 +429,7 @@ describe("markdown viewer", () => {
 
   test("the square copy squares the viewer's buttons", () => {
     expect(generateDesk().mods["vjr-markdown"]?.["kit.js"]).toContain(".rounded(RADIUS.control)");
-    const squared = generateSquare().mods["vjr-square-markdown"]?.["kit.js"] ?? "";
+    const squared = generateSquare().mods["vjr-markdown"]?.["kit.js"] ?? "";
     expect(squared).toContain(".rounded(0)");
     expect(squared).not.toContain(".rounded(RADIUS");
   });
@@ -395,7 +439,7 @@ describe("move-tab", () => {
   test("both layouts put Move to… in the tab menu", () => {
     for (const [generated, copy] of [
       [generateDesk(), "vjr-menu"],
-      [generateSquare(), "vjr-square-menu"],
+      [generateSquare(), "vjr-menu"],
     ] as const) {
       const menu = generated.mods[copy]?.["main.js"] ?? "";
       expect(menu).toContain('["Move to…", "move-tab", { tab: tg.id, space: tg.space }],\n        ["Close", "tab.close", { id: tg.id }],');
@@ -405,13 +449,13 @@ describe("move-tab", () => {
 
   test("the menu opens the layout's own popup", () => {
     expect(generateDesk().mods["vjr-menu"]?.["main.js"]).toContain('if (it[1] === "move-tab") openOverlay({ mod: "vjr-move-tab", kind: "popup", width: 300, height: 320, props: it[2] });\n    else if (it[1] === "worktree")');
-    expect(generateSquare().mods["vjr-square-menu"]?.["main.js"]).toContain('if (it[1] === "move-tab") openOverlay({ mod: "vjr-square-move-tab", kind: "popup", frame: "none", width: 300, height: 320, props: it[2] });');
+    expect(generateSquare().mods["vjr-menu"]?.["main.js"]).toContain('if (it[1] === "move-tab") openOverlay({ mod: "vjr-move-tab", kind: "popup", frame: "none", width: 300, height: 320, props: it[2] });');
   });
 
   test("both layouts float the worker", () => {
     for (const [generated, copy] of [
       [generateDesk(), "vjr-move-tab"],
-      [generateSquare(), "vjr-square-move-tab"],
+      [generateSquare(), "vjr-move-tab"],
     ] as const) {
       expect(JSON.parse(generated.layoutText).floating).toContainEqual({ id: "move-tab", content: { mod: copy, props: { role: "worker" } }, edge: "left", align: "end" });
     }
@@ -420,22 +464,22 @@ describe("move-tab", () => {
   test("both layouts install the script that schedules a move", () => {
     const script = readFileSync(join(import.meta.dir, "../mods/move-tab/schedule.sh"), "utf8");
     expect(generateDesk().mods["vjr-move-tab"]?.["schedule.sh"]).toBe(script);
-    expect(generateSquare().mods["vjr-square-move-tab"]?.["schedule.sh"]).toBe(script);
+    expect(generateSquare().mods["vjr-move-tab"]?.["schedule.sh"]).toBe(script);
   });
 
   test("the square popup has a border", () => {
-    expect(generateSquare().mods["vjr-square-move-tab"]?.["main.js"]).toContain(".bg(t.popover).border_1().border_color(t.border)");
+    expect(generateSquare().mods["vjr-move-tab"]?.["main.js"]).toContain(".bg(t.popover).border_1().border_color(t.border)");
   });
 
   test("cmd-shift-m opens each layout's own popup", () => {
     expect(generateDesk().keys).toEqual({ "cmd-shift-m": "mod.open:vjr-move-tab" });
-    expect(generateSquare().keys).toEqual({ "cmd-shift-m": "mod.open:vjr-square-move-tab" });
+    expect(generateSquare().keys).toEqual({ "cmd-shift-m": "mod.open:vjr-move-tab" });
   });
 
   test("the menu shows the key bound to the layout's own popup", () => {
     for (const [generated, menu, popup] of [
       [generateDesk(), "vjr-menu", "vjr-move-tab"],
-      [generateSquare(), "vjr-square-menu", "vjr-square-move-tab"],
+      [generateSquare(), "vjr-menu", "vjr-move-tab"],
     ] as const) {
       const text = generated.mods[menu]?.["main.js"] ?? "";
       expect(text).toContain(`const MOVE_TAB = { name: "${popup}" };\n\nfunction menuIcon(command) {`);
@@ -456,7 +500,7 @@ describe("move-tab", () => {
   test("the tab bar starts a drag in both layouts", () => {
     for (const [generated, tabs] of [
       [generateDesk(), "vjr-tabs"],
-      [generateSquare(), "vjr-square-tabs"],
+      [generateSquare(), "vjr-tabs"],
     ] as const) {
       const text = generated.mods[tabs]?.["main.js"] ?? "";
       expect(text).toContain('import { spaces, panes, run, openOverlay, theme, window, shared, layout, settings, setShared } from "herdr";');
@@ -470,7 +514,7 @@ describe("move-tab", () => {
   test("the tab bar marks a drag once the pointer moves 4 px, fades the dragged tab and outlines the tab it would land on", () => {
     for (const [generated, tabs] of [
       [generateDesk(), "vjr-tabs"],
-      [generateSquare(), "vjr-square-tabs"],
+      [generateSquare(), "vjr-tabs"],
     ] as const) {
       const text = generated.mods[tabs]?.["main.js"] ?? "";
       expect(text).toContain(
@@ -490,7 +534,7 @@ describe("move-tab", () => {
   test("a tab reorders only while the bar's own drag is set", () => {
     for (const [generated, tabs] of [
       [generateDesk(), "vjr-tabs"],
-      [generateSquare(), "vjr-square-tabs"],
+      [generateSquare(), "vjr-tabs"],
     ] as const) {
       const text = generated.mods[tabs]?.["main.js"] ?? "";
       expect(text).toContain('const from = shared("move-tab.drag") ? this.pressed : null; this.pressed = null;');

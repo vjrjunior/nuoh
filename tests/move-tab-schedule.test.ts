@@ -81,8 +81,7 @@ describe("move-tab schedule.sh", () => {
     expect(Math.abs((read?.at ?? 0) - Date.now())).toBeLessThan(60_000);
   });
 
-  test("leaves the prompt out when none is given, in the square layout too", () => {
-    layout("vjr-desk-square");
+  test("leaves the prompt out when none is given", () => {
     const { code, labels } = schedule(["--to", `${worktree}/`]);
     expect(code).toBe(0);
     expect(parseSchedule((labels[0] as string).slice(LABEL.length + 1))).toMatchObject({ to: worktree, prompt: null });
@@ -102,7 +101,7 @@ describe("move-tab schedule.sh", () => {
 
   test("refuses, without a label, whatever would leave the session where it is", () => {
     const refusals: [() => void, string[], Record<string, string>, string][] = [
-      [() => layout("main"), ["--to", worktree], {}, "herdr-app shows main, not vjr-desk or vjr-desk-square, so nothing would move this session."],
+      [() => layout("main"), ["--to", worktree], {}, "herdr-app shows main, not vjr-desk, so nothing would move this session."],
       [() => {}, ["--to", worktree], { HC_TERMINAL_ID: "" }, "Not in a herdr-app terminal, so nothing would move this session."],
       [() => info({ foreground: { pid: 11, argv: ["-zsh"], cwd: main } }), ["--to", worktree], {}, "Claude Code is not in front in this terminal."],
       [() => info({ parent: "t0" }), ["--to", worktree], {}, "This terminal is another agent's sub-agent, so it has no tab to move."],

@@ -1,6 +1,6 @@
 # Install VJR Desk
 
-For an agent asked to install these layouts on someone's machine. It adds two layouts to herdr-app, `vjr-desk` and `vjr-desk-square`, and the `vjr` theme. The person's own layouts, keys and settings stay as they are.
+For an agent asked to install this layout on someone's machine. It adds one layout to herdr-app, `vjr-desk`, and the `vjr` theme. The person's own layouts, keys and settings stay as they are.
 
 This repo is not installed by copying `layouts/` and `mods/`, as Herdr's guide describes for shared layouts. Its mods are built on the machine from the Herdr that is installed there, by `bun run apply-layout`. Follow the steps below instead.
 
@@ -30,15 +30,15 @@ Before installing, tell them this, as Herdr's guide asks. Mods are trusted code 
 Comeback and Move tab resume Claude Code conversations. Without Claude Code they do nothing.
 
 The install writes only:
-- `~/.config/herdr-app/themes/vjr.json`, `layouts/vjr-desk*.json` and `.svg`, `mods/vjr-*` and `mods/git-graph`;
-- the `layout:vjr-desk` and `layout:vjr-desk-square` sections of `~/.config/herdr-app/keys.json`;
+- `~/.config/herdr-app/themes/vjr.json`, `layouts/vjr-desk.json` and `.svg`, `mods/vjr-*` and `mods/git-graph`;
+- the `layout:vjr-desk` section of `~/.config/herdr-app/keys.json`;
 - its own records and backups in `~/.local/state/vjr-herdr/`.
 
 It refuses to overwrite a file it did not create.
 
 ## 3. Install
 
-The clone has to stay: the layouts store its path and rebuild from it when Herdr updates. Ask where the person keeps repositories, or use the folder below.
+The clone has to stay: the layout stores its path and rebuilds from it when Herdr updates. Ask where the person keeps repositories, or use the folder below.
 
 ```sh
 git clone https://github.com/vjrjunior/vjrjunior-herdr ~/.local/share/vjrjunior-herdr
@@ -58,7 +58,7 @@ Work in the clone's folder only to run these commands. `AGENTS.md` and `.claude/
 - `herdr-app status` lists no errors and shows `vjr-desk` as the layout.
 - `herdr-app shot` shows the window: near-black surfaces, a peach accent, the Spaces tree on the left and Files, Changes and Graph buttons in the tab bar.
 
-Then tell the person: `cmd-shift-l` (`ctrl-shift-l` on Linux and Windows) cycles through layouts, `vjr-desk-square` is the same window with square corners, and `ctrl-alt-shift-escape` always goes back to Herdr's own layout.
+Then tell the person: `cmd-shift-l` (`ctrl-shift-l` on Linux and Windows) cycles through layouts, **Settings › Look › Square corners** squares the layout's corners, and `ctrl-alt-shift-escape` always goes back to Herdr's own layout.
 
 ## 5. Optional: their editor
 
@@ -76,13 +76,13 @@ The Markdown viewer's first button opens a file in its own app. To make it open 
 cd ~/.local/share/vjrjunior-herdr && git pull && bun run install-theme && bun run apply-layout
 ```
 
-Herdr updates need nothing: the layouts rebuild themselves.
+Herdr updates need nothing: the layout rebuilds itself.
 
 ## Uninstall
 
 ```sh
 cd ~/.local/share/vjrjunior-herdr
-bun run uninstall-layout    # removes the layouts, their mods and key sections; goes back to main if needed
+bun run uninstall-layout    # removes the layout, its mods and key section; goes back to main if needed
 bun run uninstall-theme     # restores what was there before
 ```
 

@@ -41,8 +41,8 @@ case $prompt in -*) fail "The prompt can't start with -." ;; esac
 
 layout=$(herdr-app status 2>/dev/null | jq -r '.layout // empty' 2>/dev/null)
 case $layout in
-  vjr-desk|vjr-desk-square) ;;
-  *) fail "herdr-app shows ${layout:-no layout}, not vjr-desk or vjr-desk-square, so nothing would move this session." ;;
+  vjr-desk) ;;
+  *) fail "herdr-app shows ${layout:-no layout}, not vjr-desk, so nothing would move this session." ;;
 esac
 
 info=$(hc get "$terminal" --json 2>/dev/null) || fail "Couldn't read terminal $terminal."

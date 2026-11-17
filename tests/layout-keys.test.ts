@@ -8,9 +8,9 @@ afterEach(removeTempDirs);
 
 describe("deriveSection", () => {
   test("derives every global key bound to a replaced action", () => {
-    expect(deriveSection({ "cmd-/": "app.help", "cmd-shift-/": "app.help", "cmd-t": "tab.new" }, { "app.help": "mod.open:vjr-square-help" })).toEqual({
-      "cmd-/": "mod.open:vjr-square-help",
-      "cmd-shift-/": "mod.open:vjr-square-help",
+    expect(deriveSection({ "cmd-/": "app.help", "cmd-shift-/": "app.help", "cmd-t": "tab.new" }, { "app.help": "mod.open:vjr-help" })).toEqual({
+      "cmd-/": "mod.open:vjr-help",
+      "cmd-shift-/": "mod.open:vjr-help",
     });
   });
 
@@ -19,7 +19,7 @@ describe("deriveSection", () => {
   });
 
   test("an action with no key adds nothing", () => {
-    expect(deriveSection({ "cmd-t": "tab.new" }, { "app.help": "mod.open:vjr-square-help" })).toEqual({});
+    expect(deriveSection({ "cmd-t": "tab.new" }, { "app.help": "mod.open:vjr-help" })).toEqual({});
   });
 });
 

@@ -1,13 +1,13 @@
 # vjrjunior-herdr
 
-VJR Desk for [Herdr](https://herdr.dev): the VJR theme, a dark palette of three hues (peach, mint and red) over a gray ladder, generated from one file for herdr-app and Ghostty, and two herdr-app layouts built on it.
+VJR Desk for [Herdr](https://herdr.dev): the VJR theme, a dark palette of three hues (peach, mint and red) over a gray ladder, generated from one file for herdr-app and Ghostty, and a herdr-app layout built on it, with round or square corners.
 
 ## Install with an agent
 
 Paste this into Claude Code, or any coding agent with a shell, on the machine that runs herdr-app:
 
 ```
-Install the VJR Desk layouts for herdr-app by following https://github.com/vjrjunior/vjrjunior-herdr/blob/main/INSTALL.md
+Install the VJR Desk layout for herdr-app by following https://github.com/vjrjunior/vjrjunior-herdr/blob/main/INSTALL.md
 ```
 
 [`INSTALL.md`](INSTALL.md) tells the agent what to check, what to run, what each mod reads and runs, and how to undo it. The rest of this file describes each part.
@@ -26,7 +26,7 @@ Then open **Settings → Look → Dark** and choose `vjr`, or run:
 herdr-app do app.theme '{"name":"vjr"}'
 ```
 
-Herdr's own command palette will not show it: its `Theme:` list holds only the four built-in themes. The layouts below add it. The choice applies to the layout on screen, and each layout keeps its own.
+Herdr's own command palette will not show it: its `Theme:` list holds only the four built-in themes. The layout below adds it. The choice applies to the layout on screen, and each layout keeps its own.
 
 For Ghostty, copy `targets/ghostty/VJR` to `~/.config/ghostty/themes/` and set `theme = VJR`.
 
@@ -72,41 +72,53 @@ A palette that does not validate installs nothing, and the last good theme stays
 | `VJR_HERDR_CONFIG` | `~/.config/vjr-herdr/config.json` | another file for the local config |
 | `XDG_STATE_HOME` | `~/.local/state` | backups, the install records and the layout log |
 
-## Use the layouts
+## Use the layout
 
-Two layouts for herdr-app, built from the version you have installed:
-
-| Layout | What it is |
-|---|---|
-| `vjr-desk` | Herdr's window with the VJR theme, `vjr` in the command palette, a **Graph** button that opens Git Graph in the side panel, and Spaces as a tree of each repository's worktrees, open or closed, drawn as a graph or as blocks, with the active space in its own color and your own colored folders on top. |
-| `vjr-desk-square` | The same window with every corner a layout can reach squared, including menus, popups, the command palette, Settings, Git Graph and the Spaces tree. |
+One layout for herdr-app, `vjr-desk`, built from the version you have installed: Herdr's window with the VJR theme, `vjr` in the command palette, a **Graph** button that opens Git Graph in the side panel, and Spaces as a tree of each repository's worktrees, open or closed, drawn as a graph or as blocks, with the active space in its own color and your own colored folders on top. It has two looks: round corners, which are Herdr's own and the default, and square corners.
 
 ```sh
 bun run install-theme
 bun run apply-layout
-herdr-app do layout.switch '{"name":"vjr-desk-square"}'
+herdr-app do layout.switch '{"name":"vjr-desk"}'
 ```
 
 Switch between layouts with `cmd-shift-l`, or with `Layout:` in the command palette. `bun run uninstall-layout` removes everything `apply-layout` created and goes back to `main` if needed. It leaves the theme installed.
 
-These stay rounded, because the app draws them or opens them by itself: renaming, close confirmations, notifications, peek, Welcome, What's new, the feedback window, Add machine's terminal dialog, the spinner and the window's outer corners.
+### Square corners
 
-### How they stay current
+**Settings › Look › Square corners** is a toggle right under the layout picker, shown only while `vjr-desk` is on screen. Turned on, it squares every corner the layout can reach, including menus, popups, the command palette, Settings, Git Graph and the Spaces tree. It is the same layout with the same mods, built again: a toast says `Squaring the corners` or `Rounding the corners`, and the layout rebuilds in a few seconds. If the rebuild fails, the toggle goes back and a warning toast says why.
 
-[`RECIPE.md`](RECIPE.md) describes the layouts. The layouts follow Herdr's format: `themes/`, `mods/` and `layouts/` mirror the app's folder. The difference is that the mods are not stored here, so this repo is not ready for a plain `cp`. Community layouts ship a copy of Herdr's mods from one version, and those stop receiving Herdr's fixes. Here `recipes/` holds small edits, and `bun run apply-layout` applies them to the files of the Herdr you have installed.
+From a shell:
 
-When Herdr updates, the invisible `vjr-sync` mod notices the new version and runs the same command, so the copies rebuild themselves within seconds. It only runs while one of these layouts is on screen.
+```sh
+bun run apply-layout --square on
+bun run apply-layout --square off
+```
 
-If a recipe no longer fits the new version, nothing changes in either layout: the previous copies keep running and a warning says what to run. The shipped `main` layout is never touched, so `cmd-shift-l` always has somewhere to go.
+The choice is kept in `~/.local/state/vjr-herdr/layout.json` (`"square": true` or `false`), so a plain `bun run apply-layout` and the rebuild after a Herdr update keep it.
+
+In both looks, Settings is the layout's copy of Herdr's, which has the toggle: the sidebar's gear, the palette's Settings entry and the Settings key (`cmd-,`, or whichever key `global` binds to it) open it. Other places where one of Herdr's mods opens Settings by itself, a machine's login note for example, open Herdr's own, which has no toggle.
+
+If you had `vjr-desk-square` from an earlier version, the first `apply-layout` removes it, with its `vjr-square-*` mods and its section of `keys.json`. A window that was showing it moves to `vjr-desk` with square corners on; otherwise the corners stay round. Panel sizes Herdr kept for the old layout are not carried over.
+
+With square corners, these stay rounded, because the app draws them or opens them by itself: renaming, close confirmations, notifications, peek, Welcome, What's new, the feedback window, Add machine's terminal dialog, the spinner and the window's outer corners.
+
+### How it stays current
+
+[`RECIPE.md`](RECIPE.md) describes the layout. It follows Herdr's format: `themes/`, `mods/` and `layouts/` mirror the app's folder. The difference is that the mods are not stored here, so this repo is not ready for a plain `cp`. Community layouts ship a copy of Herdr's mods from one version, and those stop receiving Herdr's fixes. Here `recipes/` holds small edits, and `bun run apply-layout` applies them to the files of the Herdr you have installed.
+
+When Herdr updates, the invisible `vjr-sync` mod notices the new version and runs the same command, so the copies rebuild themselves within seconds. It only runs while `vjr-desk` is on screen.
+
+If a recipe no longer fits the new version, nothing changes in the layout: the previous copies keep running and a warning says what to run. The shipped `main` layout is never touched, so `cmd-shift-l` always has somewhere to go.
 
 - The folders in `~/.config/herdr-app/mods/vjr-*` are generated. To change one, edit `recipes/` and run `bun run apply-layout`.
 - Run it again after changing the shortcut for the palette, Settings, help or search in the `global` section of `keys.json`.
-- The layouts store this repo's path. If you move it, run `bun run apply-layout` from the new place.
+- The layout stores this repo's path. If you move it, run `bun run apply-layout` from the new place.
 - `~/.local/state/vjr-herdr/layout.log` records every run.
 
 ### Local config
 
-`~/.config/vjr-herdr/config.json` holds what is yours and stays out of this repo. Without it the layouts are the ones described here. `XDG_CONFIG_HOME` moves the folder, and `VJR_HERDR_CONFIG` names another file.
+`~/.config/vjr-herdr/config.json` holds what is yours and stays out of this repo. Without it the layout is the one described here. `XDG_CONFIG_HOME` moves the folder, and `VJR_HERDR_CONFIG` names another file.
 
 ```json
 {
@@ -117,10 +129,10 @@ If a recipe no longer fits the new version, nothing changes in either layout: th
 
 - **`editor`** names the Markdown viewer's first button and gives the command it runs, with the file as its last argument.
 - **`extras`** are folders with more recipes, each a path or `{ path, options }`. An extra has `recipes/index.ts`, which exports `recipes` (a list of `{ name, mods, apply }`, the shape in `recipes/recipe.ts`), its mods in `mods/<name>/` and, if it brings icons, `kit/icons/*.svg`.
-  - Its recipes run in both layouts after this repo's and before `square`, so its mods are installed as `vjr-<name>` and `vjr-square-<name>` and come out square in `vjr-desk-square`.
+  - Its recipes run in both looks after this repo's, and before `square` when the corners are square, so its mods are installed as `vjr-<name>` and come out square with Square corners on.
   - A recipe's `mods` entry with `from: "repo"` is read from the extra's own `mods/`, and `apply` gets the extra's `options`.
   - A mod of an extra imports the kit as `../../kit/kit.js`, like this repo's, and its icons are installed next to the kit's.
-  - `square: { popupRoots, frameless }` on a recipe gives its popups the square border and drops Herdr's frame.
+  - `square: { popupRoots, frameless }` on a recipe gives its popups the square border and drops Herdr's frame, with Square corners on.
   - An extra that does not load stops `apply-layout` before it installs anything, and the message names the folder.
 
 Run `bun run apply-layout` after changing the file. `vjr-sync` reads it again on every Herdr update.
@@ -147,7 +159,7 @@ It is third-party code that runs with your permissions, so it never updates by i
 
 When the Mac restarts, Herdr brings every terminal back as a bare shell. `mods/comeback/` notes which Claude Code conversation runs in each terminal and, when the window opens after a restart, types `claude --resume` back into each terminal that lost its Claude, with the options it started with, then shows a toast with what came back. Options that load code (`--settings`, `--mcp-config`, `--plugin-dir`) stay behind: Comeback reads its notes from a label that any program with `hc` can write, and what a label says runs unattended after a reboot. It needs no hooks and edits no files outside Herdr's: it reads `hc`, `ps`, `sysctl` and `~/.claude/sessions/`, and keeps its notes as a `comeback` label on each terminal.
 
-Each loss gets one automatic try. `herdr-app do vjr-square-comeback.resume` (or `vjr-comeback.resume` in `vjr-desk`) tries again. [`mods/comeback/RECIPE.md`](mods/comeback/RECIPE.md) describes it in full and is ready for herdr.dev.
+Each loss gets one automatic try. `herdr-app do vjr-comeback.resume` tries again. [`mods/comeback/RECIPE.md`](mods/comeback/RECIPE.md) describes it in full and is ready for herdr.dev.
 
 ### Markdown viewer
 
@@ -157,7 +169,7 @@ Each loss gets one automatic try. `herdr-app do vjr-square-comeback.resume` (or 
 herdr-app do pane.split --direction right --mod vjr-markdown --props '{"file":"/path/to/NOTES.md"}'
 ```
 
-In the square layout the mod is `vjr-square-markdown`. The pane reads the file again when it changes and hides front matter. A link to another `.md` opens in the same pane, with `Back` (an outline button with an arrow) to return; web links open in the browser and other files in their own app. The header's right side has two buttons: Open, an outline button with a gray icon, opens the file in its own app, and Reload, an icon button with a tooltip, reads it again. With an `editor` in the [local config](#local-config), the first button carries that editor's name and runs its command. It reads only the file it shows and the files it links to, runs `open` or the configured editor, and never reaches the network.
+The pane reads the file again when it changes and hides front matter. A link to another `.md` opens in the same pane, with `Back` (an outline button with an arrow) to return; web links open in the browser and other files in their own app. The header's right side has two buttons: Open, an outline button with a gray icon, opens the file in its own app, and Reload, an icon button with a tooltip, reads it again. With an `editor` in the [local config](#local-config), the first button carries that editor's name and runs its command. It reads only the file it shows and the files it links to, runs `open` or the configured editor, and never reaches the network.
 
 ### Move tab
 
@@ -170,11 +182,11 @@ sh ~/.config/herdr-app/mods/vjr-move-tab/schedule.sh --to <worktree> [--prompt <
 sh ~/.config/herdr-app/mods/vjr-move-tab/schedule.sh --cancel
 ```
 
-It labels the session's terminal with `vjr.move-to` and returns at once. When the turn ends and Claude stays idle for two seconds, the worker moves only Claude's pane: other panes of the tab, a dev server say, stay where they are, and a Claude alone in its tab moves the whole tab as above. The prompt, when given, is the resumed Claude's first turn. The view follows only when that tab was on screen; otherwise it stays where you were. The script refuses at once, exit code 1 and one line saying why, outside a herdr-app terminal, when neither `vjr-desk` nor `vjr-desk-square` is on screen (nothing else would move it), when Claude isn't in front or reports no status, and when the destination isn't another worktree of the repo. A scheduled move is dropped with a toast when its conversation changed (`/clear`), when it waited 4 hours, or when its label can't be read. The copy in `vjr-square-move-tab` is the same script.
+It labels the session's terminal with `vjr.move-to` and returns at once. When the turn ends and Claude stays idle for two seconds, the worker moves only Claude's pane: other panes of the tab, a dev server say, stay where they are, and a Claude alone in its tab moves the whole tab as above. The prompt, when given, is the resumed Claude's first turn. The view follows only when that tab was on screen; otherwise it stays where you were. The script refuses at once, exit code 1 and one line saying why, outside a herdr-app terminal, when `vjr-desk` is not the layout on screen (nothing else would move it), when Claude isn't in front or reports no status, and when the destination isn't another worktree of the repo. A scheduled move is dropped with a toast when its conversation changed (`/clear`), when it waited 4 hours, or when its label can't be read.
 
 To drag it, press the tab in the tab bar and release it on a row of the Spaces tree: the main checkout, a worktree, open as a space or not, or another space of the same checkout. While a tab is pressed, the pointer is a closed hand over the tab bar, and over the Spaces tree once the drag moves; over a terminal on the way it stays Herdr's. Once the pointer has moved a few pixels with the button held, the tab fades to show it is being dragged, every row that would take it gets a dashed `accent` border, and the row under the pointer a solid one; the tab's own space and rows outside its repo never do. Dragged along the tab bar instead, the tab it would land on gets the `accent` border, and releasing there reorders the tabs as Herdr always did. Releasing there asks for the same move as the popup, and releasing anywhere else moves nothing. The narrow rail, below 160px, takes no drops.
 
-The mod is installed as `vjr-move-tab` in `vjr-desk` and `vjr-square-move-tab` in `vjr-desk-square`, with a copy of Herdr's menu that holds the item (`vjr-menu` and `vjr-square-menu`) and the layout's copy of Herdr's tab bar (`vjr-tabs` and `vjr-square-tabs`), which starts the drag. `cmd-shift-m` opens the popup for the focused tab in both layouts, and the menu shows the key next to `Move to…`. `apply-layout` writes it to each layout's section of `keys.json` (`mod.open:vjr-move-tab` and `mod.open:vjr-square-move-tab`) on every run, so change it in `recipes/move-tab.ts`, not there. The copy of the mod that runs the move is an invisible floating block, so a move outlives the popup that asked for it.
+The mod is installed as `vjr-move-tab`, with a copy of Herdr's menu that holds the item (`vjr-menu`) and the layout's copy of Herdr's tab bar (`vjr-tabs`), which starts the drag. `cmd-shift-m` opens the popup for the focused tab in both looks, and the menu shows the key next to `Move to…`. `apply-layout` writes it to the layout's section of `keys.json` (`mod.open:vjr-move-tab`) on every run, so change it in `recipes/move-tab.ts`, not there. The copy of the mod that runs the move is an invisible floating block, so a move outlives the popup that asked for it.
 
 It reads Herdr's live data (spaces, panes, terminals, agents), `~/.claude/sessions/<pid>.json` for each Claude's current conversation, whether `~/.claude/projects/` holds that conversation yet, and Herdr's document through `doc.get`, which it never writes. It runs `git`, `ps`, `kill`, `test`, `hc` (including `hc label` to clear a scheduled move and `hc read` for Claude's prompt) and `herdr-app do` (including `terminal.select` and `terminal.clear_selection` at Claude's cursor), plus `sh` only to pipe into `hc connect`. `schedule.sh` runs `hc`, `jq`, `git` and `herdr-app status`. It never reaches the network.
 
@@ -193,11 +205,11 @@ Each folder is a card: its name sits on a gray band with a folder icon in its co
 - **Folding:** click a folder's band. A folded folder is only its band and shows `N need you`, counting the agents in it that are blocked or done (or how many it holds when none are), and a dot in its most urgent status. When the space in front changes to one inside a folded folder, by a click, a key, `agent.next`, a toast or a script, the folder opens; folding it again while that space is in front keeps it folded.
 - **Editing:** right-click a folder for its colors (applied at once), `Rename…` and `Delete folder`. Deleting gives its repositories and spaces back to the list; no space closes.
 
-Both layouts show the same folders, kept with their fold in `spaces.folders` in Herdr's shared state, and so do restarts. A space that becomes active from outside the tree unfolds its folder and is scrolled into view. Below 160px the rail shows each folder as its tile, followed by the numbers of its spaces while it's open. The space menu item is in the layouts' copy of Herdr's menu (`vjr-menu`, `vjr-square-menu`), and only shows when the Spaces tree opens that menu.
+Both looks show the same folders, kept with their fold in `spaces.folders` in Herdr's shared state, and so do restarts. A space that becomes active from outside the tree unfolds its folder and is scrolled into view. Below 160px the rail shows each folder as its tile, followed by the numbers of its spaces while it's open. The space menu item is in the layout's copy of Herdr's menu (`vjr-menu`), and only shows when the Spaces tree opens that menu.
 
 ## Kit
 
-`kit/kit.js` is the UI kit of this repo's mods (the Spaces tree, the Markdown viewer and Move tab): tokens (sizes, text, radii), components (`button`, `iconButton`, `link`, `chip`, `pill`, `card`, `heading`, `line`, `popupRow`, `mark`, `statusDot`, `stepNode`, `icon`) and the SVG icons in `kit/icons/`. A mod imports it as `../../kit/kit.js`, and `apply-layout` copies `kit.js` into each installed mod that imports it. The icons are installed once per layout, in the `kit` mod's `icons/` folder, where the kit reads them. A layout whose mods use the kit must include the `kit` recipe; the generator refuses otherwise.
+`kit/kit.js` is the UI kit of this repo's mods (the Spaces tree, the Markdown viewer and Move tab): tokens (sizes, text, radii), components (`button`, `iconButton`, `link`, `chip`, `pill`, `card`, `heading`, `line`, `popupRow`, `mark`, `statusDot`, `stepNode`, `icon`) and the SVG icons in `kit/icons/`. A mod imports it as `../../kit/kit.js`, and `apply-layout` copies `kit.js` into each installed mod that imports it. The icons are installed once, in the `kit` mod's `icons/` folder, where the kit reads them. A layout whose mods use the kit must include the `kit` recipe; the generator refuses otherwise.
 
 `lib/` holds what more than one mod needs and no window shows: `checkouts.js` (a repo's worktrees and the checkout a folder is in) and `claude.js` (a Claude Code session, the options worth keeping, the command that resumes it). Herdr refuses an import from outside a mod's folder, so a mod imports a module as `../../lib/<name>.js` and `apply-layout` copies it, and what it imports, next to the mod's own files. A mod can't have a file with the name of a module it takes from `lib/`.
 
@@ -206,8 +218,6 @@ Both layouts show the same folders, kept with their fold in `spaces.folders` in 
 ```sh
 herdr-app do pane.split --direction right --mod vjr-kit
 ```
-
-In the square layout the mod is `vjr-square-kit`.
 
 Credits:
 - [Lucide](https://lucide.dev) icons by Lucide Contributors (ISC; portions from Feather by Cole Bemis, MIT), from `lucide-static@0.469.0`. The license is in `kit/icons/LICENSE-lucide`.
@@ -226,7 +236,7 @@ bun run test-panel --close            # closes the panel in every layout
 ```json
 {
   "title": "Move tab",
-  "layouts": ["vjr-desk", "vjr-desk-square"],
+  "layouts": ["vjr-desk"],
   "watch": ["move-tab.drag", "move-tab.request"],
   "shotOn": ["move-tab.request"],
   "report": "t17",
@@ -241,7 +251,8 @@ bun run test-panel --close            # closes the panel in every layout
 }
 ```
 
-- **Steps** run their `run` commands when they open, so a step can switch the layout, the space or the zoom for the person. A window is open in each layout in `layouts`, so it comes back after a switch, at the same step.
+- **Steps** run their `run` commands when they open, so a step can switch the layout, the space or the zoom for the person. A window is open in each layout in `layouts`, normally just `vjr-desk`, so it comes back after a switch, at the same step.
+- **Both looks:** a run that checks round and square corners has one step per look. The look is not an app command, so a step's `run` cannot flip it: the step's `do` tells the person to flip Square corners in Settings, or the run's author runs `bun scripts/layout.ts apply --square on` before starting.
 - **Events** are logged on their own: spaces and tabs opened, closed, moved and reordered, a tab's pane count, the layout, and each shared key in `watch`.
 - **Shots:** each answer takes a `herdr-app shot`, and so does each change to a key in `shotOn`. They go to `~/.local/state/vjr-herdr/test-panel/<id>/` unless the run names `shots`.
 - **When the last step is answered,** the panel types a one-line summary into the terminal in `report` with `hc send`, so the Claude that wrote the run gets the result without anyone going back to it.

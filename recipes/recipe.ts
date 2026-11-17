@@ -14,7 +14,7 @@ export type RecipeContext = {
   options: Record<string, unknown>;
 };
 export type Recipe = { name: string; mods: ModSource[]; square?: SquareHints; options?: Record<string, unknown>; apply(context: RecipeContext): void };
-export type Variant = { layout: string; prefix: string; preview: string; recipes: Recipe[] };
+export type Variant = { layout: string; prefix: string; preview: string; square: boolean; recipes: Recipe[] };
 
 export class RecipeError extends Error {}
 

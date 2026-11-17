@@ -23,11 +23,11 @@ describe("events", () => {
   test("a tab moved to another space, a space opened and a key set", () => {
     const after = snapshot(
       [space("s1", "app", [["t1", "Claude", 2]]), space("s2", "feat-x", [["t3", "1"], ["t2", "2"]]), space("s3", "chore-y", [["t4", "1"]])],
-      "vjr-desk-square",
+      "terminals",
       { "move-tab.drag": { tab: "t2", space: "s1", at: 1 } },
     );
     expect(changes(before, after)).toEqual([
-      "layout vjr-desk-square",
+      "layout terminals",
       'space "chore-y" opened',
       'tab "2" moved from "app" to "feat-x"',
       'tab "1" opened in "chore-y"',

@@ -47,19 +47,18 @@ describe("the local config", () => {
 });
 
 describe("extras", () => {
-  test("an extra's recipe lands in both layouts, with each layout's prefix and its options", () => {
-    const [desk, square] = generateWith({ greeting: "hi" });
-    expect(Object.keys(desk?.mods ?? {})).toContain("vjr-hello");
-    expect(Object.keys(square?.mods ?? {})).toContain("vjr-square-hello");
-    expect(JSON.parse(desk?.layoutText ?? "{}").floating).toContainEqual({ id: "hello", content: { mod: "vjr-hello", props: { greeting: "hi" } }, edge: "left", align: "end" });
-    expect(JSON.parse(square?.layoutText ?? "{}").floating).toContainEqual({ id: "hello", content: { mod: "vjr-square-hello", props: { greeting: "hi" } }, edge: "left", align: "end" });
+  test("an extra's recipe lands in both looks, with the layout's prefix and its options", () => {
+    for (const look of generateWith({ greeting: "hi" })) {
+      expect(Object.keys(look.mods)).toContain("vjr-hello");
+      expect(JSON.parse(look.layoutText).floating).toContainEqual({ id: "hello", content: { mod: "vjr-hello", props: { greeting: "hi" } }, edge: "left", align: "end" });
+    }
   });
 
-  test("the square layout squares an extra's mod and frames its popup", () => {
+  test("square corners square an extra's mod and frame its popup", () => {
     const [desk, square] = generateWith();
     expect(desk?.mods["vjr-hello"]?.["main.js"]).toContain(".bg(t.popover).rounded(6)");
-    expect(square?.mods["vjr-square-hello"]?.["main.js"]).toContain(".bg(t.popover).border_1().border_color(t.border).rounded(0)");
-    expect(JSON.parse(square?.mods["vjr-square-hello"]?.["mod.json"] ?? "{}").overlay).toEqual({ frame: "none" });
+    expect(square?.mods["vjr-hello"]?.["main.js"]).toContain(".bg(t.popover).border_1().border_color(t.border).rounded(0)");
+    expect(JSON.parse(square?.mods["vjr-hello"]?.["mod.json"] ?? "{}").overlay).toEqual({ frame: "none" });
   });
 
   test("an extra's mod gets the kit, and its icons join the kit's", () => {
@@ -103,17 +102,15 @@ describe("apply with a local config", () => {
     expect(mods()).not.toContain("vjr-hello");
   });
 
-  test("an extra in the config is installed in both layouts, and leaves when it leaves the config", () => {
+  test("an extra in the config is installed, and leaves when it leaves the config", () => {
     const { apply, mods, config } = setup();
     writeFileSync(config, JSON.stringify({ extras: [EXTRA] }));
     expect(apply().stdout).toContain("applied");
     expect(mods()).toContain("vjr-hello");
-    expect(mods()).toContain("vjr-square-hello");
     expect(apply().stdout).toContain("unchanged");
     writeFileSync(config, "{}");
     expect(apply().stdout).toContain("applied");
     expect(mods()).not.toContain("vjr-hello");
-    expect(mods()).not.toContain("vjr-square-hello");
   });
 
   test("an extra that doesn't load installs nothing and says which folder", () => {
@@ -133,7 +130,6 @@ describe("apply with a local config", () => {
     writeFileSync(config, JSON.stringify({ editor: { name: "Zed", argv: ["zed", "-n"] } }));
     expect(apply().code).toBe(0);
     expect(viewer()).toContain('const EDITOR = {"name":"Zed","argv":["zed","-n"]};');
-    expect(readFileSync(join(homes.herdrApp, "mods/vjr-square-markdown/main.js"), "utf8")).toContain('const EDITOR = {"name":"Zed","argv":["zed","-n"]};');
   });
 });
 

@@ -1,8 +1,8 @@
 # AGENTS.md
 
-This repo customizes herdr-app: the VJR palette and theme (also built for Ghostty), the `vjr-desk` layouts and their mods. Weigh every idea by what it does for herdr-app. `README.md` covers each part and its commands; `RECIPE.md` describes the layouts.
+This repo customizes herdr-app: the VJR palette and theme (also built for Ghostty), the `vjr-desk` layout and its mods. Weigh every idea by what it does for herdr-app. `README.md` covers each part and its commands; `RECIPE.md` describes the layout.
 
-Asked only to install the layouts on someone's machine? Follow [`INSTALL.md`](INSTALL.md) and skip the rest of this file: the rules below are for changing the repo.
+Asked only to install the layout on someone's machine? Follow [`INSTALL.md`](INSTALL.md) and skip the rest of this file: the rules below are for changing the repo.
 
 ## Herdr's guide
 
@@ -10,7 +10,7 @@ Asked only to install the layouts on someone's machine? Follow [`INSTALL.md`](IN
 
 The guide speaks to someone editing the app's folder by hand. Here that folder is an output:
 
-- Change `recipes/` and this repo's `mods/`, then run `bun run apply-layout`. It generates `~/.config/herdr-app/mods/vjr-*`, the `vjr-desk*` layouts and their `keys.json` sections.
+- Change `recipes/` and this repo's `mods/`, then run `bun run apply-layout`. It generates `~/.config/herdr-app/mods/vjr-*`, the `vjr-desk` layout and its `keys.json` section.
 - Shipped layouts and mods, `frame/` and `layouts/.state/` stay untouched, even for a test.
 
 ## Planning
@@ -27,7 +27,7 @@ The guide speaks to someone editing the app's folder by hand. Here that folder i
    Herdr's shipped mods in `~/.config/herdr-app/mods/` are prior art too.
 3. For each candidate that fits, read its `RECIPE.md` and its code, not only the README. Note what it does well, what doesn't fit here (a frozen copy of Herdr's mods from one version, hooks, a single OS, network calls) and its license.
 4. Decide for each one: adopt it unmodified at a commit, as `mods/git-graph/` is; build ours from its best ideas; or skip it.
-5. Write the plan in the main checkout's `docs/`. It is ready when it has a **Prior art** section (the searches run, each candidate with its link, verdict and what we take from it; "nothing fits" counts when the searches are listed), names the sections of Herdr's guide the change relies on, and says how the feature looks in each of the [two layouts](#both-layouts).
+5. Write the plan in the main checkout's `docs/`. It is ready when it has a **Prior art** section (the searches run, each candidate with its link, verdict and what we take from it; "nothing fits" counts when the searches are listed), names the sections of Herdr's guide the change relies on, and says how the feature looks in each of the [two looks](#both-looks).
 
 Copied code needs a license that allows it and a credit in `README.md` with author, license and commit, as Git Graph has. Apache-2.0 code also needs a `NOTICE`. Before adopting a mod, tell the user if it reaches the network, runs programs (`exec`, `hc`) or reads files outside its folder.
 
@@ -44,25 +44,25 @@ Each feature or fix gets its own branch in its own worktree. The main checkout, 
   ```
 
 - Specs and plans live in the main checkout's `docs/`, by absolute path. `docs/` is git-ignored, and removing a worktree deletes its ignored files. Planning files stay out of every commit, whatever a skill says.
-- `bun run apply-layout` stores the folder it runs from in the live layouts, and `vjr-sync` rebuilds from that folder on every Herdr update. Run it from a worktree to try a change in the window. When the branch lands or is dropped, update the main checkout and run it there before removing the worktree.
+- `bun run apply-layout` stores the folder it runs from in the live layout, and `vjr-sync` rebuilds from that folder on every Herdr update. Run it from a worktree to try a change in the window. When the branch lands or is dropped, update the main checkout and run it there before removing the worktree.
 
-## Both layouts
+## Both looks
 
-Every feature ships in `vjr-desk` and `vjr-desk-square`, built from the same recipes, as Comeback and the Spaces tree do.
+`vjr-desk` has two looks, round corners and square corners, chosen in Settings › Look › Square corners or with `bun scripts/layout.ts apply --square on|off`. Every feature works in both, built from the same recipes, as Comeback and the Spaces tree do.
 
-- Add the feature's recipe to `OWN` in `recipes/variants.ts`: both layouts are built from that list. In `vjr-desk-square`, `square` runs last: it squares every corner and turns `●` and `○` into `■` and `□` in what the recipes before it produced, and it takes every `from: "repo"` mod of those recipes by itself.
-- A recipe whose mod opens a popup says so in its `square` field (`popupRoots`, `frameless`), as `recipes/move-tab.ts` does. Nothing warns when a popup is missing there, so the shot of each layout in Done is the check.
+- Add the feature's recipe to `OWN` in `recipes/variants.ts`: both looks are built from that list. With square corners, `square` runs last: it squares every corner and turns `●` and `○` into `■` and `□` in what the recipes before it produced, and it takes every `from: "repo"` mod of those recipes by itself.
+- A recipe whose mod opens a popup says so in its `square` field (`popupRoots`, `frameless`), as `recipes/move-tab.ts` does. Nothing warns when a popup is missing there, so the shot of each look in Done is the check.
 - What belongs to one person (their editor, a mod for their team's workflow) stays out of this repo: it goes in the local config and its `extras`, described in `README.md` › Local config.
-- Mods are installed as `vjr-<name>` in one layout and `vjr-square-<name>` in the other. Name another mod as `mod: "<name>"` or `{ name: "<name>" }`, in double quotes, so the generator can add the prefix; it refuses a reference it cannot rewrite. Commands sent to a mod differ the same way (`vjr-comeback.resume`, `vjr-square-comeback.resume`), so docs give both.
+- Mods are installed as `vjr-<name>` in both looks. Name another mod as `mod: "<name>"` or `{ name: "<name>" }`, in double quotes, so the generator can add the prefix; it refuses a reference it cannot rewrite. Commands sent to a mod carry the same prefix (`vjr-comeback.resume`).
 
 ## UI
 
-The mods in this repo draw their UI with the kit in `kit/kit.js`: its components, its icons in `kit/icons/` and its tokens. A mod imports it as `../../kit/kit.js`; `bun run apply-layout` copies it into each installed mod. Colors come from `theme()` by name, never hex values; the only exception is the Spaces tree's avatar palette. Icons are SVG files, never font glyphs. A new component goes into the kit as soon as a second mod would draw the same thing; a piece only one mod needs stays in that mod. `vjr-kit` (`vjr-square-kit`) shows every component: open it with `herdr-app do pane.split --direction right --mod vjr-kit`.
+The mods in this repo draw their UI with the kit in `kit/kit.js`: its components, its icons in `kit/icons/` and its tokens. A mod imports it as `../../kit/kit.js`; `bun run apply-layout` copies it into each installed mod. Colors come from `theme()` by name, never hex values; the only exception is the Spaces tree's avatar palette. Icons are SVG files, never font glyphs. A new component goes into the kit as soon as a second mod would draw the same thing; a piece only one mod needs stays in that mod. `vjr-kit` shows every component: open it with `herdr-app do pane.split --direction right --mod vjr-kit`.
 
 ## Done
 
 - `bun test` passes. The tests use temporary homes, never the real app folder.
-- For a mod or a recipe, `bun run apply-layout` passes (it runs `herdr-app check` on every changed mod and installs nothing if one fails) and `herdr-app status` shows no errors. Then switch to each layout (`herdr-app do layout.switch '{"name":"vjr-desk"}'`, then `vjr-desk-square`) and take a `herdr-app shot` that shows the change in both.
+- For a mod or a recipe, `bun run apply-layout` passes (it runs `herdr-app check` on every changed mod and installs nothing if one fails) and `herdr-app status` shows no errors. Then take a `herdr-app shot` that shows the change with round corners and one with square corners (`bun scripts/layout.ts apply --square on`, then `--square off`), and put the look back as it was.
 - A change people can see updates its section of `README.md` and the recipe that describes it (`RECIPE.md`, or `mods/<name>/RECIPE.md`) on the same branch. Recipes follow the order in Herdr's guide.
 - A check only a person in the window can make (a drag, a toast, a key) goes in a test panel run (`bun run test-panel <run.json>`, see `README.md`), all the checks in one run. Don't post steps in the chat and wait.
 - Work left for later goes in `TODOS.md`, in its What, Why, Context, Effort, Priority and Depends on shape.

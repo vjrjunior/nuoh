@@ -123,7 +123,7 @@ function modFiles(copy: Copy, version: string): Record<string, string> {
 function finishLayout(layout: LayoutNode, variant: Variant, options: GenerateOptions): LayoutNode {
   const sync = {
     id: "vjr-sync",
-    content: { mod: "vjr-sync", props: { built: options.version, repo: options.repo, bun: options.bun } },
+    content: { mod: "vjr-sync", props: { built: options.version, repo: options.repo, bun: options.bun, square: variant.square } },
     edge: "right",
     align: "end",
   };
