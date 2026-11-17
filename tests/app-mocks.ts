@@ -49,6 +49,21 @@ export class Node {
   }
 }
 
+export const walk = (node: Node): Node[] => [node, ...node.kids.flatMap(walk)];
+
+export function texts(node: Node): string[] {
+  return [...node.texts, ...node.kids.flatMap(texts)];
+}
+
+export function find(node: Node, match: (node: Node) => boolean): Node | null {
+  if (match(node)) return node;
+  for (const kid of node.kids) {
+    const found = find(kid, match);
+    if (found) return found;
+  }
+  return null;
+}
+
 export function make(): Node {
   return new Proxy(new Node(), {
     get(target, prop, receiver) {

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { herdr, type Node } from "./app-mocks";
+import { find, herdr, type Node, texts } from "./app-mocks";
 
 const { default: Markdown } = await import("../mods/markdown/main.js");
 
@@ -68,19 +68,6 @@ async function open(props: Record<string, unknown> = given) {
   view.init(props, cx);
   await flush();
   return { view, cx };
-}
-
-function texts(node: Node): string[] {
-  return [...node.texts, ...node.kids.flatMap(texts)];
-}
-
-function find(node: Node, match: (node: Node) => boolean): Node | null {
-  if (match(node)) return node;
-  for (const kid of node.kids) {
-    const found = find(kid, match);
-    if (found) return found;
-  }
-  return null;
 }
 
 function click(view: { render(): Node }, key: string, cx: unknown) {

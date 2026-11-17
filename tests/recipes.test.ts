@@ -1,21 +1,17 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import type { Variant } from "../recipes/recipe";
-import { LEFT_ROUNDED } from "../recipes/variants";
+import { LEFT_ROUNDED, variantWith } from "../recipes/variants";
 import { generateVariant } from "../scripts/generate-layout";
-import { bothLooks, removeTempDirs, repo, tempDir } from "./helpers";
+import { modsIn, removeTempDirs, repo, tempDir } from "./helpers";
 import { makeHerdrHome, SHIPPED_MODS } from "./herdr-home";
-
-const VARIANTS = bothLooks();
 
 afterEach(removeTempDirs);
 
 function generate(square: boolean, overrides: Record<string, string> = {}) {
   const home = tempDir();
   makeHerdrHome(home, overrides);
-  const variant = VARIANTS.find((candidate) => candidate.square === square) as Variant;
-  return generateVariant(variant, { home, version: "0.1.10", repo, bun: "/bin/bun" });
+  return generateVariant(variantWith([], square), { home, version: "0.1.10", repo, bun: "/bin/bun" });
 }
 
 const generateRound = (overrides?: Record<string, string>) => generate(false, overrides);
@@ -37,17 +33,11 @@ function findNode(node: unknown, id: string): Record<string, any> | null {
   return null;
 }
 
-function modsIn(node: unknown): string[] {
-  if (Array.isArray(node)) return node.flatMap(modsIn);
-  if (node === null || typeof node !== "object") return [];
-  return Object.entries(node).flatMap(([key, value]) => (key === "mod" && typeof value === "string" ? [value] : modsIn(value)));
-}
-
 const graphChild = (generated: ReturnType<typeof generate>) => findNode(JSON.parse(generated.layoutText), "panel-body")?.children.at(-1);
 
-describe("variants", () => {
+describe("looks", () => {
   test("both looks are the same layout with the same mod names", () => {
-    expect(VARIANTS.map((variant) => [variant.layout, variant.prefix, variant.square])).toEqual([["vjr-desk", "vjr-", false], ["vjr-desk", "vjr-", true]]);
+    expect(generateRound().layout).toBe("vjr-desk");
     expect(generateSquare().layout).toBe("vjr-desk");
     for (const mod of Object.keys(generateRound().mods)) expect(Object.keys(generateSquare().mods)).toContain(mod);
   });
@@ -332,8 +322,7 @@ describe("square", () => {
         writeFileSync(path, readFileSync(path, "utf8").replace(/\.rounded(_[a-z]+)?\([^()]*\)/g, ""));
       }
     }
-    const variant = VARIANTS[1] as Variant;
-    expect(() => generateVariant(variant, { home, version: "0.1.10", repo, bun: "/bin/bun" })).toThrow(/recipe square:/);
+    expect(() => generateVariant(variantWith([], true), { home, version: "0.1.10", repo, bun: "/bin/bun" })).toThrow(/recipe square:/);
   });
 
   test("a home without status glyphs still generates", () => {

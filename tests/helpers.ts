@@ -70,3 +70,9 @@ export function run(root: string, script: string, args: string[], env: Record<st
 export function bothLooks(extras: Recipe[] = []): Variant[] {
   return [variantWith(extras, false), variantWith(extras, true)];
 }
+
+export function modsIn(node: unknown): string[] {
+  if (Array.isArray(node)) return node.flatMap(modsIn);
+  if (node === null || typeof node !== "object") return [];
+  return Object.entries(node).flatMap(([key, value]) => (key === "mod" && typeof value === "string" ? [value] : modsIn(value)));
+}

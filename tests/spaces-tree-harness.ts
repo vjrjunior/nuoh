@@ -103,25 +103,12 @@ export function click(view: { render(): Node }, key: string) {
   fire(path, "click");
 }
 
-export function texts(node: Node): string[] {
-  return [...node.texts, ...node.kids.flatMap(texts)];
-}
-
 export const BRANCH = "feat/enrollment-delete-charge-waiver";
 export const onMain = [{ path: "/r/app", branch: "main", main: true }, { path: "/w/app/one", branch: "one", main: false }];
 export const onBranch = [{ path: "/r/app", branch: BRANCH, main: true }, { path: "/w/app/one", branch: "one", main: false }];
 
 export function style(node: Node, name: string): unknown[] | undefined {
   return node.calls.findLast(([called]) => called === name)?.[1];
-}
-
-export function find(node: Node, match: (node: Node) => boolean): Node | null {
-  if (match(node)) return node;
-  for (const kid of node.kids) {
-    const found = find(kid, match);
-    if (found) return found;
-  }
-  return null;
 }
 
 export function headOf(view: { render(): Node }): Node {

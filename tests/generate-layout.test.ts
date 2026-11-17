@@ -3,7 +3,7 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { type Copy, exact, pattern, type Recipe, RecipeError, type Variant } from "../recipes/recipe";
 import { generateVariant } from "../scripts/generate-layout";
-import { removeTempDirs, tempDir } from "./helpers";
+import { modsIn, removeTempDirs, tempDir } from "./helpers";
 import { makeHerdrHome } from "./herdr-home";
 
 afterEach(removeTempDirs);
@@ -36,7 +36,7 @@ const broken: Recipe = {
   },
 };
 
-const variantWith = (...recipes: Recipe[]): Variant => ({ layout: "test-desk", prefix: "test-", preview: "layouts/test-desk.svg", recipes });
+const testVariant = (...recipes: Recipe[]): Variant => ({ layout: "test-desk", prefix: "test-", preview: "layouts/test-desk.svg", square: false, recipes });
 
 function setup(overrides: Record<string, string> = {}) {
   const home = tempDir();
@@ -55,20 +55,14 @@ function setup(overrides: Record<string, string> = {}) {
     writeFileSync(join(repo, "mods", name, "main.js"), `${kitImport}export default class Mod {}\n`);
     writeFileSync(join(repo, "mods", name, "mod.json"), '{ "place": "none" }\n');
   }
-  const generate = (variant = variantWith(recipe)) => generateVariant(variant, { home, version: "0.1.10", repo, bun: "/bin/bun" });
+  const generate = (variant = testVariant(recipe)) => generateVariant(variant, { home, version: "0.1.10", repo, bun: "/bin/bun" });
   return { home, repo, generate };
-}
-
-function modsIn(node: unknown): string[] {
-  if (Array.isArray(node)) return node.flatMap(modsIn);
-  if (node === null || typeof node !== "object") return [];
-  return Object.entries(node).flatMap(([key, value]) => (key === "mod" && typeof value === "string" ? [value] : modsIn(value)));
 }
 
 const sample = (): Copy => ({ name: "sample", files: { "main.js": "alpha beta alpha" }, meta: {} });
 
 describe("copies", () => {
-  test("copies only js files and mod.json", () => {
+  test("copies only the mod's code and mod.json", () => {
     const generated = setup().generate();
     expect(Object.keys(generated.mods["test-tabs"] ?? {}).sort()).toEqual(["main.js", "mod.json"]);
   });
@@ -96,7 +90,7 @@ describe("copies", () => {
 });
 
 describe("the kit", () => {
-  const modsOf = (...recipes: Recipe[]) => setup().generate(variantWith(...recipes)).mods;
+  const modsOf = (...recipes: Recipe[]) => setup().generate(testVariant(...recipes)).mods;
 
   test("a repo mod that imports the kit gets its own copy of it", () => {
     const mods = modsOf(withKit, userRecipe);
@@ -114,13 +108,13 @@ describe("the kit", () => {
   });
 
   test("a mod that uses the kit in a layout without the kit refuses", () => {
-    expect(() => setup().generate(variantWith(userRecipe))).toThrow("user uses the kit, but test-desk has no kit");
+    expect(() => setup().generate(testVariant(userRecipe))).toThrow("user uses the kit, but test-desk has no kit");
   });
 
   test("a single-quoted kit import is rewritten too", () => {
     const { repo, generate } = setup();
     writeFileSync(join(repo, "mods/user/main.js"), "import { KIT } from '../../kit/kit.js';\nexport default class Mod {}\n");
-    const mods = generate(variantWith(withKit, userRecipe)).mods;
+    const mods = generate(testVariant(withKit, userRecipe)).mods;
     expect(mods["test-user"]?.["main.js"]).toContain("from './kit.js'");
     expect(mods["test-user"]?.["main.js"]).not.toContain("kit/kit.js");
     expect(mods["test-user"]?.["kit.js"]).toContain("test-kit");
@@ -129,7 +123,7 @@ describe("the kit", () => {
   test("a kit import by another path refuses", () => {
     const { repo, generate } = setup();
     writeFileSync(join(repo, "mods/user/main.js"), 'import { KIT } from "../kit/kit.js";\nexport default class Mod {}\n');
-    expect(() => generate(variantWith(withKit, userRecipe))).toThrow('import the kit as "../../kit/kit.js"');
+    expect(() => generate(testVariant(withKit, userRecipe))).toThrow('import the kit as "../../kit/kit.js"');
   });
 });
 
@@ -189,7 +183,7 @@ describe("references", () => {
   });
 
   test("names the recipe in a failure", () => {
-    expect(() => setup().generate(variantWith(broken))).toThrow(/recipe broken:/);
+    expect(() => setup().generate(testVariant(broken))).toThrow(/recipe broken:/);
   });
 
   test("translates replacements to the copy names", () => {
@@ -205,7 +199,7 @@ describe("references", () => {
       },
     };
     expect(setup().generate().keys).toEqual({});
-    expect(setup().generate(variantWith(withKey)).keys).toEqual({ "cmd-shift-m": "mod.open:test-picker" });
+    expect(setup().generate(testVariant(withKey)).keys).toEqual({ "cmd-shift-m": "mod.open:test-picker" });
   });
 });
 
@@ -219,7 +213,7 @@ describe("layout", () => {
     expect(layout.floating).toEqual([
       {
         id: "vjr-sync",
-        content: { mod: "vjr-sync", props: { built: "0.1.10", repo, bun: "/bin/bun" } },
+        content: { mod: "vjr-sync", props: { built: "0.1.10", repo, bun: "/bin/bun", square: false } },
         edge: "right",
         align: "end",
       },
@@ -245,7 +239,7 @@ describe("layout", () => {
         context.layout.terminal_menu = "menu";
       },
     };
-    expect(JSON.parse(setup().generate(variantWith(withMenu)).layoutText).terminal_menu).toBe("test-menu");
+    expect(JSON.parse(setup().generate(testVariant(withMenu)).layoutText).terminal_menu).toBe("test-menu");
   });
 
   test("leaves the installed main layout untouched", () => {
@@ -257,7 +251,7 @@ describe("layout", () => {
 
   test("a source read twice by two recipes is copied once", () => {
     const other: Recipe = { name: "other", mods: [{ name: "tabs", from: "mods" }], apply() {} };
-    const generated = setup().generate(variantWith(recipe, other));
+    const generated = setup().generate(testVariant(recipe, other));
     expect(Object.keys(generated.mods).filter((name) => name === "test-tabs")).toHaveLength(1);
   });
 });
@@ -274,7 +268,7 @@ describe("shared modules", () => {
 
   test("a mod that imports from lib gets a copy of the module and of what it imports", () => {
     const { generate } = withLib('import { claude } from "../../lib/claude.js";\nexport { base } from "../../lib/paths.js";\n');
-    const user = generate(variantWith(withKit, userRecipe)).mods["test-user"];
+    const user = generate(testVariant(withKit, userRecipe)).mods["test-user"];
     expect(user?.["main.js"]).toContain('import { claude } from "./claude.js"');
     expect(user?.["main.js"]).toContain('export { base } from "./paths.js"');
     expect(user?.["main.js"]).not.toContain("../../lib/");
@@ -284,12 +278,12 @@ describe("shared modules", () => {
 
   test("a mod that imports nothing from lib gets none of it", () => {
     const { generate } = withLib("");
-    expect(Object.keys(generate(variantWith(withKit, userRecipe)).mods["test-user"] ?? {}).sort()).toEqual(["kit.js", "main.js", "mod.json"]);
+    expect(Object.keys(generate(testVariant(withKit, userRecipe)).mods["test-user"] ?? {}).sort()).toEqual(["kit.js", "main.js", "mod.json"]);
   });
 
   test("a mod with a file named like a lib module refuses", () => {
     const { repo, generate } = withLib('import { claude } from "../../lib/claude.js";\n');
     writeFileSync(join(repo, "mods/user/paths.js"), "export const mine = 1;\n");
-    expect(() => generate(variantWith(withKit, userRecipe))).toThrow("user/paths.js has the name of a module in lib/");
+    expect(() => generate(testVariant(withKit, userRecipe))).toThrow("user/paths.js has the name of a module in lib/");
   });
 });

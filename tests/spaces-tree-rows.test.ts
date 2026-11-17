@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { herdr, type Node } from "./app-mocks";
-import { reset, BRANCH, SpacesTree, app, common, cx, find, headOf, onBranch, onMain, pathTo, setup, space, style, texts } from "./spaces-tree-harness";
+import { find, herdr, type Node, texts } from "./app-mocks";
+import { reset, BRANCH, SpacesTree, app, common, cx, headOf, onBranch, onMain, pathTo, setup, space, style } from "./spaces-tree-harness";
 
 beforeEach(reset);
 

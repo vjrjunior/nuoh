@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, setSystemTime, test } from "bun:test";
-import { herdr, type Node } from "./app-mocks";
+import { find, herdr, type Node, texts } from "./app-mocks";
 
 const { default: MoveTab } = await import("../mods/move-tab/main.js");
 const { appIo } = await import("../mods/move-tab/io.js");
@@ -102,19 +102,6 @@ function worker() {
   const view = new MoveTab();
   view.init(given, cx);
   return { view, cx };
-}
-
-function texts(node: Node): string[] {
-  return [...node.texts, ...node.kids.flatMap(texts)];
-}
-
-function find(node: Node, match: (node: Node) => boolean): Node | null {
-  if (match(node)) return node;
-  for (const kid of node.kids) {
-    const found = find(kid, match);
-    if (found) return found;
-  }
-  return null;
 }
 
 const byKey = (root: Node, key: string) => find(root, (node) => node.key === key);

@@ -1,15 +1,13 @@
 import { expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { Node } from "./app-mocks";
-import "./app-mocks";
+import { type Node, walk } from "./app-mocks";
 
 const { ICONS, button, chip, iconButton, iconPath, popupRow, stepNode, toneColor } = await import("../kit/kit.js");
 
 const repo = join(import.meta.dir, "..");
 const t = new Proxy({}, { get: (_x, p) => (typeof p === "string" ? `t.${p}` : undefined) }) as any;
 
-const walk = (node: Node): Node[] => [node, ...node.kids.flatMap(walk)];
 const calls = (node: Node, name: string) => walk(node).flatMap((n) => n.calls.filter(([c]) => c === name).map(([, args]) => args));
 const svgs = (node: Node) => calls(node, "svg").map(([path]) => path);
 const own = (node: Node, name: string) => node.calls.filter(([c]) => c === name).map(([, args]) => args);

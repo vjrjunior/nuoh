@@ -1,10 +1,9 @@
 import { beforeEach, expect, test } from "bun:test";
-import { herdr, type Node } from "./app-mocks";
+import { herdr, type Node, walk } from "./app-mocks";
 
 const { ICONS } = await import("../kit/kit.js");
 const { default: Kit } = await import("../mods/kit/main.js");
 
-const walk = (node: Node): Node[] => [node, ...node.kids.flatMap(walk)];
 const find = (node: Node, key: string) => walk(node).find((n) => n.key === key) as Node;
 const texts = (node: Node) => walk(node).flatMap((n) => n.texts);
 const svgs = (node: Node) => walk(node).flatMap((n) => n.calls.filter(([c]) => c === "svg").map(([, args]) => args[0]));
