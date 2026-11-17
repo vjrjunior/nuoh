@@ -1,6 +1,6 @@
 import { base, checkoutOf, parseWorktrees, placeOf } from "../../lib/checkouts.js";
 import { resumeCommand } from "../../lib/claude.js";
-import { REASONS, atShell, freshArgv, freshCommand, isClaude, isDraft, keepArgs, leaves, matchingFolder, movedNote, promptBox, resumeArgv, runsSession, spaceName, splitSteps } from "./logic.js";
+import { REASONS, REFUSED, atShell, freshArgv, freshCommand, isClaude, isDraft, keepArgs, leaves, matchingFolder, movedNote, promptBox, resumeArgv, runsSession, spaceName, splitSteps } from "./logic.js";
 
 const END_WAIT = 10000;
 const POLL = 250;
@@ -199,7 +199,7 @@ async function paneOf(made, io) {
 }
 
 function refused(body) {
-  return { title: "Can't move this tab", body, level: "warning" };
+  return { title: REFUSED, body, level: "warning" };
 }
 
 function failed(message, run) {

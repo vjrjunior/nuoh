@@ -4,7 +4,7 @@ import { agents, closeOverlay, focused, notify, panes, props, setShared, shared,
 import { CONTROL, RADIUS, TEXT, heading, icon } from "../../kit/kit.js";
 import { appIo } from "./io.js";
 import { parseWorktrees, placeOf } from "../../lib/checkouts.js";
-import { LABEL, REASONS, parseSchedule, scheduleStep, targetsFor } from "./logic.js";
+import { LABEL, REASONS, REFUSED, parseSchedule, scheduleStep, targetsFor } from "./logic.js";
 import { moveTab } from "./move.js";
 
 const KEY = "move-tab.request";
@@ -84,7 +84,7 @@ export default class MoveTab extends View {
     setShared(KEY, null);
     if (!Number.isFinite(request.at) || Date.now() - request.at > STALE) return;
     if (this.running) {
-      notify({ title: "Can't move this tab", body: REASONS.running(), level: "warning" });
+      notify({ title: REFUSED, body: REASONS.running(), level: "warning" });
       return;
     }
     this.running = true;
@@ -130,7 +130,7 @@ export default class MoveTab extends View {
     this.since.delete(address);
     cx.spawn(async (cx) => {
       await appIo(cx).unlabel(address);
-      notify({ title: "Can't move this tab", body: reason, level: "warning" });
+      notify({ title: REFUSED, body: reason, level: "warning" });
     });
   }
 
@@ -143,13 +143,13 @@ export default class MoveTab extends View {
       try {
         const io = appIo(cx);
         if (!(await io.unlabel(address))) {
-          notify({ title: "Can't move this tab", body: REASONS.unlabeled(), level: "warning" });
+          notify({ title: REFUSED, body: REASONS.unlabeled(), level: "warning" });
           return;
         }
         const pane = panes().find((candidate) => candidate.terminal === address);
         const space = pane ? spaces().find((candidate) => candidate.tabs.some((tab) => tab.id === pane.tab)) : null;
         if (!space) {
-          notify({ title: "Can't move this tab", body: REASONS.gone(), level: "warning" });
+          notify({ title: REFUSED, body: REASONS.gone(), level: "warning" });
           return;
         }
         const seen = focused();

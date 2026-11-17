@@ -26,6 +26,7 @@ export const REASONS = {
 };
 
 export const LABEL = "vjr.move-to";
+export const REFUSED = "Can't move this tab";
 export const SCHEDULE_TTL = 4 * 60 * 60 * 1000;
 export const SETTLE = 2000;
 const READY = ["idle", "done"];
