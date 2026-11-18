@@ -110,18 +110,6 @@
 **Priority:** P3
 **Depends on:** Nothing
 
-### Reorder the Spaces folders by dragging
-
-**What:** Press a folder's row in the Spaces tree and let go on another folder's row to move it before or after that one, with the 2px `accent` line the tree's repository reorder already draws.
-
-**Why:** Folders stay in the order they were made. With more than a few, the only way to put one first is to delete and remake the others.
-
-**Context:** `spaces.folders` keeps the folders as an array, so the order is the array's. `folders.js` would need a `moveFolder(state, id, index)`; `main.js` already tracks a row drag in `dragUnit` and lights folder rows in `overFolder`, so a folder drag needs its own pressed id and a line instead of the outline. Release handlers must stay one per event on each row (see `mods/move-tab/RECIPE.md`).
-
-**Effort:** S
-**Priority:** P3
-**Depends on:** Nothing
-
 ### Copy a step's text from the test panel
 
 **What:** Give each line of a test panel step a way to copy it, so a command or a message the step asks to paste into a terminal can be taken from the panel itself.
@@ -195,6 +183,10 @@
 **Depends on:** Nothing
 
 ## Completed
+
+### Reorder the Spaces folders by dragging
+
+**Completed:** 2026-11-18. A folder's band drags onto another's: after it moving down, before it moving up, with the card faded and a 2px `accent` line on the card it lands next to. `moveFolder` in `mods/spaces-tree/folders.js` keeps a folder on its side of the pinned line, since folders and repositories can now be pinned too.
 
 ### Share Comeback's and Move tab's Claude helpers in one module
 

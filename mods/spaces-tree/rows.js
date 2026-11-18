@@ -2,7 +2,7 @@ import { div } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
 import { spaces, agents, run, shared } from "herdr";
 import { branchLabel, counts, foldedTail, holdsActive, isFolded, paint } from "./tree.js";
-import { folderOf, folderTail } from "./folders.js";
+import { folderOf, folderOrder, folderTail } from "./folders.js";
 import { readState } from "./popups.js";
 import { CONTROL, ICON_SIZE, TEXT, icon, iconButton, statusDot, toneColor } from "../../kit/kit.js";
 
@@ -44,23 +44,36 @@ export const withRows = (Base) =>
         .hover((s) => s.bg(t.selected))
         .child(icon("folder", { size: ICON_SIZE.md, color: paint(folder.color, t) }))
         .child(div().flex_1().min_w(0).truncate().text_size(TEXT.xl).font_bold().text_color(t.foreground).child(folder.name))
+        .when(folder.pinned, (el) => el.child(this.pin(t)))
         .child(this.note(count, t))
         .when(Boolean(tail?.status), (el) => el.child(this.statusDot(tail.status, t)))
         .child(icon(folder.folded ? "chevron-right" : "chevron-down", { size: ICON_SIZE.md, color: t.unknown }))
-        .on_hover((on, cx) => this.overFolderRow(folder, on, cx))
-        .on_mouse_move((_e, cx) => this.overFolderRow(folder, true, cx))
-        .on_mouse_up("left", (_e, cx) => {
-          if (this.dropOnFolder(folder)) cx.notify();
+        .on_hover((on, cx) => {
+          this.overFolderRow(folder, on, cx);
+          if (!on) this.leaveFolder(folder, cx);
         })
-        .on_click(() => this.toggleFolder(folder.id))
+        .on_mouse_move((_e, cx) => {
+          this.overFolderRow(folder, true, cx);
+          this.overFolderMove(folder, cx);
+        })
+        .on_mouse_down("left", () => this.pressFolder(folder))
+        .on_mouse_up("left", (_e, cx) => {
+          if (this.dropOnFolder(folder) || this.foldOnRelease(folder)) cx.notify();
+        })
         .on_mouse_down("right", () => this.folderMenu(folder));
     }
 
     folderSection({ folder, entries }, t, draw, blocks) {
-      const dropping = this.overFolder === folder.id && this.dragUnit != null && folderOf(readState(), this.dragUnit) !== folder.id;
+      const state = readState();
+      const dropping = this.overFolder === folder.id && this.dragUnit != null && !this.pinned(this.dragUnit) && folderOf(state, this.dragUnit) !== folder.id;
       const active = folder.folded && entries.some(holdsActive);
+      const order = folderOrder(state).map((known) => known.id);
+      const from = order.indexOf(this.movingFolder);
+      const at = order.indexOf(folder.id);
+      const aimed = from >= 0 && from !== at && this.overMove === folder.id;
       return v_flex()
         .id(`folder-card-${folder.id}`)
+        .relative()
         .flex_none()
         .mb(6)
         .p(CARD)
@@ -68,6 +81,7 @@ export const withRows = (Base) =>
         .bg(t.surface)
         .border_1()
         .border_color(dropping ? t.accent : active ? t.dim : t.border)
+        .when(this.movingFolder === folder.id && this.overMove !== folder.id, (el) => el.opacity(0.5))
         .child(this.band(folder, entries, t))
         .when(!folder.folded && entries.length > 0, (el) =>
           el.child(
@@ -78,7 +92,23 @@ export const withRows = (Base) =>
               .pt(blocks ? 6 : 2)
               .children(entries.map((entry, index) => draw(entry, true, index === entries.length - 1))),
           ),
-        );
+        )
+        .when(aimed, (el) => el.child(this.dropLine(t, from < at)));
+    }
+
+    dropLine(t, below) {
+      return div()
+        .absolute()
+        .left(0)
+        .w_full()
+        .h(2)
+        .bg(t.accent)
+        .when(below, (line) => line.bottom(0))
+        .when(!below, (line) => line.top(0));
+    }
+
+    pin(t) {
+      return icon("pin", { size: ICON_SIZE.md, color: t.unknown });
     }
 
     avatar(row, t) {
@@ -188,11 +218,13 @@ export const withRows = (Base) =>
       const status = summary ? summary.status : row.status;
       const all = spaces();
       const index = row.space ? all.findIndex((space) => space.id === row.space.id) : -1;
+      const pinned = this.pinned(entry.key);
       const line = h_flex()
         .gap(8)
         .items_center()
         .child(this.avatar(row, t))
         .child(this.name(row, t).font_medium())
+        .when(pinned, (el) => el.child(this.pin(t)))
         .when(adding, (el) => el.child(this.iconButton(`add-${entry.key}`, "plus", "New worktree", () => this.newWorktree(entry), t)))
         .when(!adding && Boolean(text), (el) => el.child(this.note(text, t)))
         .when(Boolean(status) && !flat, (el) => el.child(this.statusDot(status, t)))
@@ -213,7 +245,7 @@ export const withRows = (Base) =>
         .when(Boolean(row.space), (el) => el.on_mouse_down("right", () => this.menu(row.space, entry)))
         .when(Boolean(rail), (el) => el.child(div().absolute().left(RAIL).top(bottom).w(1.5).h(height - bottom).bg(rail)))
         .when(Boolean(status) && flat, (el) => el.child(this.bar(status, t, height)));
-      const reorder = index >= 0 ? this.reorder(row, index, all) : {};
+      const reorder = index >= 0 ? this.reorder(entry, row, index, all) : {};
       const events = {
         hover: (on, cx) => this.hover(entry.key, on, cx),
         down: () => {
@@ -232,21 +264,10 @@ export const withRows = (Base) =>
     draggable(el, index, t) {
       return el
         .when(this.pressed === index && this.over !== index, (el) => el.opacity(0.5))
-        .when(this.pressed !== null && this.over === index && this.pressed !== index, (el) =>
-          el.child(
-            div()
-              .absolute()
-              .left(0)
-              .w_full()
-              .h(2)
-              .bg(t.accent)
-              .when(this.pressed < index, (line) => line.bottom(0))
-              .when(this.pressed > index, (line) => line.top(0)),
-          ),
-        );
+        .when(this.pressed !== null && this.over === index && this.pressed !== index, (el) => el.child(this.dropLine(t, this.pressed < index)));
     }
 
-    reorder(row, index, all) {
+    reorder(entry, row, index, all) {
       return {
         down: () => {
           this.pressed = index;
@@ -254,7 +275,8 @@ export const withRows = (Base) =>
         },
         move: (cx) => {
           const source = all[this.pressed];
-          const over = source && (source.machine ?? null) === (row.space.machine ?? null) ? index : null;
+          const shelf = this.pinned(this.dragUnit) === this.pinned(entry.key);
+          const over = source && shelf && (source.machine ?? null) === (row.space.machine ?? null) ? index : null;
           if (this.pressed !== null && this.over !== over) {
             this.over = over;
             cx.notify();

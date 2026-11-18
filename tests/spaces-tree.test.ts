@@ -20,20 +20,26 @@ import {
   repoName,
 } from "../mods/spaces-tree/tree.js";
 import {
+  activeChild,
   arrange,
+  canMoveFolder,
   createFolder,
   deleteFolder,
   entryOfSpace,
   fileUnit,
   folderOf,
   folderTail,
+  moveFolder,
   newFolderId,
   nextColor,
+  pinFolder,
   readFolders,
+  readPins,
   recolorFolder,
   renameFolder,
   revealFor,
   toggleFolder,
+  togglePin,
 } from "../mods/spaces-tree/folders.js";
 
 const space = (id: string, over = {}) => ({ id, index: 1, name: id, named: false, folder: "", machine: null, branch: null, active: false, status: null, tabs: [], ...over });
@@ -377,7 +383,7 @@ describe("folders", () => {
 
   test("an empty folder still shows, with nothing in it", () => {
     const empty = createFolder(state, { id: "f3", name: "Later", color: "ansi5" });
-    expect(arrange(tree, empty).folders.at(-1)).toEqual({ folder: { id: "f3", name: "Later", color: "ansi5", folded: false }, entries: [] });
+    expect(arrange(tree, empty).folders.at(-1)).toEqual({ folder: { id: "f3", name: "Later", color: "ansi5", folded: false, pinned: false }, entries: [] });
   });
 
   test("reading ignores what isn't a folder and members of folders that are gone", () => {
@@ -387,7 +393,7 @@ describe("folders", () => {
       folders: [{ id: "a", name: "A", color: "teal" }, { id: "a", name: "Twice" }, { name: "No id" }, { id: "b", name: 3 }],
       members: { one: "a", two: "gone", three: 4 },
     });
-    expect(read).toEqual({ folders: [{ id: "a", name: "A", color: "ansi6", folded: false }], members: { one: "a" } });
+    expect(read).toEqual({ folders: [{ id: "a", name: "A", color: "ansi6", folded: false, pinned: false }], members: { one: "a" } });
   });
 
   test("filing moves a unit into a folder, and null or an unknown folder takes it out", () => {
@@ -401,7 +407,7 @@ describe("folders", () => {
 
   test("a new folder goes last, open, with its trimmed name and the unit it was made for", () => {
     const made = createFolder(state, { id: "f3", name: "  Side  ", color: "ansi1", unit: "x" });
-    expect(made.folders.at(-1)).toEqual({ id: "f3", name: "Side", color: "ansi1", folded: false });
+    expect(made.folders.at(-1)).toEqual({ id: "f3", name: "Side", color: "ansi1", folded: false, pinned: false });
     expect(made.members.x).toBe("f3");
   });
 
@@ -463,5 +469,75 @@ describe("folders", () => {
     expect(opened.folders.map((folder: { folded: boolean }) => folder.folded)).toEqual([false, false]);
     expect(revealFor(state, "y")).toBe(state);
     expect(revealFor(state, "x")).toBe(state);
+  });
+  test("revealing leaves a pinned unit's folder as it is", () => {
+    expect(revealFor(state, common, [common])).toBe(state);
+  });
+});
+
+describe("pins and folder order", () => {
+  const tree = buildTree([space("m"), space("x"), space("y")], { m: look("/r/app"), x: null, y: null }, repos);
+  const keys = (entries: { key: string }[]) => entries.map((entry) => entry.key);
+  const three = readFolders({
+    folders: [
+      { id: "a", name: "A", color: "ansi4", pinned: true },
+      { id: "b", name: "B", color: "ansi2" },
+      { id: "c", name: "C", color: "ansi3", pinned: true },
+      { id: "d", name: "D", color: "ansi1" },
+    ],
+    members: { [common]: "b", y: "a" },
+  });
+  const order = (state: { folders: { id: string }[] }) => state.folders.map((folder) => folder.id);
+
+  test("pins read as a list of unique keys, and toggling adds or takes one out", () => {
+    expect(readPins(undefined)).toEqual([]);
+    expect(readPins({ x: 1 })).toEqual([]);
+    expect(readPins(["x", "x", 3, "", common])).toEqual(["x", common]);
+    expect(togglePin(["x"], common)).toEqual(["x", common]);
+    expect(togglePin(["x", common], "x")).toEqual([common]);
+  });
+
+  test("pinned repositories and spaces leave their folder for the top, in Herdr's order", () => {
+    const { pinned, folders, loose } = arrange(tree, three, ["x", common]);
+    expect(keys(pinned)).toEqual([common, "x"]);
+    expect(folders.map(({ folder, entries }) => [folder.id, keys(entries)])).toEqual([
+      ["a", ["y"]],
+      ["c", []],
+      ["b", []],
+      ["d", []],
+    ]);
+    expect(loose).toEqual([]);
+    expect(keys(arrange(tree, three).pinned)).toEqual([]);
+  });
+
+  test("a folder is read unpinned unless it says so, and pinning toggles it", () => {
+    expect(three.folders.map((folder: { pinned: boolean }) => folder.pinned)).toEqual([true, false, true, false]);
+    expect(pinFolder(three, "b").folders[1].pinned).toBe(true);
+    expect(pinFolder(pinFolder(three, "b"), "b").folders[1].pinned).toBe(false);
+    expect(pinFolder(three, "gone")).toBe(three);
+  });
+
+  test("a folder moved down goes after the one it lands on, and moved up before it", () => {
+    expect(order(moveFolder(three, "b", "d"))).toEqual(["a", "c", "d", "b"]);
+    expect(order(moveFolder(three, "d", "b"))).toEqual(["a", "d", "b", "c"]);
+    expect(order(moveFolder(three, "a", "c"))).toEqual(["b", "c", "a", "d"]);
+  });
+
+  test("a folder stays on its own side of the pinned line", () => {
+    expect(canMoveFolder(three, "a", "c")).toBe(true);
+    expect(canMoveFolder(three, "a", "b")).toBe(false);
+    expect(canMoveFolder(three, "a", "a")).toBe(false);
+    expect(canMoveFolder(three, "a", "gone")).toBe(false);
+    expect(moveFolder(three, "a", "b")).toBe(three);
+  });
+
+  test("the list to scroll counts the pinned rows first", () => {
+    const active = buildTree([space("m"), space("x", { active: true }), space("y")], { m: look("/r/app"), x: null, y: null }, repos);
+    expect(activeChild(arrange(active, three, ["x"]), false)).toEqual({ at: 0, folded: false });
+    expect(activeChild(arrange(active, three, [common]), false)).toEqual({ at: 5, folded: false });
+    const inFolder = readFolders({ ...three, members: { x: "d" } });
+    expect(activeChild(arrange(active, inFolder, [common]), false)).toEqual({ at: 4, folded: false });
+    expect(activeChild(arrange(active, three, ["x"]), true)).toEqual({ at: 0, folded: false });
+    expect(activeChild(arrange(active, three, [common]), true)).toEqual({ at: 6, folded: false });
   });
 });

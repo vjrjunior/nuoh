@@ -96,7 +96,7 @@ export default class Tabs extends View {
   "mods/changes/main.js": script("    return div().rounded(10);"),
   "mods/workspace-status/main.js": script(`    return div().rounded(3).on_click(() => run("app.palette"));`),
   "mods/pane/main.js": script("    return div().rounded(4);"),
-  "mods/menu/main.js": script(`    const tree = () => openOverlay({ mod: "worktree", kind: "dialog", width: 440, height: 260, props: {} });
+  "mods/menu/main.js": 'import { run, props, closeOverlay, openOverlay, theme, keys, terminals, spaces, panes, exec } from "herdr";\n' + script(`    const tree = () => openOverlay({ mod: "worktree", kind: "dialog", width: 440, height: 260, props: {} });
     const items = [
         ["Close", "tab.close", { id: tg.id }],
         ["Close", "space.close", { id: tg.id }],

@@ -4,7 +4,7 @@ import { spaces, panes, run, exec, theme, shared, setShared, watchFolder, window
 import { parseWorktrees, placeOf as place } from "../../lib/checkouts.js";
 import { assignColors, buildTree, canOpen, duePlaces, liveFolds, parseRefs, readLook, repoName } from "./tree.js";
 import { activeChild, arrange, entryOfSpace, revealFor } from "./folders.js";
-import { openNameDialog, readState, renderPopup, saveState, startPopup } from "./popups.js";
+import { openNameDialog, readPinned, readState, renderPopup, saveState, startPopup } from "./popups.js";
 import { DRAG, withActions } from "./actions.js";
 import { withRail } from "./rail.js";
 import { withRows } from "./rows.js";
@@ -49,6 +49,8 @@ export default class SpacesTree extends withRail(withRows(withActions(View))) {
     this.dropOver = null;
     this.dragUnit = null;
     this.overFolder = null;
+    this.movingFolder = null;
+    this.overMove = null;
     this.revealed = spaces().find((space) => space.active)?.id ?? null;
     this.revealing = null;
     this.scroll = ScrollHandle.new();
@@ -134,7 +136,8 @@ export default class SpacesTree extends withRail(withRows(withActions(View))) {
   hiddenUnits() {
     const state = readState();
     const folded = new Set(state.folders.filter((folder) => folder.folded).map((folder) => folder.id));
-    return Object.keys(state.members).filter((unit) => folded.has(state.members[unit]));
+    const pins = new Set(readPinned());
+    return Object.keys(state.members).filter((unit) => folded.has(state.members[unit]) && !pins.has(unit));
   }
 
   reveal() {
@@ -148,7 +151,7 @@ export default class SpacesTree extends withRail(withRows(withActions(View))) {
     if (!entry) return;
     this.revealing = null;
     const state = readState();
-    saveState(state, revealFor(state, entry.key));
+    saveState(state, revealFor(state, entry.key, readPinned()));
   }
 
   settled(space) {
@@ -309,7 +312,7 @@ export default class SpacesTree extends withRail(withRows(withActions(View))) {
     const { colors, changed } = assignColors(spaces(), shared("space.colors") ?? {});
     if (changed) setShared("space.colors", colors);
     const narrow = this.narrow();
-    const groups = arrange(this.entries(), readState());
+    const groups = arrange(this.entries(), readState(), readPinned());
     const blocks = this.style() === "blocks";
     this.bringActive(groups, narrow);
     const draw = (entry, inFolder = false, last = false) => (blocks ? this.blockEntry(entry, t, inFolder, last) : this.graphEntry(entry, t, inFolder));
@@ -331,6 +334,7 @@ export default class SpacesTree extends withRail(withRows(withActions(View))) {
           .mode("always")
           .track_scroll(this.scroll)
           .on_mouse_up("left", (_e, cx) => {
+            this.landFolder();
             this.pressed = null;
             this.over = null;
             this.dropOver = null;
@@ -344,8 +348,14 @@ export default class SpacesTree extends withRail(withRows(withActions(View))) {
             this.over = null;
             this.dragUnit = null;
             this.overFolder = null;
+            this.movingFolder = null;
+            this.overMove = null;
           })
-          .children(narrow ? this.compactRows(groups, t) : [...groups.folders.map((group) => this.folderSection(group, t, draw, blocks)), ...groups.loose.map((entry) => draw(entry))]),
+          .children(
+            narrow
+              ? this.compactRows(groups, t)
+              : [...groups.pinned.map((entry) => draw(entry)), ...groups.folders.map((group) => this.folderSection(group, t, draw, blocks)), ...groups.loose.map((entry) => draw(entry))],
+          ),
       );
   }
 }

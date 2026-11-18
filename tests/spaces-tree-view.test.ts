@@ -124,6 +124,14 @@ describe("bringing the active space into view", () => {
     expect(shownBy(view)).toEqual([0, 0]);
   });
 
+  test("pinned rows come before the folders in the list it scrolls", () => {
+    app.shared[FOLDERS] = { folders: [{ id: "f1", name: "Clients", color: "ansi4", folded: false }], members: { x: "f1" } };
+    app.shared["spaces.pinned"] = [common];
+    const view = setup();
+    view.render();
+    expect(shownBy(view)).toEqual([1]);
+  });
+
   test("the narrow rail counts each folder tile and each space", () => {
     app.sidebar = 60;
     app.shared[FOLDERS] = { folders: [{ id: "f1", name: "Clients", color: "ansi4", folded: false }], members: { [common]: "f1" } };

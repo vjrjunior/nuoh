@@ -74,7 +74,7 @@ A palette that does not validate installs nothing, and the last good theme stays
 
 ## Use the layout
 
-One layout for herdr-app, `vjr-desk`, built from the version you have installed: Herdr's window with the VJR theme, `vjr` in the command palette, a **Graph** button that opens Git Graph in the side panel, and Spaces as a tree of each repository's worktrees, open or closed, drawn as a graph or as blocks, with the active space in its own color and your own colored folders on top. It has two looks: round corners, which are Herdr's own and the default, and square corners.
+One layout for herdr-app, `vjr-desk`, built from the version you have installed: Herdr's window with the VJR theme, `vjr` in the command palette, a **Graph** button that opens Git Graph in the side panel, and Spaces as a tree of each repository's worktrees, open or closed, drawn as a graph or as blocks, with the active space in its own color, your pinned repositories and your own colored folders on top. It has two looks: round corners, which are Herdr's own and the default, and square corners.
 
 ```sh
 bun run install-theme
@@ -192,18 +192,21 @@ It refuses, with a toast that says why, when Claude is working or waiting for yo
 
 The transcript stays under the first folder's project in `~/.claude/projects/`, so `claude --resume <id>` works anywhere, but the worktree's own `/resume` picker may not list the conversation. A Claude that never had a turn has no conversation to resume yet, so a new `claude` with the same options starts in its place, and the toast says so. A tab let go anywhere but the tab bar or the Spaces tree, over a terminal say, stays in the drag until the next press, for at most 30 s: until then, the tab stays faded, the rows that would take it stay dashed, and they light up under the pointer. Any press anywhere ends a drag older than 300 ms, so a later click on a row only opens that row, and a later drag never drops the old tab. A release drops only on a row that lit up under the pointer first, so a press the tree can't see, such as one on its scrollbar, can't drop it either. [`mods/move-tab/RECIPE.md`](mods/move-tab/RECIPE.md) describes it in full.
 
-### Spaces folders
+### Spaces folders and pins
 
-Gather repositories, with their worktrees, and loose spaces into folders with a name and one of the six avatar colors. Folders sit at the top of the Spaces tree, in the order you made them; what isn't in a folder follows in Herdr's order.
+Gather repositories, with their worktrees, and loose spaces into folders with a name and one of the six avatar colors. Folders sit at the top of the Spaces tree, in the order you drag them into; what isn't in a folder follows in Herdr's order. Pin a repository or a space to keep it at the very top, and pin a folder to keep it above the others.
 
 Each folder is a card: its name sits on a gray band with a folder icon in its color and how many repositories and spaces it holds, and what it holds is listed inside the card, set in from both sides, in graph and in blocks alike.
 
 - **Filing:** drag a repository's row (or a loose space's) onto a folder, or right-click a space and pick `Move to folder…`: the popup lists the folders, checks the one it's in, makes a `New folder…` with it, and takes it out with `Remove from folder`. A worktree's menu files its whole repository. Dragging a row onto a row in another folder, or outside any, reorders it as before and moves it into that row's folder, or out.
 - **Making one:** the folder button left of `+` in the Spaces header opens `New folder` for an empty folder; `New folder…` in `Move to folder…` makes one with the row in it.
 - **Folding:** click a folder's band. A folded folder is only its band and shows `N need you`, counting the agents in it that are blocked or done (or how many it holds when none are), and a dot in its most urgent status. When the space in front changes to one inside a folded folder, by a click, a key, `agent.next`, a toast or a script, the folder opens; folding it again while that space is in front keeps it folded.
-- **Editing:** right-click a folder for its colors (applied at once), `Rename…` and `Delete folder`. Deleting gives its repositories and spaces back to the list; no space closes.
+- **Reordering:** press a folder's band and let go on another folder's band. Moved down, it lands after that folder; moved up, before it. While it is held, its card fades to half and a 2px `accent` line runs along the edge of the card it would land next to. Letting go on its own band only folds it.
+- **Editing:** right-click a folder for its colors (applied at once), `Pin folder`, `Rename…` and `Delete folder`. Deleting gives its repositories and spaces back to the list; no space closes.
+- **Pinning a repository or a space:** right-click its row and pick `Pin to top` (a worktree's menu pins its whole repository). It moves above every folder, with a gray pin after its name, and stays there when its folder is folded; its folder no longer counts it. `Unpin` puts it back in its folder. Pinned rows reorder among themselves by dragging, as before; a drag never takes a row across the pinned line, and a pinned row doesn't go into a folder by dragging (`Move to folder…` still files it, for when it's unpinned). Going to a pinned space leaves its folder folded.
+- **Pinning a folder:** `Pin folder` in its popup keeps it above the folders that aren't pinned, with a pin on its band; `Unpin folder` lets it go. A folder only reorders among folders on its side of that line.
 
-Both looks show the same folders, kept with their fold in `spaces.folders` in Herdr's shared state, and so do restarts. A space that becomes active from outside the tree unfolds its folder and is scrolled into view. Below 160px the rail shows each folder as its tile, followed by the numbers of its spaces while it's open. The space menu item is in the layout's copy of Herdr's menu (`vjr-menu`), and only shows when the Spaces tree opens that menu.
+Both looks show the same folders and pins, kept with their fold in `spaces.folders` and, for pinned repositories and spaces, in `spaces.pinned`, in Herdr's shared state, and so do restarts. A space that becomes active from outside the tree unfolds its folder and is scrolled into view. Below 160px the rail shows the pinned spaces' numbers first, then each folder as its tile, followed by the numbers of its spaces while it's open; the rail shows no pins and doesn't reorder folders. The space menu items are in the layout's copy of Herdr's menu (`vjr-menu`), and only show when the Spaces tree opens that menu.
 
 ## Kit
 

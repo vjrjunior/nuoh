@@ -1,7 +1,7 @@
 import { spaces, openOverlay, shared, setShared, props } from "herdr";
 import { accepts, DRAG_GRACE, dropTarget } from "./tree.js";
-import { fileUnit, folderOf, toggleFolder } from "./folders.js";
-import { FOLDER_MENU, movePopupHeight, readState, saveState } from "./popups.js";
+import { canMoveFolder, fileUnit, folderOf, moveFolder, toggleFolder, togglePin } from "./folders.js";
+import { FOLDER_MENU, movePopupHeight, readPinned, readState, saveState } from "./popups.js";
 
 export const DRAG = "move-tab.drag";
 const REQUEST = "move-tab.request";
@@ -75,10 +75,16 @@ export const withActions = (Base) =>
         });
     }
 
+    pinned(key) {
+      return readPinned().includes(key);
+    }
+
     menu(space, entry) {
       const state = readState();
+      const pins = readPinned();
       const name = entry.kind === "repo" ? entry.main.name : entry.row.name;
-      const folder = { unit: entry.key, name, height: movePopupHeight(state.folders.length, folderOf(state, entry.key) != null) };
+      const height = movePopupHeight(state.folders.length, folderOf(state, entry.key) != null);
+      const folder = { unit: entry.key, name, height, pinned: pins.includes(entry.key), pins: togglePin(pins, entry.key) };
       openOverlay({ mod: "menu", kind: "popup", width: 200, height: 260, props: { tab: "space", target: { id: space.id }, folder } });
     }
 
@@ -93,7 +99,7 @@ export const withActions = (Base) =>
 
     dropOnEntry(entry) {
       const unit = this.dragUnit;
-      if (!unit || unit === entry.key) return;
+      if (!unit || unit === entry.key || this.pinned(unit) || this.pinned(entry.key)) return;
       const state = readState();
       const into = folderOf(state, entry.key);
       if (folderOf(state, unit) !== into) saveState(state, fileUnit(state, unit, into));
@@ -106,18 +112,55 @@ export const withActions = (Base) =>
       this.overFolder = null;
       this.pressed = null;
       this.over = null;
-      if (!unit || !lit) return false;
+      if (!unit || !lit || this.pinned(unit)) return false;
       const state = readState();
       if (folderOf(state, unit) !== folder.id) saveState(state, fileUnit(state, unit, folder.id));
       return true;
     }
 
     overFolderRow(folder, on, cx) {
-      const over = on && this.dragUnit != null ? folder.id : this.overFolder === folder.id ? null : this.overFolder;
+      const over = on && this.dragUnit != null && !this.pinned(this.dragUnit) ? folder.id : this.overFolder === folder.id ? null : this.overFolder;
       if (over === this.overFolder) return;
       this.overFolder = over;
       if (over) this.over = null;
       cx.notify();
+    }
+
+    pressFolder(folder) {
+      this.movingFolder = folder.id;
+      this.overMove = folder.id;
+    }
+
+    overFolderMove(folder, cx) {
+      if (this.movingFolder == null) return;
+      const over = this.movingFolder === folder.id || canMoveFolder(readState(), this.movingFolder, folder.id) ? folder.id : null;
+      if (over === this.overMove) return;
+      this.overMove = over;
+      cx.notify();
+    }
+
+    leaveFolder(folder, cx) {
+      if (this.overMove !== folder.id) return;
+      this.overMove = null;
+      cx.notify();
+    }
+
+    landFolder() {
+      const from = this.movingFolder;
+      const to = this.overMove;
+      this.movingFolder = null;
+      this.overMove = null;
+      if (from == null || to == null || from === to) return;
+      const state = readState();
+      saveState(state, moveFolder(state, from, to));
+    }
+
+    foldOnRelease(folder) {
+      if (this.movingFolder !== folder.id || this.overMove !== folder.id) return false;
+      this.movingFolder = null;
+      this.overMove = null;
+      this.toggleFolder(folder.id);
+      return true;
     }
 
     newWorktree(entry) {

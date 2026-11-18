@@ -1,12 +1,13 @@
 import { div } from "gpui-kit";
 import { v_flex, h_flex, InputState, Input } from "gpui-base";
 import { props, theme, shared, setShared, closeOverlay, openOverlay } from "herdr";
-import { createFolder, deleteFolder, fileUnit, folderOf, newFolderId, nextColor, readFolders, recolorFolder, renameFolder } from "./folders.js";
+import { createFolder, deleteFolder, fileUnit, folderOf, newFolderId, nextColor, pinFolder, readFolders, readPins, recolorFolder, renameFolder } from "./folders.js";
 import { PALETTE, paint } from "./tree.js";
 import { CONTROL, RADIUS, TEXT, button, popupRow } from "../../kit/kit.js";
 
 export const FOLDERS = "spaces.folders";
-export const FOLDER_MENU = { width: 220, height: 122 };
+export const PINS = "spaces.pinned";
+export const FOLDER_MENU = { width: 220, height: 151 };
 export const NAME_DIALOG = { width: 340, height: 180 };
 const PAD = 4;
 const TITLE = 24;
@@ -17,6 +18,8 @@ export function movePopupHeight(count, inFolder) {
 }
 
 export const readState = () => readFolders(shared(FOLDERS));
+
+export const readPinned = () => readPins(shared(PINS));
 
 export function saveState(before, after) {
   if (after !== before) setShared(FOLDERS, after);
@@ -129,6 +132,20 @@ function folderView(view, t) {
         .children(PALETTE.map((color) => swatch(`folder-color-${color}`, color, folder.color === color, () => saveState(state, recolorFolder(state, folder.id, color)), t))),
     )
     .child(separator(t))
+    .child(
+      popupRow(
+        "folder-pin",
+        {
+          icon: folder.pinned ? "pin-off" : "pin",
+          label: folder.pinned ? "Unpin folder" : "Pin folder",
+          onClick: () => {
+            saveState(state, pinFolder(state, folder.id));
+            closePopup(view);
+          },
+        },
+        t,
+      ),
+    )
     .child(
       popupRow(
         "folder-rename",

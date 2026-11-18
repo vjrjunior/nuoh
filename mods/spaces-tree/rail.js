@@ -37,9 +37,9 @@ export const withRail = (Base) =>
         .when(needs, (el) => el.child(statusDot(t[tail.status], { size: 5 })));
     }
 
-    compactRows({ folders, loose }, t) {
+    compactRows({ pinned, folders, loose }, t) {
       const numbered = (entries) => this.compactSpaces(entries, t);
-      return [...folders.flatMap(({ folder, entries }) => [this.compactFolder(folder, entries, t), ...(folder.folded ? [] : numbered(entries))]), ...numbered(loose)];
+      return [...numbered(pinned), ...folders.flatMap(({ folder, entries }) => [this.compactFolder(folder, entries, t), ...(folder.folded ? [] : numbered(entries))]), ...numbered(loose)];
     }
 
     compactSpaces(entries, t) {

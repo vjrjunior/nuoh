@@ -19,6 +19,8 @@ export const ICONS = [
   "git-branch",
   "github",
   "layers",
+  "pin",
+  "pin-off",
   "plus",
   "rotate-cw",
   "terminal",

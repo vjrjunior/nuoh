@@ -272,6 +272,7 @@ describe("square", () => {
 
   test("a context menu that changed still generates", () => {
     const menu = [
+      'import { run, props, closeOverlay, openOverlay, theme, keys, terminals, spaces, panes, exec } from "herdr";',
       'export default class Mod { render() {',
       '        ["Close", "tab.close", { id: tg.id }],',
       '    const icon = command === "worktree" ? "git-branch" : "terminal";',
@@ -358,18 +359,30 @@ describe("spaces-tree", () => {
     expect(generateRound().mods["vjr-spaces-tree"]?.["rows.js"]).toMatch(/\.rounded\(8\)/);
   });
 
-  test("both looks put Move to folder… in the space menu, before Close", () => {
+  test("both looks put Pin to top or Unpin, then Move to folder…, in the space menu, before Close", () => {
     const copy = "vjr-menu";
     for (const generated of [generateRound(), generateSquare()]) {
       const menu = generated.mods[copy]?.["main.js"] ?? "";
-      expect(menu).toContain('        ...(p.folder ? [["Move to folder…", "spaces-folder", p.folder]] : []),\n        ["Close", "space.close", { id: tg.id }],');
-      expect(menu).toContain('  if (command === "spaces-folder") return "mods/workspace-chrome/folder.svg";\n  const name = command.endsWith(".close")');
+      expect(menu).toContain(
+        '        ...(p.folder ? [p.folder.pinned ? ["Unpin", "spaces-unpin", p.folder] : ["Pin to top", "spaces-pin", p.folder], ["Move to folder…", "spaces-folder", p.folder]] : []),\n        ["Close", "space.close", { id: tg.id }],',
+      );
+      expect(menu).toContain(
+        '  if (command === "spaces-pin") return "mods/workspace-chrome/pin.svg";\n  if (command === "spaces-unpin") return "mods/workspace-chrome/pin-off.svg";\n  if (command === "spaces-folder") return "mods/workspace-chrome/folder.svg";\n  const name = command.endsWith(".close")',
+      );
+    }
+  });
+
+  test("both looks make Pin to top and Unpin write the pins the tree worked out", () => {
+    for (const generated of [generateRound(), generateSquare()]) {
+      const menu = generated.mods["vjr-menu"]?.["main.js"] ?? "";
+      expect(menu).toContain('import { run, props, closeOverlay, openOverlay, theme, keys, terminals, spaces, panes, exec, setShared } from "herdr";');
+      expect(menu).toContain('    closeOverlay(props()?.overlay);\n    if (it[1] === "spaces-pin" || it[1] === "spaces-unpin") return setShared("spaces.pinned", it[2].pins);\n');
     }
   });
 
   test("the menu opens the layout's own folders popup, frameless with square corners", () => {
     expect(generateRound().mods["vjr-menu"]?.["main.js"]).toContain(
-      '    closeOverlay(props()?.overlay);\n    if (it[1] === "spaces-folder") return openOverlay({ mod: "vjr-spaces-tree", kind: "popup", width: 240, height: it[2].height, props: { ...it[2], role: "folders" } });',
+      '    if (it[1] === "spaces-pin" || it[1] === "spaces-unpin") return setShared("spaces.pinned", it[2].pins);\n    if (it[1] === "spaces-folder") return openOverlay({ mod: "vjr-spaces-tree", kind: "popup", width: 240, height: it[2].height, props: { ...it[2], role: "folders" } });',
     );
     expect(generateSquare().mods["vjr-menu"]?.["main.js"]).toContain('openOverlay({ mod: "vjr-spaces-tree", kind: "popup", frame: "none", width: 240,');
   });
@@ -387,6 +400,15 @@ describe("spaces-tree", () => {
 
   test("a menu without the space case fails the recipe", () => {
     expect(() => generateRound({ "mods/menu/main.js": "export default class Mod { render() { return div(); } }" })).toThrow(/recipe spaces-tree/);
+  });
+
+  test("a menu whose imports changed fails the recipe", () => {
+    const home = tempDir();
+    makeHerdrHome(home);
+    const menu = readFileSync(join(home, "mods/menu/main.js"), "utf8");
+    const anchor = 'import { run, props, closeOverlay, openOverlay, theme, keys, terminals, spaces, panes, exec } from "herdr";';
+    expect(menu).toContain(anchor);
+    expect(() => generateRound({ "mods/menu/main.js": menu.replace(anchor, "") })).toThrow(/recipe spaces-tree:/);
   });
 });
 
@@ -472,7 +494,13 @@ describe("move-tab", () => {
   });
 
   test("a menu that changed fails the recipe", () => {
-    const onlyFolders = ['        ["Close", "space.close", { id: tg.id }],', "    closeOverlay(props()?.overlay);", '  const name = command.endsWith(".close") ? "x" : "terminal";', ""].join("\n");
+    const onlyFolders = [
+      'import { run, props, closeOverlay, openOverlay, theme, keys, terminals, spaces, panes, exec } from "herdr";',
+      '        ["Close", "space.close", { id: tg.id }],',
+      "    closeOverlay(props()?.overlay);",
+      '  const name = command.endsWith(".close") ? "x" : "terminal";',
+      "",
+    ].join("\n");
     expect(() => generateRound({ "mods/menu/main.js": onlyFolders })).toThrow(/recipe move-tab/);
   });
 

@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { herdr, type Node, texts } from "./app-mocks";
+import { herdr, type Node, texts, walk } from "./app-mocks";
 import { reset, SpacesTree, app, click, common, cx, fire, onMain, pathTo, setup, space, style } from "./spaces-tree-harness";
 
 beforeEach(reset);
 
 describe("folders", () => {
   const FOLDERS = "spaces.folders";
+  const PINS = "spaces.pinned";
   const folders = (members: Record<string, string>, folded = false) => ({
     folders: [
       { id: "f1", name: "Clients", color: "ansi4", folded },
@@ -136,6 +137,51 @@ describe("folders", () => {
       expect(border(view, "f2")).toBe("#border");
       fire(node(view, "folder-f1"), "up:left");
       expect(border(view, "f1")).toBe("#border");
+    });
+
+    const line = (view: { render(): Node }, id: string) =>
+      (node(view, `folder-card-${id}`).at(-1) as Node).kids.find((kid) => style(kid, "h")?.[0] === 2 && style(kid, "bg")?.[0] === "#accent") ?? null;
+    const opacity = (view: { render(): Node }, id: string) => style(node(view, `folder-card-${id}`).at(-1) as Node, "opacity")?.[0];
+
+    test("a dragged folder's card fades and the card it would land on shows a line on the side it goes", () => {
+      app.shared[FOLDERS] = folders({});
+      const view = setup();
+      fire(node(view, "folder-f1"), "down:left");
+      expect([opacity(view, "f1"), line(view, "f2")]).toEqual([undefined, null]);
+      fire(node(view, "folder-f2"), "move");
+      expect(opacity(view, "f1")).toBe(0.5);
+      expect(style(line(view, "f2") as Node, "bottom")).toEqual([0]);
+      expect(line(view, "f1")).toBeNull();
+      fire(node(view, "folder-f1"), "move");
+      expect([opacity(view, "f1"), line(view, "f2")]).toEqual([undefined, null]);
+    });
+
+    test("a folder moving up shows the line on top of the card it lands on", () => {
+      app.shared[FOLDERS] = folders({});
+      const view = setup();
+      fire(node(view, "folder-f2"), "down:left");
+      fire(node(view, "folder-f1"), "move");
+      expect(style(line(view, "f1") as Node, "top")).toEqual([0]);
+    });
+
+    test("a folder held over the other side of the pinned line shows no line", () => {
+      app.shared[FOLDERS] = { ...folders({}), folders: [{ ...folders({}).folders[0], pinned: true }, folders({}).folders[1]] };
+      const view = setup();
+      fire(node(view, "folder-f2"), "down:left");
+      fire(node(view, "folder-f1"), "move");
+      expect(line(view, "f1")).toBeNull();
+    });
+
+    test("a pinned row carries a pin, and so does a pinned folder's band", () => {
+      app.shared[FOLDERS] = { ...folders({}), folders: [{ ...folders({}).folders[0], pinned: true }, folders({}).folders[1]] };
+      app.shared[PINS] = [common];
+      const view = setup();
+      const pins = (key: string) => walk(node(view, key).at(-1) as Node).filter((one) => one.calls.some(([called, args]) => called === "svg" && args[0] === "mods/kit/icons/pin.svg"));
+      expect(pins(`head-${common}`)).toHaveLength(1);
+      expect(style(pins(`head-${common}`)[0] as Node, "text_color")).toEqual(["#unknown"]);
+      expect(pins("head-x")).toHaveLength(0);
+      expect(pins("folder-f1")).toHaveLength(1);
+      expect(pins("folder-f2")).toHaveLength(0);
     });
 
     test("a folded folder holding the active space gets a dim card border", () => {
@@ -297,6 +343,144 @@ describe("folders", () => {
     click(view, "compact-folder-f1");
     expect(listKeys(view)).toEqual(["compact-folder-f1", "compact-folder-f2", "compact-m"]);
   });
+
+  test("the narrow rail puts the pinned spaces first", () => {
+    app.shared[FOLDERS] = folders({ [common]: "f1" });
+    app.shared[PINS] = ["x"];
+    app.sidebar = 100;
+    expect(listKeys(setup())).toEqual(["compact-x", "compact-folder-f1", "compact-m", "compact-folder-f2"]);
+  });
+
+  test("dragging a folder's band onto another moves it after going down and before going up", () => {
+    app.shared[FOLDERS] = folders({});
+    const view = setup();
+    drag(view, "folder-f1", "folder-f2");
+    expect(state().folders.map((folder) => [folder.id, folder.folded])).toEqual([
+      ["f2", false],
+      ["f1", false],
+    ]);
+    expect(listKeys(view).slice(0, 2)).toEqual(["folder-card-f2", "folder-card-f1"]);
+    drag(view, "folder-f1", "folder-f2");
+    expect(state().folders.map((folder) => folder.id)).toEqual(["f1", "f2"]);
+  });
+
+  test("a folder let go over another band lands there when only the list hears the release, as in the window", () => {
+    app.shared[FOLDERS] = folders({});
+    const view = setup();
+    fire(node(view, "folder-f1"), "down:left");
+    fire(node(view, "folder-f2"), "move");
+    const list = view.render().kids[1] as Node;
+    for (const handler of list.handlers["up:left"] ?? []) handler({}, cx);
+    expect(state().folders.map((folder) => [folder.id, folder.folded])).toEqual([
+      ["f2", false],
+      ["f1", false],
+    ]);
+  });
+
+  test("leaving the band takes the line away, and letting go then moves nothing", () => {
+    app.shared[FOLDERS] = folders({});
+    const view = setup();
+    fire(node(view, "folder-f1"), "down:left");
+    fire(node(view, "folder-f2"), "move");
+    for (const handler of (node(view, "folder-f2").at(-1) as Node).handlers.hover ?? []) handler(false, cx);
+    expect((node(view, "folder-card-f2").at(-1) as Node).kids.some((kid) => style(kid, "h")?.[0] === 2)).toBe(false);
+    const list = view.render().kids[1] as Node;
+    for (const handler of list.handlers["up:left"] ?? []) handler({}, cx);
+    expect(state().folders.map((folder) => folder.id)).toEqual(["f1", "f2"]);
+  });
+
+  test("a band pressed and let go on itself folds once, on its release, and moves nothing", () => {
+    app.shared[FOLDERS] = folders({});
+    const view = setup();
+    expect((node(view, "folder-f2").at(-1) as Node).handlers.click).toBeUndefined();
+    fire(node(view, "folder-f2"), "down:left");
+    fire(node(view, "folder-f2"), "up:left");
+    expect(state().folders.map((folder) => [folder.id, folder.folded])).toEqual([
+      ["f1", false],
+      ["f2", true],
+    ]);
+  });
+
+  test("a band let go after a press outside the list moves nothing", () => {
+    app.shared[FOLDERS] = folders({});
+    const view = setup();
+    fire(node(view, "folder-f1"), "down:left");
+    for (const handler of (view.render().kids[1] as Node).handlers.down_out ?? []) handler({}, cx);
+    fire(node(view, "folder-f2"), "move");
+    fire(node(view, "folder-f2"), "up:left");
+    expect(state().folders.map((folder) => folder.id)).toEqual(["f1", "f2"]);
+  });
+
+  test("a pinned folder sits above the others and a folder can't be dragged across it", () => {
+    app.shared[FOLDERS] = { ...folders({}), folders: [folders({}).folders[0], { ...folders({}).folders[1], pinned: true }] };
+    const view = setup();
+    expect(listKeys(view).slice(0, 2)).toEqual(["folder-card-f2", "folder-card-f1"]);
+    drag(view, "folder-f1", "folder-f2");
+    expect(state().folders.map((folder) => folder.id)).toEqual(["f1", "f2"]);
+  });
+
+  test("a pinned repository sits at the top, out of its folded folder, which no longer counts it", () => {
+    app.shared[FOLDERS] = folders({ [common]: "f1" }, true);
+    app.shared[PINS] = [common];
+    const view = setup();
+    expect(listKeys(view)).toEqual([`group-${common}`, "folder-card-f1", "folder-card-f2", "group-x"]);
+    expect(texts(node(view, "folder-f1").at(-1) as Node)).toEqual(["Clients", "0"]);
+    app.shared[PINS] = [];
+    expect(listKeys(view)).toEqual(["folder-card-f1", "folder-card-f2", "group-x"]);
+  });
+
+  test("pinned rows reorder among themselves, and a row doesn't cross the pinned line", () => {
+    app.shared[FOLDERS] = folders({ x: "f1" });
+    app.shared[PINS] = [common];
+    const view = setup();
+    drag(view, "head-x", `head-${common}`);
+    expect(app.runs.filter(([name]) => name === "space.move")).toEqual([]);
+    expect(state().members).toEqual({ x: "f1" });
+    app.shared[PINS] = [common, "x"];
+    drag(view, "head-x", `head-${common}`);
+    expect(app.runs).toContainEqual(["space.move", { id: "x", index: 1 }]);
+    expect(state().members).toEqual({ x: "f1" });
+  });
+
+  test("a pinned row doesn't light a folder up or go into it", () => {
+    app.shared[FOLDERS] = folders({});
+    app.shared[PINS] = [common];
+    const view = setup();
+    fire(node(view, `head-${common}`), "down:left");
+    fire(node(view, "folder-f1"), "move");
+    expect(style(node(view, "folder-card-f1").at(-1) as Node, "border_color")).toEqual(["#505050"]);
+    fire(node(view, "folder-f1"), "up:left");
+    expect(state().members).toEqual({});
+  });
+
+  test("going to a pinned space leaves its folded folder folded", () => {
+    app.shared[FOLDERS] = folders({ [common]: "f1" }, true);
+    app.shared[PINS] = [common];
+    const looks = { "/r/app": { top: "/r/app", common }, "/x": null };
+    const view = placed([space("m", { folder: "/r/app" }), space("x", { active: true, folder: "/x" })], looks);
+    view.tick(cx);
+    app.spaces = [space("m", { active: true, folder: "/r/app" }), space("x", { folder: "/x" })];
+    view.tick(cx);
+    expect(state().folders[0].folded).toBe(true);
+  });
+
+  test("a pinned repository in a folded folder keeps its git fresh", () => {
+    app.shared[FOLDERS] = folders({ [common]: "f1", x: "f1" }, true);
+    const view = setup();
+    expect(view.hiddenUnits()).toEqual([common, "x"]);
+    app.shared[PINS] = [common];
+    expect(view.hiddenUnits()).toEqual(["x"]);
+  });
+
+  test("the space menu says whether the row is pinned and carries the pins it would leave", () => {
+    app.shared[FOLDERS] = folders({});
+    app.shared[PINS] = ["x"];
+    const view = setup();
+    fire(node(view, `head-${common}`), "down:right");
+    expect(app.overlays.at(-1)?.props.folder).toMatchObject({ unit: common, pinned: false, pins: ["x", common] });
+    fire(node(view, "head-x"), "down:right");
+    expect(app.overlays.at(-1)?.props.folder).toMatchObject({ unit: "x", pinned: true, pins: [] });
+  });
 });
 
 describe("folder popups", () => {
@@ -372,7 +556,7 @@ describe("folder popups", () => {
     view.input.set_value("Work");
     press(view, "name-color-ansi3");
     press(view, "name-save");
-    expect(saved().folders).toEqual([{ id: "f1", name: "Work", color: "ansi3", folded: false }]);
+    expect(saved().folders).toEqual([{ id: "f1", name: "Work", color: "ansi3", folded: false, pinned: false }]);
   });
 
   test("the folder popup recolors at once, renames through the dialog and deletes", () => {
@@ -384,6 +568,17 @@ describe("folder popups", () => {
     expect(app.overlays.at(-1)).toMatchObject({ mod: "spaces-tree", kind: "dialog", props: { role: "name", folder: "f1" } });
     press(view, "folder-delete");
     expect(saved()).toEqual({ folders: [], members: {} });
+  });
+
+  test("the folder popup pins the folder and unpins it", () => {
+    const view = open("folder", { folder: "f1" });
+    expect(texts(view.render())).toContain("Pin folder");
+    press(view, "folder-pin");
+    expect(saved().folders[0]?.pinned).toBe(true);
+    expect(app.closed).toEqual(["o1"]);
+    expect(texts(open("folder", { folder: "f1" }).render())).toContain("Unpin folder");
+    press(open("folder", { folder: "f1" }), "folder-pin");
+    expect(saved().folders[0]?.pinned).toBe(false);
   });
 
   test("a popup copy starts no timer, no git and no command loop", () => {
