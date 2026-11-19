@@ -102,6 +102,10 @@ export class FakeInput {
     this.text = next;
   }
   set_selected_range(_range: { start: number; end: number }) {}
+  masked = false;
+  set_masked(masked: boolean) {
+    this.masked = masked;
+  }
   on(event: string, handler: Handler) {
     this.handlers[event] = handler;
     return true;
