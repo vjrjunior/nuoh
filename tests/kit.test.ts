@@ -103,6 +103,9 @@ const ADOPTERS = [
   "mods/kit/main.js",
   "mods/spaces-tree/main.js",
   "mods/markdown/main.js",
+  "mods/markdown/picker.js",
+  "mods/files/main.js",
+  "mods/files/menu.js",
   "mods/move-tab/main.js",
   "tools/test-panel/main.js",
 ];

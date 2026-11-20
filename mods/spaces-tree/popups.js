@@ -1,9 +1,9 @@
 import { div } from "gpui-kit";
-import { v_flex, h_flex, InputState, Input } from "gpui-base";
+import { v_flex, h_flex, InputState } from "gpui-base";
 import { props, theme, shared, setShared, closeOverlay, openOverlay } from "herdr";
 import { createFolder, deleteFolder, fileUnit, folderOf, newFolderId, nextColor, pinFolder, readFolders, readPins, recolorFolder, renameFolder } from "./folders.js";
 import { PALETTE, paint } from "./tree.js";
-import { CONTROL, RADIUS, TEXT, button, popupRow } from "../../kit/kit.js";
+import { CONTROL, TEXT, button, input, popupRow } from "../../kit/kit.js";
 
 export const FOLDERS = "spaces.folders";
 export const PINS = "spaces.pinned";
@@ -200,7 +200,7 @@ function nameView(view, t) {
         .child(div().flex_1().text_size(TEXT.title).font_semibold().child(renaming ? "Rename folder" : "New folder"))
         .child(div().text_size(TEXT.sm).text_color(t.dim).child("Esc")),
     )
-    .child(Input.new(view.input).h(CONTROL.large).px(10).rounded(RADIUS.control).border_1().border_color(t.accent).bg(t.background).text_size(TEXT.base).text_color(t.foreground))
+    .child(input(view.input, t))
     .child(
       h_flex()
         .gap(6)

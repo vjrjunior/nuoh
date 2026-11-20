@@ -1,4 +1,5 @@
 import { comeback } from "./comeback";
+import { files } from "./files";
 import { gitGraphPanel } from "./git-graph-panel";
 import { kit } from "./kit";
 import { listVjrTheme } from "./list-vjr-theme";
@@ -9,7 +10,7 @@ import type { Recipe, Variant } from "./recipe";
 import { spacesTree } from "./spaces-tree";
 import { squareFor } from "./square";
 
-const OWN: Recipe[] = [listVjrTheme, look, kit, gitGraphPanel, spacesTree, comeback, markdown, moveTab];
+const OWN: Recipe[] = [listVjrTheme, look, kit, gitGraphPanel, spacesTree, comeback, markdown, moveTab, files];
 
 export function variantWith(extras: Recipe[], square: boolean): Variant {
   const taken = OWN.map((recipe) => recipe.name);
@@ -23,4 +24,4 @@ export function variantWith(extras: Recipe[], square: boolean): Variant {
 
 export const LEFT_ROUNDED = ["prompt", "confirm", "toast", "peek", "win98", "terminals-bar", "terminals-pane"];
 
-export const REPLACED = ["spaces"];
+export const REPLACED = ["spaces", "files"];

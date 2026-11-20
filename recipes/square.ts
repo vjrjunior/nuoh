@@ -37,7 +37,7 @@ export function squareFor(recipes: Recipe[]): Recipe {
   return {
     name: "square",
     mods: [
-      ...["agents", "files", "changes", "pane", "menu", "new-menu", "picker", "worktree", "machine-add", "help"].map(
+      ...["agents", "changes", "pane", "menu", "new-menu", "picker", "worktree", "machine-add", "help"].map(
         (name) => ({ name, from: "mods" as const }),
       ),
       ...own.values(),

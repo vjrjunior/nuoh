@@ -1,7 +1,7 @@
 import { View } from "gpui-kit";
-import { h_flex, v_flex } from "gpui-base";
+import { h_flex, InputState, v_flex } from "gpui-base";
 import { theme } from "herdr";
-import { ICONS, TEXT, button, card, chip, heading, icon, iconButton, line, link, pill, popupRow, stepNode, statusDot } from "../../kit/kit.js";
+import { CONTROL, ICONS, TEXT, button, card, chip, heading, icon, iconButton, input, line, link, pill, popupRow, stepNode, statusDot } from "../../kit/kit.js";
 
 const STATUSES = ["working", "blocked", "done", "idle", "unknown"];
 const STEPS = ["done", "current", "bad", "todo"];
@@ -15,6 +15,11 @@ function row() {
 }
 
 export default class Kit extends View {
+  init() {
+    this.field = InputState.new({ placeholder: "Filter files…" });
+    this.quiet = InputState.new({ value: "Typed text" });
+  }
+
   render() {
     const t = theme();
     const noop = () => {};
@@ -79,6 +84,12 @@ export default class Kit extends View {
       ),
     );
 
+    const inputs = v_flex()
+      .gap(8)
+      .w(320)
+      .child(input(this.field, t))
+      .child(input(this.quiet, t, { height: CONTROL.row, active: false }));
+
     return v_flex()
       .id("kit")
       .size_full()
@@ -92,6 +103,7 @@ export default class Kit extends View {
       .child(section("links", "Links", t).child(links))
       .child(section("chips", "Chips", t).child(chips))
       .child(section("pill", "Pill", t).child(row().child(pill("Pill", t))))
+      .child(section("inputs", "Inputs", t).child(inputs))
       .child(section("lines", "Lines", t).child(lines))
       .child(section("popup-rows", "Popup rows", t).child(popupRows))
       .child(section("dots", "Dots", t).child(dots))

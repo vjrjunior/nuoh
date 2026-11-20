@@ -1,10 +1,13 @@
 import { View, div } from "gpui-kit";
 import { h_flex, TextView, v_flex } from "gpui-base";
-import { exec, home, props, readTextFile, theme, watchFolder } from "herdr";
+import { exec, home, nextCommand, props, readTextFile, shared, theme, watchFolder } from "herdr";
 import { button, iconButton } from "../../kit/kit.js";
+import { REQUEST } from "../../lib/open-markdown.js";
 import { folderOf, linkTarget, nameOf, shortFolder, stripFrontMatter } from "./logic.js";
+import { Picker } from "./picker.js";
 
 const EDITOR = { name: "Open", argv: ["open"] };
+const READING = { width: 760, text: 14 };
 
 function message(text, t) {
   return div().p(16).text_size(12).text_color(t.dim).child(text);
@@ -12,7 +15,12 @@ function message(text, t) {
 
 export default class Markdown extends View {
   init(given, cx) {
-    const file = (given ?? props() ?? {}).file;
+    const start = { ...(props() ?? {}), ...(given && typeof given === "object" ? given : {}) };
+    const file = start.file;
+    if (start.overlay && !file) {
+      this.picker = new Picker(start, cx);
+      return;
+    }
     this.history = [];
     this.reads = 0;
     this.watches = 0;
@@ -20,6 +28,23 @@ export default class Markdown extends View {
     this.watching = null;
     this.file = null;
     if (typeof file === "string" && file) this.show(file, cx);
+    this.listen(cx);
+  }
+
+  listen(cx) {
+    cx.spawn(async (cx) => {
+      for (;;) {
+        const command = await nextCommand();
+        if (typeof command !== "string") return;
+        if (command !== "show") continue;
+        const request = shared(REQUEST);
+        if (!request?.file || request.at === this.taken) continue;
+        this.taken = request.at;
+        if (request.file === this.file) continue;
+        if (this.file) this.history.push(this.file);
+        this.show(request.file, cx);
+      }
+    });
   }
 
   show(file, cx) {
@@ -88,7 +113,8 @@ export default class Markdown extends View {
     if (previous) this.show(previous, cx);
   }
 
-  render() {
+  render(cx) {
+    if (this.picker) return this.picker.render(cx);
     const t = theme();
     const file = this.file;
     const head = h_flex()
@@ -139,6 +165,6 @@ export default class Markdown extends View {
       .bg(t.background)
       .text_color(t.foreground)
       .child(head)
-      .child(div().flex_1().min_h(0).px(16).py(12).text_size(13).child(body));
+      .child(h_flex().flex_1().min_h(0).justify_center().child(div().h_full().w_full().max_w(READING.width).px(24).py(16).text_size(READING.text).child(body)));
   }
 }

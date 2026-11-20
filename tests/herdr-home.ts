@@ -98,6 +98,8 @@ export default class Tabs extends View {
   "mods/pane/main.js": script("    return div().rounded(4);"),
   "mods/menu/main.js": 'import { run, props, closeOverlay, openOverlay, theme, keys, terminals, spaces, panes, exec } from "herdr";\n' + script(`    const tree = () => openOverlay({ mod: "worktree", kind: "dialog", width: 440, height: 260, props: {} });
     const items = [
+        ["Split right", "pane.split", { direction: "right", pane: tg.pane }],
+        ...(inTab ? [["Close pane", "pane.close", { pane: tg.pane }]] : []),
         ["Close", "tab.close", { id: tg.id }],
         ["Close", "space.close", { id: tg.id }],
     ];

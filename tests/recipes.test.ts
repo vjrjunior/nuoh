@@ -42,8 +42,8 @@ describe("looks", () => {
     for (const mod of Object.keys(generateRound().mods)) expect(Object.keys(generateSquare().mods)).toContain(mod);
   });
 
-  test("with round corners it copies eleven mods", () => {
-    expect(Object.keys(generateRound().mods).sort()).toEqual(["vjr-comeback", "vjr-kit", "vjr-markdown", "vjr-menu", "vjr-move-tab", "vjr-palette", "vjr-settings", "vjr-spaces-tree", "vjr-tabs", "vjr-workspace-chrome", "vjr-workspace-status"]);
+  test("with round corners it copies twelve mods", () => {
+    expect(Object.keys(generateRound().mods).sort()).toEqual(["vjr-comeback", "vjr-files", "vjr-kit", "vjr-markdown", "vjr-menu", "vjr-move-tab", "vjr-palette", "vjr-settings", "vjr-spaces-tree", "vjr-tabs", "vjr-workspace-chrome", "vjr-workspace-status"]);
   });
 
   test("with square corners it copies twenty-one mods", () => {
@@ -274,6 +274,7 @@ describe("square", () => {
     const menu = [
       'import { run, props, closeOverlay, openOverlay, theme, keys, terminals, spaces, panes, exec } from "herdr";',
       'export default class Mod { render() {',
+      '        ...(inTab ? [["Close pane", "pane.close", { pane: tg.pane }]] : []),',
       '        ["Close", "tab.close", { id: tg.id }],',
       '    const icon = command === "worktree" ? "git-branch" : "terminal";',
       'function menuIcon(command) {',
@@ -428,7 +429,7 @@ describe("markdown viewer", () => {
   test("both looks install the viewer without placing it", () => {
     const copy = "vjr-markdown";
     for (const generated of [generateRound(), generateSquare()]) {
-      expect(Object.keys(generated.mods[copy] ?? {}).sort()).toEqual(["kit.js", "logic.js", "main.js", "mod.json"]);
+      expect(Object.keys(generated.mods[copy] ?? {}).sort()).toEqual(["kit.js", "logic.js", "main.js", "mod.json", "open-markdown.js", "picker.js"]);
       expect(modsIn(JSON.parse(generated.layoutText))).not.toContain(copy);
     }
   });
@@ -438,6 +439,104 @@ describe("markdown viewer", () => {
     const squared = generateSquare().mods["vjr-markdown"]?.["kit.js"] ?? "";
     expect(squared).toContain(".rounded(0)");
     expect(squared).not.toContain(".rounded(RADIUS");
+  });
+});
+
+describe("markdown picker", () => {
+  test("both looks put Open Markdown… on a terminal's menu, before Close pane", () => {
+    for (const generated of [generateRound(), generateSquare()]) {
+      expect(generated.mods["vjr-menu"]?.["main.js"]).toContain(
+        '        ...(term ? [["Open Markdown…", "markdown-picker", { terminal: term.address, pane: tg.pane }]] : []),\n        ...(inTab ? [["Close pane", "pane.close", { pane: tg.pane }]] : []),',
+      );
+    }
+  });
+
+  test("both looks right-click a terminal into the layout's own menu", () => {
+    expect(JSON.parse(generateRound().layoutText).terminal_menu).toBe("vjr-menu");
+    expect(JSON.parse(generateSquare().layoutText).terminal_menu).toBe("vjr-menu");
+  });
+
+  test("the item opens the layout's own picker, frameless with square corners", () => {
+    expect(generateRound().mods["vjr-menu"]?.["main.js"]).toContain(
+      'if (it[1] === "markdown-picker") openOverlay({ mod: "vjr-markdown", kind: "popup", width: 560, height: 420, props: it[2] });\n    else if (it[1] === "move-tab")',
+    );
+    expect(generateSquare().mods["vjr-menu"]?.["main.js"]).toContain('if (it[1] === "markdown-picker") openOverlay({ mod: "vjr-markdown", kind: "popup", frame: "none", width: 560, height: 420');
+  });
+
+  test("the item has a file icon and shows the picker's key", () => {
+    const menu = generateRound().mods["vjr-menu"]?.["main.js"] ?? "";
+    expect(menu).toContain('const MARKDOWN_PICKER = { name: "vjr-markdown" };');
+    expect(menu).toContain('function menuIcon(command) {\n  if (command === "markdown-picker") return "mods/workspace-chrome/file-text.svg";');
+    expect(menu).toContain('  if (name === "markdown-picker") return keys().find((b) => b.action === `mod.open:${MARKDOWN_PICKER.name}`)?.keys ?? "";');
+  });
+
+  test("cmd-shift-o opens the picker in both looks", () => {
+    expect(generateRound().keys["cmd-shift-o"]).toBe("mod.open:vjr-markdown");
+    expect(generateSquare().keys["cmd-shift-o"]).toBe("mod.open:vjr-markdown");
+  });
+
+  test("the key opens the picker at the top, frameless and bordered with square corners", () => {
+    expect(meta(generateRound(), "markdown").overlay).toEqual({ kind: "popup", at: "top", offset: 40, width: 560, height: 420 });
+    expect(meta(generateSquare(), "markdown").overlay).toEqual({ kind: "popup", at: "top", offset: 40, width: 560, height: 420, frame: "none" });
+    expect(generateSquare().mods["vjr-markdown"]?.["picker.js"]).toContain(".bg(t.popover).border_1().border_color(t.border)");
+    expect(generateRound().mods["vjr-markdown"]?.["picker.js"]).not.toContain(".border_1().border_color(t.border)");
+  });
+
+  test("opening a file names the layout's own viewer", () => {
+    expect(generateRound().mods["vjr-markdown"]?.["open-markdown.js"]).toContain('export const MARKDOWN = { name: "vjr-markdown" };');
+  });
+
+  test("a menu without Close pane fails the recipe", () => {
+    const withoutPane = [
+      'import { run, props, closeOverlay, openOverlay, theme, keys, terminals, spaces, panes, exec } from "herdr";',
+      '        ["Close", "space.close", { id: tg.id }],',
+      "    closeOverlay(props()?.overlay);",
+      '  const name = command.endsWith(".close") ? "x" : "terminal";',
+      "",
+    ].join("\n");
+    expect(() => generateRound({ "mods/menu/main.js": withoutPane })).toThrow(/recipe markdown/);
+  });
+});
+
+describe("files", () => {
+  test("both looks show our Files in the panel", () => {
+    for (const generated of [generateRound(), generateSquare()]) {
+      expect(findNode(JSON.parse(generated.layoutText), "files")?.content).toEqual({ mod: "vjr-files" });
+      expect(Object.keys(generated.mods["vjr-files"] ?? {}).sort()).toEqual(["actions.js", "kit.js", "logic.js", "main.js", "menu.js", "mod.json", "open-markdown.js"]);
+    }
+  });
+
+  test("no copy of Herdr's Files is made in either look", () => {
+    for (const generated of [generateRound(), generateSquare()]) {
+      expect(generated.mods["vjr-files"]?.["main.js"]).toContain("export default class Files extends View");
+      expect(generated.mods["vjr-files"]?.["main.js"]).not.toContain("div().rounded(10)");
+    }
+  });
+
+  test("the panel keeps its corners with round corners and loses them with square ones", () => {
+    expect(generateRound().mods["vjr-files"]?.["main.js"]).toContain(".rounded(RADIUS.panel)");
+    const square = generateSquare().mods["vjr-files"] ?? {};
+    expect(square["main.js"]).not.toMatch(/\.rounded\((?!0\))/);
+    expect(square["kit.js"]).not.toMatch(/\.rounded\((?!0\))/);
+  });
+
+  test("the row menu is a frameless, bordered popup with square corners", () => {
+    expect(generateRound().mods["vjr-files"]?.["main.js"]).toContain('openOverlay({ mod: "vjr-files", kind: "popup", width: MENU_WIDTH');
+    expect(generateSquare().mods["vjr-files"]?.["main.js"]).toContain('openOverlay({ mod: "vjr-files", kind: "popup", frame: "none", width: MENU_WIDTH');
+    expect(generateSquare().mods["vjr-files"]?.["menu.js"]).toContain(".bg(t.popover).border_1().border_color(t.border)");
+  });
+
+  test("a Markdown file opens the layout's own viewer", () => {
+    expect(generateRound().mods["vjr-files"]?.["open-markdown.js"]).toContain('export const MARKDOWN = { name: "vjr-markdown" };');
+  });
+
+  test("a layout without a files block fails the recipe", () => {
+    const home = tempDir();
+    makeHerdrHome(home);
+    const layout = JSON.parse(readFileSync(join(home, "layouts/main.json"), "utf8"));
+    const body = findNode(layout, "panel-body") as Record<string, any>;
+    body.children = body.children.filter((child: { id: string }) => child.id !== "files");
+    expect(() => generateRound({ "layouts/main.json": JSON.stringify(layout) })).toThrow(/recipe files: layout node files not found/);
   });
 });
 
@@ -474,8 +573,8 @@ describe("move-tab", () => {
   });
 
   test("cmd-shift-m opens the layout's own popup in both looks", () => {
-    expect(generateRound().keys).toEqual({ "cmd-shift-m": "mod.open:vjr-move-tab" });
-    expect(generateSquare().keys).toEqual({ "cmd-shift-m": "mod.open:vjr-move-tab" });
+    expect(generateRound().keys["cmd-shift-m"]).toBe("mod.open:vjr-move-tab");
+    expect(generateSquare().keys["cmd-shift-m"]).toBe("mod.open:vjr-move-tab");
   });
 
   test("the menu shows the key bound to the layout's own popup", () => {
@@ -496,9 +595,13 @@ describe("move-tab", () => {
   test("a menu that changed fails the recipe", () => {
     const onlyFolders = [
       'import { run, props, closeOverlay, openOverlay, theme, keys, terminals, spaces, panes, exec } from "herdr";',
+      '        ...(inTab ? [["Close pane", "pane.close", { pane: tg.pane }]] : []),',
       '        ["Close", "space.close", { id: tg.id }],',
       "    closeOverlay(props()?.overlay);",
       '  const name = command.endsWith(".close") ? "x" : "terminal";',
+      "function menuIcon(command) {",
+      "function shortcut(name, args) {",
+      '    if (it[1] === "worktree") tree();',
       "",
     ].join("\n");
     expect(() => generateRound({ "mods/menu/main.js": onlyFolders })).toThrow(/recipe move-tab/);

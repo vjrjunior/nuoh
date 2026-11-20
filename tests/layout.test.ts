@@ -63,7 +63,7 @@ describe("apply", () => {
 
     expect(result.code).toBe(0);
     expect(result.stdout).toContain("applied");
-    expect(readdirSync(join(home, "mods")).filter((name) => name.startsWith("vjr-"))).toHaveLength(12);
+    expect(readdirSync(join(home, "mods")).filter((name) => name.startsWith("vjr-"))).toHaveLength(13);
     expect(existsSync(join(home, "mods/git-graph/LICENSE"))).toBe(true);
     expect(readdirSync(join(home, "layouts")).filter((name) => name.startsWith("vjr-")).sort()).toEqual(["vjr-desk.json", "vjr-desk.svg"]);
   });
@@ -91,7 +91,12 @@ describe("apply", () => {
 
     apply();
 
-    expect(keys()["layout:vjr-desk"]).toEqual({ "cmd-shift-p": "mod.open:vjr-palette", "cmd-,": "mod.open:vjr-settings", "cmd-shift-m": "mod.open:vjr-move-tab" });
+    expect(keys()["layout:vjr-desk"]).toEqual({
+      "cmd-shift-p": "mod.open:vjr-palette",
+      "cmd-,": "mod.open:vjr-settings",
+      "cmd-shift-o": "mod.open:vjr-markdown",
+      "cmd-shift-m": "mod.open:vjr-move-tab",
+    });
   });
 
   test("with square corners the section also opens the copied help and picker", () => {
@@ -168,7 +173,7 @@ describe("apply", () => {
 
     apply();
 
-    expect(log().filter((line) => line.startsWith("check "))).toHaveLength(13);
+    expect(log().filter((line) => line.startsWith("check "))).toHaveLength(14);
   });
 
   test("checks the mods side by side", () => {
@@ -187,7 +192,7 @@ describe("apply", () => {
     apply();
 
     expect(record().version).toBe("0.1.10");
-    expect(record().mods).toHaveLength(13);
+    expect(record().mods).toHaveLength(14);
     expect(record().kept).toEqual([]);
     expect(record().files.sort()).toEqual(["layouts/vjr-desk.json", "layouts/vjr-desk.svg"]);
     expect(record().sections).toEqual(["layout:vjr-desk"]);
@@ -585,7 +590,7 @@ describe("square corners", () => {
 
     expect(apply(["--square", "off"]).stdout).toContain("applied");
 
-    expect(ourMods(home)).toHaveLength(12);
+    expect(ourMods(home)).toHaveLength(13);
     expect(existsSync(join(home, "mods/vjr-agents"))).toBe(false);
     expect(record().square).toBe(false);
     expect(keys()["layout:vjr-desk"]["cmd-/"]).toBeUndefined();

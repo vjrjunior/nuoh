@@ -13,6 +13,8 @@ let execs: [string, string[]][];
 let watches: { dir: string; resolve: (paths: string[]) => void }[];
 let given: Record<string, unknown>;
 let slow: ((value: string | null) => void)[] | null;
+let commands: ((command: string) => void)[];
+let sharedState: Record<string, unknown>;
 
 const originalTheme = herdr.theme;
 
@@ -27,7 +29,11 @@ beforeEach(() => {
   watches = [];
   given = { file: FILE };
   slow = null;
+  commands = [];
+  sharedState = {};
   Object.assign(herdr, {
+    nextCommand: () => new Promise((resolve) => commands.push(resolve)),
+    shared: (key: string) => sharedState[key],
     props: () => given,
     home: () => HOME,
     theme: () => new Proxy({}, { get: (_target, prop) => (typeof prop === "string" ? "#505050" : undefined) }),
@@ -62,7 +68,8 @@ const flush = async () => {
   for (let i = 0; i < 4; i++) await new Promise((resolve) => setTimeout(resolve, 0));
 };
 
-async function open(props: Record<string, unknown> = given) {
+async function open(props: Record<string, unknown> = given, full: Record<string, unknown> = props) {
+  given = full;
   const cx = makeCx();
   const view = new Markdown();
   view.init(props, cx);
@@ -295,5 +302,179 @@ describe("leaving a folder", () => {
     await flush();
     expect(cancelled).toEqual([DIR]);
     expect(watches.map((watch) => watch.dir)).toEqual([DIR, "/Users/me/w/app/docs"]);
+  });
+});
+
+describe("taking a file from another mod", () => {
+  async function send(file: string, at: string) {
+    sharedState["markdown.request"] = { file, tab: "t1", at };
+    commands.shift()?.("show");
+    await flush();
+  }
+
+  test("show switches to the requested file and Back returns", async () => {
+    files[`${DIR}/PLAN.md`] = "# Plan";
+    const { view, cx } = await open();
+    await send(`${DIR}/PLAN.md`, "1");
+    expect(texts(view.render())).toContain("# Plan");
+    click(view, "md-back", cx);
+    await flush();
+    expect(texts(view.render())).toContain("# Draft autosave\n\nBody text");
+  });
+
+  test("a request is taken once", async () => {
+    files[`${DIR}/PLAN.md`] = "# Plan";
+    const { view } = await open();
+    await send(`${DIR}/PLAN.md`, "1");
+    await send(`${DIR}/PLAN.md`, "1");
+    expect(view.history).toEqual([FILE]);
+  });
+
+  test("the file already shown keeps its history", async () => {
+    const { view } = await open();
+    await send(FILE, "2");
+    expect(view.history).toEqual([]);
+  });
+
+  test("a viewer opened empty takes the file without a Back", async () => {
+    const { view } = await open({});
+    await send(FILE, "3");
+    expect(texts(view.render())).toContain("NOTES.md");
+    expect(view.history).toEqual([]);
+  });
+
+  test("other commands are ignored", async () => {
+    const { view } = await open();
+    sharedState["markdown.request"] = { file: `${DIR}/PLAN.md`, tab: "t1", at: "4" };
+    commands.shift()?.("other");
+    await flush();
+    expect(view.file).toBe(FILE);
+  });
+});
+
+describe("reading in a column", () => {
+  test("the text sits in a centered column at most 760 px wide, at 14 px", async () => {
+    const { view } = await open();
+    const column = find(view.render(), (node) => node.calls.some(([name, args]) => name === "max_w" && args[0] === 760)) as Node;
+    expect(column.calls).toContainEqual(["text_size", [14]]);
+  });
+});
+
+describe("the picker", () => {
+  const TOP = "/Users/me/w/app";
+  let read: string;
+  let opened: [string, unknown][];
+  let closed: string[];
+  let readFrom: string[];
+
+  beforeEach(() => {
+    readFrom = [];
+    read = ["● Wrote docs/plan.md", "  and NOTES.md"].join("\n");
+    opened = [];
+    closed = [];
+    Object.assign(herdr, {
+      panes: () => [
+        { pane: "p1", tab: "t1", terminal: "t7", cwd: TOP },
+        { pane: "p2", tab: "t1", terminal: null, mod: "files" },
+      ],
+      focused: () => ({ tab: "t1", pane: "p1", terminal: "t7", cwd: TOP }),
+      hc: async (args: string[]) => (readFrom.push(args[1]), { code: 0, stdout: JSON.stringify({ text: args[1] === "t7" ? read : "" }), stderr: "" }),
+      exec: async (command: string, args: string[]) => {
+        const script = args[1];
+        if (script.includes("ls-files --cached --others --exclude-standard -z")) return { code: 0, stdout: `${TOP}\nREADME.md\ndocs/plan.md\n`, stderr: "" };
+        if (script.includes("awk")) return { code: 0, stdout: `${TOP}\nsub/NOTES.md\n`, stderr: "" };
+        const found = args.slice(4).filter((path) => path === "docs/plan.md");
+        return { code: 0, stdout: found.map((path) => `${path}\0${TOP}/${path}\0`).join(""), stderr: "" };
+      },
+      run: (name: string, args: unknown) => opened.push([name, args]),
+      closeOverlay: (id: string) => closed.push(id),
+    });
+  });
+
+  async function picker(props: Record<string, unknown> = { overlay: "o1" }) {
+    const { view, cx } = await open(props);
+    return { view, cx, rows: () => texts(view.render()) };
+  }
+
+  test("the screen's Markdown files come first, newest first, then the repository's", async () => {
+    const { rows } = await picker();
+    const shown = rows();
+    expect(shown).toContain("ON THIS SCREEN");
+    expect(shown).toContain("IN THIS REPOSITORY");
+    expect(shown.indexOf("NOTES.md")).toBeLessThan(shown.indexOf("plan.md"));
+    expect(shown.indexOf("plan.md")).toBeLessThan(shown.indexOf("README.md"));
+    expect(shown.filter((text) => text === "plan.md")).toHaveLength(1);
+  });
+
+  test("Enter opens the chosen file beside the terminal it read and closes", async () => {
+    const { view, cx } = await picker();
+    view.picker.input.emit("submit", cx);
+    expect(opened).toEqual([["pane.split", { direction: "right", pane: "p1", mod: "markdown", props: { file: `${TOP}/sub/NOTES.md` } }]]);
+    expect(closed).toEqual(["o1"]);
+  });
+
+  test("arrows move the choice and wrap", async () => {
+    const { view, cx } = await picker();
+    const root = view.render();
+    const keys = root.calls.find(([name]) => name === "on_key_down")?.[1][0] as (event: { key: string }, cx: unknown) => void;
+    keys({ key: "up" }, cx);
+    expect(view.picker.at).toBe(2);
+    keys({ key: "down" }, cx);
+    expect(view.picker.at).toBe(0);
+    keys({ key: "escape" }, cx);
+    expect(closed).toEqual(["o1"]);
+  });
+
+  test("typing filters the rows", async () => {
+    const { view, cx, rows } = await picker();
+    view.picker.input.set_value("readme");
+    view.picker.input.emit("change", cx);
+    expect(rows()).toContain("README.md");
+    expect(rows()).not.toContain("plan.md");
+  });
+
+  test("a typed path that exists opens when nothing matches", async () => {
+    const { view, cx } = await picker();
+    view.picker.input.set_value("docs/plan.md");
+    view.picker.input.emit("change", cx);
+    view.picker.at = 99;
+    view.picker.filter = "docs/plan.md";
+    view.picker.choose(null, cx);
+    await flush();
+    expect(opened[0]?.[1]).toMatchObject({ props: { file: `${TOP}/docs/plan.md` } });
+  });
+
+  test("a typed path that doesn't exist says so", async () => {
+    const { view, cx, rows } = await picker();
+    view.picker.input.set_value("gone.md");
+    view.picker.input.emit("change", cx);
+    view.picker.choose(null, cx);
+    await flush();
+    expect(rows()).toContain("No file at gone.md");
+    expect(closed).toEqual([]);
+  });
+
+  test("a right-click's terminal comes from props() when init gets only the overlay", async () => {
+    await open({ overlay: "o3" }, { overlay: "o3", terminal: "t9", pane: "p9" });
+    expect(readFrom).toEqual(["t9"]);
+  });
+
+  test("a right-click reads the terminal it was opened on", async () => {
+    await picker({ overlay: "o2", terminal: "t9", pane: "p9" });
+    expect(readFrom).toEqual(["t9"]);
+  });
+
+  test("with the viewer focused, it reads the tab's terminal", async () => {
+    herdr.focused = () => ({ tab: "t1", pane: "p2", terminal: null, cwd: null });
+    const { rows } = await picker();
+    expect(rows()).toContain("NOTES.md");
+    expect(readFrom).toEqual(["t7"]);
+  });
+
+  test("nothing on screen says so and still lists the repository", async () => {
+    read = "no paths here";
+    const { rows } = await picker();
+    expect(rows()).toContain("No Markdown on this terminal's screen. Type a path.");
+    expect(rows()).toContain("README.md");
   });
 });

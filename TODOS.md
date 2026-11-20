@@ -26,6 +26,78 @@
 **Priority:** P3
 **Depends on:** The Markdown viewer
 
+### Show a space on another machine in Files
+
+**What:** List the folders and the git state of a space on another machine in `mods/files/`, and open its files, as Herdr's own Files does.
+
+**Why:** Files says `Files on <machine> isn't supported yet` for such a space, where Herdr's Files showed it.
+
+**Context:** `exec`, `readTextFile` and `hc` take `{ on: space.machine }`. `watchFolder` is local only, so a remote tree needs the 10-second timer alone. A Markdown file there needs the viewer to read with `on` too (`props.on`). No machine is set up here to check it against.
+
+**Effort:** M
+**Priority:** P3
+**Depends on:** A second machine in `hc machine ls`
+
+### Change files from Files
+
+**What:** New file, New folder, Rename, Duplicate and Move to Trash in the Files row menu, and dragging a row onto a folder to move it.
+
+**Why:** Files only reads; changing a file means a terminal or another app.
+
+**Context:** `mods/files/menu.js` lists the items from `menuItems` in `logic.js`. A name needs a field in the mod's own popup (Herdr's `prompt` can't hand text back to a mod). Moving to the Trash on macOS is `osascript`, or `trash` where installed.
+
+**Effort:** M
+**Priority:** P3
+**Depends on:** Nothing
+
+### Search inside files from Files
+
+**What:** A second mode for the Files filter that lists the lines holding the text, under each file, and opens a Markdown file or the code view at that line.
+
+**Why:** The filter finds names only.
+
+**Context:** `git grep -n -I --untracked` in a repository, bounded like the name list (`MATCHES`). The code view has no way to scroll to a line from a mod yet; the row could open the file and show the line number.
+
+**Effort:** M
+**Priority:** P3
+**Depends on:** Nothing
+
+### Move through the Files tree with the keyboard
+
+**What:** ↑ ↓ to move a selection in the tree, → and ← to open and close folders, Enter to open a file, with `"focusable": true` so `pane.go` reaches the panel.
+
+**Why:** The tree only takes clicks; only the filter's results take keys.
+
+**Context:** `mods/files/main.js` keeps `selected` for the last clicked row. The guide's `focusable` mods get `"focus"` from `nextCommand()`; scrolling the selection into view needs a `ScrollHandle` on the tree.
+
+**Effort:** S
+**Priority:** P3
+**Depends on:** Nothing
+
+### Color code blocks and show the source in the Markdown viewer
+
+**What:** Draw each fenced code block of `mods/markdown/` as a read-only code view with the theme's colors and a Copy button, and add a Formatted · Source switch to the header.
+
+**Why:** Plans and specs carry code, and `TextView.markdown` draws it as plain text with no way to copy one block.
+
+**Context:** Split the text at fences and draw the parts in a column: `TextView.markdown` for prose, `EditorState` + `Editor` for code, sized by line count since an editor doesn't size itself. `EditorState.new` can't run in `render`. Text can't then be selected across a code block.
+
+**Effort:** M
+**Priority:** P3
+**Depends on:** Nothing
+
+### Open a Markdown path with Cmd-click
+
+**What:** Make Cmd-click on a `.md` path in a terminal open it in the Markdown viewer beside it.
+
+**Why:** Cmd-click is what people try first, and it goes to macOS's app for `.md`.
+
+**Context:** Herdr gives a mod no event for a link clicked in a terminal. The only way today is a small app that becomes macOS's default for `.md` and sends the file to Herdr while Herdr is in front, which changes a system setting; `cmd-shift-o` and `Open Markdown…` cover the case without it.
+
+**Effort:** M
+**Priority:** P3
+**Depends on:** A terminal link event in Herdr's mod API
+
 ### Publish comeback on herdr.dev
 
 **What:** Publish `mods/comeback/` as a community mod: a public repo or folder in Herdr's format with `mods/comeback/`, its `RECIPE.md` and a `preview.png`, and the `herdr-mod` topic.

@@ -15,6 +15,8 @@ Read the Watch out section of the one that matches the area you touch:
 - **`close` is Herdr's.** Herdr calls a View's `close(cx)` when its overlay, pane or block goes. Give your own method another name.
 - **Commands carry no arguments into a mod.** `nextCommand()` gives only the command's name, and Herdr's `prompt` overlay ends in `run(command.name, { ...command.args, name })`. To ask for text a mod keeps, draw the input in the mod's own popup.
 - **Text height.** `.line_height(14)` multiplies the font size, and the text vanishes under `truncate`. Pass `"14px"`.
+- **`init`'s first argument isn't all the props.** An overlay opened with `openOverlay({ props })` can get only part of them there. Read `{ ...props(), ...given }`, as Move tab and Files do, before choosing a role.
+- **A right-click also clicks.** An element with `on_click` and `on_mouse_down("right", …)` gets both from one right-click, and `ClickEvent` has no button. When the click does something the menu would undo (opening a file, changing focus), note the time of the right press and ignore a click right after it, as `mods/files/main.js` does.
 - **Shared state redraws every mod.** Never call `setShared` from `render` or a hover. Publish only real changes, from an event or a timer.
 - **Scrolling fakes hovers.** A list scrolling under a still pointer fires a hover per row. Count a hover as real only when the pointer moved in the last ~150 ms, and give the scroll area a stable `.id()`.
 - **Drag targets.** A drag is `on_mouse_down` on the source and `on_mouse_move` / `on_mouse_up` on every target. Reset it in the list's own `on_mouse_up`, which runs after the target's.

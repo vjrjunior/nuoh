@@ -74,7 +74,7 @@ A palette that does not validate installs nothing, and the last good theme stays
 
 ## Use the layout
 
-One layout for herdr-app, `vjr-desk`, built from the version you have installed: Herdr's window with the VJR theme, `vjr` in the command palette, a **Graph** button that opens Git Graph in the side panel, and Spaces as a tree of each repository's worktrees, open or closed, drawn as a graph or as blocks, with the active space in its own color, your pinned repositories and your own colored folders on top. It has two looks: round corners, which are Herdr's own and the default, and square corners.
+One layout for herdr-app, `vjr-desk`, built from the version you have installed: Herdr's window with the VJR theme, `vjr` in the command palette, a **Graph** button that opens Git Graph in the side panel, a Files panel of its own, a Markdown viewer you can reach from any terminal, and Spaces as a tree of each repository's worktrees, open or closed, drawn as a graph or as blocks, with the active space in its own color, your pinned repositories and your own colored folders on top. It has two looks: round corners, which are Herdr's own and the default, and square corners.
 
 ```sh
 bun run install-theme
@@ -125,7 +125,7 @@ If a recipe no longer fits the new version, nothing changes in the layout: the p
 }
 ```
 
-- **`editor`** names the Markdown viewer's first button and gives the command it runs, with the file as its last argument.
+- **`editor`** names the Markdown viewer's first button and the Files menu's `Open in <editor>`, and gives the command they run, with the file or folder as its last argument.
 - **`extras`** are folders with more recipes, each a path or `{ path, options }`. An extra has `recipes/index.ts`, which exports `recipes` (a list of `{ name, mods, apply }`, the shape in `recipes/recipe.ts`), its mods in `mods/<name>/` and, if it brings icons, `kit/icons/*.svg`.
   - Its recipes run in both looks after this repo's, and before `square` when the corners are square, so its mods are installed as `vjr-<name>` and come out square with Square corners on.
   - A recipe's `mods` entry with `from: "repo"` is read from the extra's own `mods/`, and `apply` gets the extra's `options`.
@@ -161,13 +161,32 @@ Each loss gets one automatic try. `herdr-app do vjr-comeback.resume` tries again
 
 ### Markdown viewer
 
-`mods/markdown/` shows one Markdown file in a pane. Another mod opens it with `pane.split` and `props: { file }`, and so can you:
+`mods/markdown/` shows one Markdown file formatted, in a pane beside the terminal. Three ways open it:
 
-```sh
-herdr-app do pane.split --direction right --mod vjr-markdown --props '{"file":"/path/to/NOTES.md"}'
-```
+- **From a terminal:** press `cmd-shift-o`, or right-click the terminal and pick `Open Markdown…`. A popup lists the `.md` files the terminal shows on screen and in its last 400 lines, the lowest first, then the repository's `.md` files, the most recently changed first. Only files that exist are listed: a path is read from the terminal's folder, `~` is your home, a bare name that isn't there is looked up in the repository, and a path cut across two lines is put back together. Type to filter, or type a path; ↑ ↓ choose and Enter opens it.
+- **From Files:** click a `.md` file.
+- **From a script or another mod:** `pane.split` with `props: { file }`.
 
-The pane reads the file again when it changes and hides front matter. A link to another `.md` opens in the same pane, with `Back` (an outline button with an arrow) to return; web links open in the browser and other files in their own app. The header's right side has two buttons: Open, an outline button with a gray icon, opens the file in its own app, and Reload, an icon button with a tooltip, reads it again. With an `editor` in the [local config](#local-config), the first button carries that editor's name and runs its command. It reads only the file it shows and the files it links to, runs `open` or the configured editor, and never reaches the network.
+  ```sh
+  herdr-app do pane.split --direction right --mod vjr-markdown --props '{"file":"/path/to/NOTES.md"}'
+  ```
+
+When the tab already shows a viewer, the file opens there, and `Back` returns to the one before; otherwise a new viewer splits to the right of the terminal. The text sits in a column at most 760px wide, centered, at 14px. Cmd-click on a path in a terminal still goes to macOS's app for `.md`: Herdr gives a mod no way to take that click.
+
+The pane reads the file again when it changes and hides front matter. A link to another `.md` opens in the same pane, with `Back` (an outline button with an arrow) to return; web links open in the browser and other files in their own app. The header's right side has two buttons: Open, an outline button with a gray icon, opens the file in its own app, and Reload, an icon button with a tooltip, reads it again. With an `editor` in the [local config](#local-config), the first button carries that editor's name and runs its command. It reads only the file it shows and the files it links to, runs `open` or the configured editor, and never reaches the network. The popup runs `hc read` on the terminal, `sh` to check which paths exist, and `git` and `ls` to list the repository's Markdown files.
+
+### Files
+
+The side panel's **Files** is this repo's own mod, `mods/files/`, in place of Herdr's. It shows the repository of the focused pane as a tree:
+
+- **Colors:** a changed file's name takes its change's color (green added or untracked, yellow modified, red deleted, magenta conflict) with its letter on the right, a folder the color of the worst change inside it, and files git ignores are dimmed.
+- **Opening:** a `.md` opens formatted in the Markdown viewer beside the focused pane; pictures, PDFs and other documents open in their own app; anything else shows as read-only code in the panel, with an arrow back to the tree.
+- **Filter:** type part of a name to list the repository's files that match, every word anywhere in the path; ↑ ↓ Enter open one, Escape clears.
+- **Changed only:** the header's first button lists only what changed, under its folders; the second closes every folder.
+- **Right-click:** `Open beside` for Markdown, `Open in <editor>` (the [local config](#local-config)'s `editor`, or the default app), `Reveal in Finder`, `Copy path`, `Copy relative path`, and `New terminal here` on a folder.
+- **Drag** a row onto a terminal to type its path there.
+
+It follows the focused pane: another repository's pane shows that repository, and coming back opens the same folders. It watches the repository and reads it again on every change. A space on another machine isn't listed yet. It runs `sh`, `git`, `find` and `open` (or your editor) on this computer, reads the files it shows, and never reaches the network. [`mods/files/RECIPE.md`](mods/files/RECIPE.md) describes it in full.
 
 ### Move tab
 
@@ -210,7 +229,7 @@ Both looks show the same folders and pins, kept with their fold in `spaces.folde
 
 ## Kit
 
-`kit/kit.js` is the UI kit of this repo's mods (the Spaces tree, the Markdown viewer and Move tab): tokens (sizes, text, radii), components (`button`, `iconButton`, `link`, `chip`, `pill`, `card`, `heading`, `line`, `popupRow`, `mark`, `statusDot`, `stepNode`, `icon`, `toneColor`) and the SVG icons in `kit/icons/`. A mod imports it as `../../kit/kit.js`, and `apply-layout` copies `kit.js` into each installed mod that imports it. The icons are installed once, in the `kit` mod's `icons/` folder, where the kit reads them. A layout whose mods use the kit must include the `kit` recipe; the generator refuses otherwise.
+`kit/kit.js` is the UI kit of this repo's mods (the Spaces tree, Files, the Markdown viewer and Move tab): tokens (sizes, text, radii), components (`button`, `iconButton`, `input`, `link`, `chip`, `pill`, `card`, `heading`, `line`, `popupRow`, `mark`, `statusDot`, `stepNode`, `icon`, `toneColor`) and the SVG icons in `kit/icons/`. A mod imports it as `../../kit/kit.js`, and `apply-layout` copies `kit.js` into each installed mod that imports it. The icons are installed once, in the `kit` mod's `icons/` folder, where the kit reads them. A layout whose mods use the kit must include the `kit` recipe; the generator refuses otherwise.
 
 `lib/` holds what more than one mod needs and no window shows: `checkouts.js` (a repo's worktrees and the checkout a folder is in) and `claude.js` (a Claude Code session, the options worth keeping, the command that resumes it). Herdr refuses an import from outside a mod's folder, so a mod imports a module as `../../lib/<name>.js` and `apply-layout` copies it, and what it imports, next to the mod's own files. A mod can't have a file with the name of a module it takes from `lib/`.
 

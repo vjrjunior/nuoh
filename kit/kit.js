@@ -1,10 +1,10 @@
 import { div, svg } from "gpui-kit";
-import { h_flex, v_flex } from "gpui-base";
+import { h_flex, Input, v_flex } from "gpui-base";
 
 export const KIT = { name: "kit" };
 export const CONTROL = { tiny: 18, small: 22, regular: 24, square: 26, row: 28, large: 32 };
 export const TEXT = { xs: 10.5, sm: 11, md: 11.5, base: 12, lg: 12.5, xl: 13, title: 13.5 };
-export const RADIUS = { chip: 3, pill: 4, control: 5, card: 6, round: 9 };
+export const RADIUS = { chip: 3, pill: 4, control: 5, card: 6, round: 9, panel: 10 };
 export const ICON_SIZE = { sm: 11, md: 12, lg: 14 };
 export const ICONS = [
   "arrow-left",
@@ -12,12 +12,19 @@ export const ICONS = [
   "check-heavy",
   "chevron-down",
   "chevron-right",
+  "chevrons-down-up",
+  "copy",
   "exclamation",
   "external-link",
   "eye",
+  "file",
+  "file-text",
   "folder",
+  "folder-open",
   "git-branch",
+  "git-compare",
   "github",
+  "image",
   "layers",
   "list",
   "pin",
@@ -112,6 +119,18 @@ export function iconButton(id, { icon: iconName, tooltip, color, size = CONTROL.
       onClick?.(cx);
     })
     .child(icon(iconName, { size: iconSize, color: color ?? t.muted }));
+}
+
+export function input(state, t, { height = CONTROL.large, active = true } = {}) {
+  return Input.new(state)
+    .h(height)
+    .px(10)
+    .rounded(RADIUS.control)
+    .border_1()
+    .border_color(active ? t.accent : t.input)
+    .bg(t.background)
+    .text_size(TEXT.base)
+    .text_color(t.foreground);
 }
 
 export function link(id, { label, icon: iconName, onClick }, t) {

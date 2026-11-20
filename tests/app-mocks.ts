@@ -84,7 +84,7 @@ function recorded(kind: string, path: string): Node {
 
 export const herdr: Record<string, (...args: never[]) => unknown> = {};
 
-const HERDR = ["exec", "notify", "props", "updates", "spaces", "panes", "run", "openOverlay", "theme", "shared", "setShared", "watchFolder", "window", "nextCommand", "layout", "agents", "readTextFile", "home", "terminals", "focused", "appHome", "closeOverlay", "checking"];
+const HERDR = ["exec", "notify", "props", "updates", "spaces", "panes", "run", "openOverlay", "theme", "shared", "setShared", "watchFolder", "window", "nextCommand", "layout", "agents", "readTextFile", "home", "terminals", "focused", "appHome", "closeOverlay", "checking", "hc", "settings", "keys"];
 
 mock.module("gpui-kit", () => ({ View: class {}, div: make, svg: (path: string) => recorded("svg", path), image: (path: string) => recorded("image", path) }));
 export class FakeInput {
@@ -123,6 +123,8 @@ mock.module("gpui-base", () => ({
   InputState: { new: (options?: { placeholder?: string; value?: string }) => new FakeInput(options) },
   Input: { new: () => make() },
   ScrollHandle: { new: () => ({ shown: [] as number[], scroll_to_item(index: number) { this.shown.push(index); } }) },
+  EditorState: { new: (options: Record<string, unknown>) => ({ options, released: false, release() { this.released = true; return true; } }) },
+  Editor: { new: (state: { options: { value?: string } }) => make().child(state.options.value ?? "") },
 }));
 mock.module("herdr", () => Object.fromEntries(HERDR.map((name) => [name, (...args: never[]) => herdr[name]?.(...args)])));
 mock.module("fs/promises", () => ({

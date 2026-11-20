@@ -13,12 +13,14 @@ beforeEach(() => {
 });
 
 function render() {
-  return new Kit().render({ notify() {} }) as Node;
+  const kit = new Kit();
+  kit.init();
+  return kit.render({ notify() {} }) as Node;
 }
 
 test("the gallery shows every section", () => {
   const root = render();
-  for (const id of ["buttons", "icon-buttons", "links", "chips", "pill", "lines", "popup-rows", "dots", "steps", "icons"]) {
+  for (const id of ["buttons", "icon-buttons", "links", "chips", "pill", "inputs", "lines", "popup-rows", "dots", "steps", "icons"]) {
     expect(find(root, `kit-${id}`)).toBeDefined();
   }
 });
@@ -58,4 +60,10 @@ test("the gallery shows popup rows with an icon, a color dot, a check and a sele
   const section = find(render(), "kit-popup-rows");
   expect(texts(section)).toEqual(expect.arrayContaining(["New folder…", "Clients", "Remove from folder", "Selected"]));
   expect(svgs(section)).toEqual(expect.arrayContaining(["mods/kit/icons/plus.svg", "mods/kit/icons/check.svg"]));
+});
+
+test("the gallery shows an input with the accent border and a quiet one with the input border", () => {
+  const section = find(render(), "kit-inputs");
+  const borders = walk(section).flatMap((n) => n.calls.filter(([c]) => c === "border_color").map(([, args]) => args[0]));
+  expect(borders).toEqual(["t.accent", "t.input"]);
 });
