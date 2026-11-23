@@ -1,4 +1,4 @@
-import { View, div } from "gpui-kit";
+import { View, div, image } from "gpui-kit";
 import { Editor, EditorState, h_flex, InputState, ScrollHandle, v_flex } from "gpui-base";
 import { checking, exec, focused, home, openOverlay, panes, props, readTextFile, settings, spaces, theme, watchFolder } from "herdr";
 import { CONTROL, ICON_SIZE, RADIUS, TEXT, button, icon, iconButton, input } from "../../kit/kit.js";
@@ -11,8 +11,8 @@ import {
   TOTAL,
   changedRows,
   clampEntries,
+  fileIcon,
   folderOf,
-  iconOf,
   isIgnored,
   join,
   kindOfFile,
@@ -34,6 +34,7 @@ const REFRESH_MS = 10000;
 const INDENT = 14;
 const CHANGED_KEY = "files.changed";
 const RIGHT_CLICK_MS = 600;
+const IGNORED_OPACITY = 0.5;
 
 export function locate(now, list, active) {
   let pane = now?.pane ? list.find((candidate) => candidate.pane === now.pane) : null;
@@ -294,7 +295,7 @@ export default class Files extends View {
   menuFor(row) {
     const path = join(this.root, row.path);
     const count = itemsFor(path, row.dir).length;
-    openOverlay({ mod: "files", kind: "popup", width: MENU_WIDTH, height: menuHeight(count), props: { role: "menu", path, relative: row.path, dir: row.dir, pane: this.pane } });
+    openOverlay({ mod: "files", kind: "popup", width: MENU_WIDTH, height: menuHeight(count), props: { role: "menu", path, relative: row.path, dir: row.dir, open: Boolean(row.open), pane: this.pane } });
   }
 
   setChangedOnly(on, cx) {
@@ -322,6 +323,7 @@ export default class Files extends View {
     if (this.menu) return this.menu.render(cx);
     this.follow(cx);
     const t = theme();
+    this.light = settings().dark === false;
     return v_flex()
       .id("files")
       .size_full()
@@ -354,6 +356,7 @@ export default class Files extends View {
       return bar
         .pl(6)
         .child(iconButton("files-back", { icon: "arrow-left", tooltip: "Back to files", bordered: false, size: CONTROL.small, onClick: (cx) => this.back(cx) }, t))
+        .child(this.fileImage(this.preview.path))
         .child(div().flex_none().max_w(160).truncate().font_semibold().child(nameOf(path)))
         .child(div().flex_1().min_w(0).truncate().text_size(TEXT.sm).text_color(t.dim).child(folderOf(this.preview.path) || ""))
         .child(button("files-editor", { label: editor ?? "Open", icon: "external-link", iconColor: t.muted, height: CONTROL.small, onClick: () => openInEditor(path) }, t));
@@ -389,6 +392,10 @@ export default class Files extends View {
             ),
           ),
       );
+  }
+
+  fileImage(path, { dir = false, open = false } = {}) {
+    return image(fileIcon(path, { dir, open, light: this.light })).size(ICON_SIZE.lg).flex_none();
   }
 
   back(cx) {
@@ -446,7 +453,7 @@ export default class Files extends View {
       .on_mouse_down("right", (_event, cx) => this.rightPress(row, cx))
       .drag_paths([path])
       .child(row.dir ? icon(row.open ? "chevron-down" : "chevron-right", { size: ICON_SIZE.md, color: t.dim }) : div().w(ICON_SIZE.md).flex_none())
-      .child(icon(iconOf(row.name, row.dir, row.open), { size: ICON_SIZE.lg, color: ignored ? t.dim : t.muted }))
+      .child(this.fileImage(row.path, row).when(ignored, (el) => el.opacity(IGNORED_OPACITY)))
       .child(div().flex_1().min_w(0).truncate().text_color(color).child(row.name))
       .when(Boolean(letter), (el) => el.child(div().flex_none().text_size(TEXT.sm).text_color(color).child(letter)));
   }
@@ -483,7 +490,7 @@ export default class Files extends View {
             .on_click((_event, cx) => this.leftClick({ path: relative, name, dir: false }, cx))
             .on_mouse_down("right", (_event, cx) => this.rightPress({ path: relative, name, dir: false }, cx))
             .drag_paths([path])
-            .child(icon(iconOf(name, false, false), { size: ICON_SIZE.lg, color: t.muted }))
+            .child(this.fileImage(relative))
             .child(div().flex_none().max_w(180).truncate().text_color(statusColor(kind, t) ?? t.foreground).child(name))
             .child(div().flex_1().min_w(0).truncate().text_size(TEXT.sm).text_color(t.dim).child(folderOf(relative) || ""));
         }),

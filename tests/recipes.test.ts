@@ -502,7 +502,20 @@ describe("files", () => {
   test("both looks show our Files in the panel", () => {
     for (const generated of [generateRound(), generateSquare()]) {
       expect(findNode(JSON.parse(generated.layoutText), "files")?.content).toEqual({ mod: "vjr-files" });
-      expect(Object.keys(generated.mods["vjr-files"] ?? {}).sort()).toEqual(["actions.js", "kit.js", "logic.js", "main.js", "menu.js", "mod.json", "open-markdown.js"]);
+      const names = Object.keys(generated.mods["vjr-files"] ?? {}).filter((name) => !name.startsWith("icons/"));
+      expect(names.sort()).toEqual(["actions.js", "file-icons.js", "icon-rules.js", "kit.js", "logic.js", "main.js", "menu.js", "mod.json", "open-markdown.js"]);
+    }
+  });
+
+  test("both looks install the type icons unchanged, where the panel reads them", () => {
+    const source = join(import.meta.dir, "../mods/files/icons");
+    const svgs = readdirSync(source).filter((name) => name.endsWith(".svg"));
+    for (const generated of [generateRound(), generateSquare()]) {
+      const files = generated.mods["vjr-files"] ?? {};
+      const icons = Object.keys(files).filter((name) => name.startsWith("icons/"));
+      expect(icons.sort()).toEqual(svgs.map((name) => `icons/${name}`).sort());
+      for (const name of svgs) expect(files[`icons/${name}`]).toBe(readFileSync(join(source, name), "utf8"));
+      expect(files["logic.js"]).toContain('export const PACK = { name: "vjr-files" };');
     }
   });
 

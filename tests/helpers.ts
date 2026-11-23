@@ -20,8 +20,9 @@ export function removeTempDirs(): void {
 
 export function copyRepo(): string {
   const root = tempDir();
+  const typeIcons = join(repo, "mods/files/icons");
   for (const part of ["palette", "scripts", "themes", "targets", "recipes", "mods", "layouts", "kit", "lib"]) {
-    if (existsSync(join(repo, part))) cpSync(join(repo, part), join(root, part), { recursive: true });
+    if (existsSync(join(repo, part))) cpSync(join(repo, part), join(root, part), { recursive: true, filter: (source) => source !== typeIcons });
   }
   return root;
 }

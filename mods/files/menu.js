@@ -1,10 +1,10 @@
-import { div } from "gpui-kit";
+import { div, image } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
-import { closeOverlay, theme } from "herdr";
-import { ICON_SIZE, TEXT, icon, popupRow } from "../../kit/kit.js";
+import { closeOverlay, settings, theme } from "herdr";
+import { ICON_SIZE, TEXT, popupRow } from "../../kit/kit.js";
 import { openMarkdown } from "../../lib/open-markdown.js";
 import { editorName, newTerminal, openInEditor, reveal } from "./actions.js";
-import { kindOfFile, menuItems, nameOf } from "./logic.js";
+import { fileIcon, kindOfFile, menuItems, nameOf } from "./logic.js";
 
 export const MENU_WIDTH = 240;
 const PAD = 5;
@@ -39,7 +39,7 @@ export class FileMenu {
 
   render() {
     const t = theme();
-    const { path, dir, overlay } = this.given;
+    const { path, relative, dir, open, overlay } = this.given;
     return v_flex()
       .id("files-menu")
       .size_full()
@@ -64,7 +64,7 @@ export class FileMenu {
           .items_center()
           .text_size(TEXT.sm)
           .text_color(t.dim)
-          .child(icon(dir ? "folder" : "file", { size: ICON_SIZE.md, color: t.dim }))
+          .child(image(fileIcon(relative ?? path, { dir, open, light: settings().dark === false })).size(ICON_SIZE.md).flex_none())
           .child(div().flex_1().min_w(0).truncate().child(nameOf(path))),
       )
       .children(this.items.map((item, index) => popupRow(`files-menu-${item.id}`, { icon: item.icon, label: item.label, selected: index === this.at, onClick: (cx) => this.run(item, cx) }, t)));

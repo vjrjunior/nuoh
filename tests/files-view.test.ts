@@ -115,6 +115,8 @@ function fire(view: { render(cx: unknown): Node }, cx: unknown, key: string, kin
   for (const handler of node(view, cx, key).handlers[kind] ?? []) handler({}, cx);
 }
 
+const icons = (item: Node) => walk(item).flatMap((n) => n.calls.filter(([c]) => c === "image").map(([, args]) => args[0]));
+const iconNode = (item: Node) => walk(item).find((n) => n.calls.some(([c]) => c === "image")) as Node;
 const colorOf = (item: Node) => walk(item).flatMap((n) => n.calls.filter(([c]) => c === "text_color").map(([, args]) => args[0]));
 
 describe("the tree", () => {
@@ -145,6 +147,32 @@ describe("the tree", () => {
     expect(colorOf(node(view, cx, "file-src"))).toContain("t.ansi3");
     expect(texts(node(view, cx, "file-notes.txt"))).toContain("A");
     expect(colorOf(node(view, cx, "file-node_modules"))).toContain("t.dim");
+  });
+
+  test("each row shows its type's icon in its own colors, and an open folder its open icon", async () => {
+    const { view, cx } = await open();
+    expect(icons(node(view, cx, "file-README.md"))).toEqual(["mods/files/icons/readme.svg"]);
+    expect(icons(node(view, cx, "file-src"))).toEqual(["mods/files/icons/folder-src.svg"]);
+    fire(view, cx, "file-src");
+    await flush();
+    expect(icons(node(view, cx, "file-src"))).toEqual(["mods/files/icons/folder-src-open.svg"]);
+    expect(icons(node(view, cx, "file-src/a.ts"))).toEqual(["mods/files/icons/typescript.svg"]);
+    expect(iconNode(node(view, cx, "file-src/a.ts")).calls.map(([name]) => name)).not.toContain("text_color");
+  });
+
+  test("an ignored row's icon is faded", async () => {
+    const { view, cx } = await open();
+    expect(iconNode(node(view, cx, "file-node_modules")).calls).toContainEqual(["opacity", [0.5]]);
+    expect(iconNode(node(view, cx, "file-README.md")).calls).not.toContainEqual(["opacity", [0.5]]);
+  });
+
+  test("a light appearance uses the light icons", async () => {
+    herdr.settings = () => ({ font_family: "Mono", dark: false });
+    folders[ROOT].push(["bun.lock", false]);
+    const { view, cx } = await open();
+    expect(icons(node(view, cx, "file-bun.lock"))).toEqual(["mods/files/icons/bun_light.svg"]);
+    herdr.settings = () => ({ font_family: "Mono", dark: true });
+    expect(icons(node(view, cx, "file-bun.lock"))).toEqual(["mods/files/icons/bun.svg"]);
   });
 
   test("each row can be dragged into a terminal as its full path", async () => {
@@ -210,6 +238,7 @@ describe("opening a file", () => {
     await flush();
     expect(shown()).toContain("hello");
     expect(view.preview.state.options).toMatchObject({ language: "txt", readonly: true, font_family: "Mono" });
+    expect(icons(node(view, cx, "files-head"))).toEqual(["mods/files/icons/document.svg"]);
     fire(view, cx, "files-back");
     expect(shown()).toContain("README.md");
     expect(shown()).not.toContain("hello");
@@ -251,6 +280,14 @@ describe("the filter", () => {
     expect(shown()).toContain("README.md");
   });
 
+  test("each result shows its type's icon", async () => {
+    const { view, cx } = await open();
+    view.input.set_value("plan");
+    view.input.emit("change", cx);
+    await flush();
+    expect(icons(node(view, cx, "match-docs/plan.md"))).toEqual(["mods/files/icons/markdown.svg"]);
+  });
+
   test("nothing matching says so", async () => {
     const { view, cx, shown } = await open();
     view.input.set_value("zzz");
@@ -276,7 +313,7 @@ describe("the row menu", () => {
     const { view, cx } = await open();
     fire(view, cx, "file-README.md", "down:right");
     expect(overlays).toEqual([
-      { mod: "files", kind: "popup", width: 240, height: 5 * 2 + 26 + 5 * 28, props: { role: "menu", path: `${ROOT}/README.md`, relative: "README.md", dir: false, pane: "p1" } },
+      { mod: "files", kind: "popup", width: 240, height: 5 * 2 + 26 + 5 * 28, props: { role: "menu", path: `${ROOT}/README.md`, relative: "README.md", dir: false, open: false, pane: "p1" } },
     ]);
   });
 
@@ -319,6 +356,13 @@ describe("the row menu", () => {
     expect(shown).not.toContain("feat-files-and-markdown");
     fire(view, cx, "files-menu-copy");
     expect(cx.clipboard).toEqual([`${ROOT}/README.md`]);
+  });
+
+  test("the menu's title shows the row's icon, open for an open folder", async () => {
+    const file = await menu({ path: `${ROOT}/src/a.ts`, relative: "src/a.ts", dir: false });
+    expect(icons(file.view.render(file.cx))).toEqual(["mods/files/icons/typescript.svg"]);
+    const folder = await menu({ path: `${ROOT}/src`, relative: "src", dir: true, open: true });
+    expect(icons(folder.view.render(folder.cx))).toEqual(["mods/files/icons/folder-src-open.svg"]);
   });
 
   test("Copy path and Copy relative path write the clipboard and close", async () => {

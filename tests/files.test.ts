@@ -6,9 +6,9 @@ import {
   ALL_FILES,
   changedRows,
   clampEntries,
+  fileIcon,
   folderOf,
   GIT_STATE,
-  iconOf,
   isIgnored,
   kindOfFile,
   LIST,
@@ -215,12 +215,13 @@ describe("what a file is", () => {
     ]);
   });
 
-  test("each kind has its icon, and open folders an open one", () => {
-    expect(iconOf("src", true, false)).toBe("folder");
-    expect(iconOf("src", true, true)).toBe("folder-open");
-    expect(iconOf("a.md", false, false)).toBe("file-text");
-    expect(iconOf("a.png", false, false)).toBe("image");
-    expect(iconOf("a.ts", false, false)).toBe("file");
+  test("each file and folder gets its type's icon from Files' own icons", () => {
+    expect(fileIcon("src/a.ts")).toBe("mods/files/icons/typescript.svg");
+    expect(fileIcon("README.md")).toBe("mods/files/icons/readme.svg");
+    expect(fileIcon("notes.unknownext")).toBe("mods/files/icons/file.svg");
+    expect(fileIcon("src", { dir: true })).toBe("mods/files/icons/folder-src.svg");
+    expect(fileIcon("src", { dir: true, open: true })).toBe("mods/files/icons/folder-src-open.svg");
+    expect(fileIcon("Cargo.toml", { light: true })).toBe("mods/files/icons/toml_light.svg");
   });
 
   test("the code view gets a language it knows", () => {

@@ -1,3 +1,7 @@
+import ICONS from "./file-icons.js";
+import { iconFor } from "./icon-rules.js";
+
+export const PACK = { name: "files" };
 export const PER_FOLDER = 500;
 export const TOTAL = 5000;
 export const MATCHES = 200;
@@ -128,12 +132,8 @@ export function kindOfFile(name) {
   return "text";
 }
 
-export function iconOf(name, dir, open) {
-  if (dir) return open ? "folder-open" : "folder";
-  const kind = kindOfFile(name);
-  if (kind === "markdown") return "file-text";
-  if (kind === "image") return "image";
-  return "file";
+export function fileIcon(path, { dir = false, open = false, light = false } = {}) {
+  return `mods/${PACK.name}/icons/${iconFor(ICONS, path, { dir, open, light })}.svg`;
 }
 
 export function languageOf(name) {

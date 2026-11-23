@@ -77,6 +77,16 @@ describe("copies", () => {
     expect(generated.mods["test-git-graph"]?.["graph.js"]).toBeDefined();
   });
 
+  test("a repo mod's own icons are installed with it, and only its SVGs", () => {
+    const { repo, generate } = setup();
+    mkdirSync(join(repo, "mods/git-graph/icons"), { recursive: true });
+    writeFileSync(join(repo, "mods/git-graph/icons/lane.svg"), '<svg xmlns="http://www.w3.org/2000/svg"></svg>\n');
+    writeFileSync(join(repo, "mods/git-graph/icons/LICENSE-lanes"), "MIT\n");
+    const files = generate().mods["test-git-graph"] ?? {};
+    expect(files["icons/lane.svg"]).toContain("<svg");
+    expect(Object.keys(files).filter((name) => name.startsWith("icons/"))).toEqual(["icons/lane.svg"]);
+  });
+
   test("records where each copy came from", () => {
     const generated = setup().generate();
     expect(JSON.parse(generated.mods["test-tabs"]?.["mod.json"] ?? "{}").cloned_from).toEqual({ name: "tabs", version: "0.1.10" });

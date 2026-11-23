@@ -74,6 +74,42 @@
 **Priority:** P3
 **Depends on:** Nothing
 
+### Show a file's type icon in the Markdown viewer and its picker
+
+**What:** Draw the file's type icon in the Markdown viewer's header and on the rows of `Open Markdown…`, as Files does.
+
+**Why:** Files shows a colored icon for every file; the viewer and the picker still show the kit's grey `file-text`, so a `README.md`, a `TODOS.md` and a `CLAUDE.md` look the same there.
+
+**Context:** The icons, their table and `iconFor` live in `mods/files/` because only Files draws them. A second mod using them moves them into the kit (`kit/`, installed once in `vjr-kit`), with `fileIcon` reading `mods/${KIT.name}/file-icons/<icon>.svg`, and `scripts/file-icons.ts` writing there.
+
+**Effort:** S
+**Priority:** P3
+**Depends on:** Nothing
+
+### Hide system clutter in the Files tree
+
+**What:** Leave `.DS_Store` and similar files the system writes out of the Files tree and its filter.
+
+**Why:** They show up in every folder Finder has opened, with no use in the panel.
+
+**Context:** `LIST` in `mods/files/logic.js` prints every entry but `.git`; a short list of names to skip there (and in `ALL_FILES`' `find` outside a repository) is enough. A repository's `.gitignore` usually ignores them already, so they show dimmed.
+
+**Effort:** S
+**Priority:** P3
+**Depends on:** Nothing
+
+### Pick Files' icon by the language of a file
+
+**What:** Give a file the icon of the language VS Code would detect for it where the name alone picks another, as a workflow YAML in `.github/workflows` gets the GitHub Actions icon.
+
+**Why:** Files picks icons by name and extension only, so those files show the plain language's icon.
+
+**Context:** Material Icon Theme's `languageIds` table maps VS Code's language ids to icons; the ids come from VS Code's language rules (extensions, file names, first lines), which aren't in the package. A handful of path patterns would cover the common cases.
+
+**Effort:** M
+**Priority:** P3
+**Depends on:** Nothing
+
 ### Color code blocks and show the source in the Markdown viewer
 
 **What:** Draw each fenced code block of `mods/markdown/` as a read-only code view with the theme's colors and a Copy button, and add a Formatted · Source switch to the header.

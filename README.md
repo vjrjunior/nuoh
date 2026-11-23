@@ -179,7 +179,8 @@ The pane reads the file again when it changes and hides front matter. A link to 
 
 The side panel's **Files** is this repo's own mod, `mods/files/`, in place of Herdr's. It shows the repository of the focused pane as a tree:
 
-- **Colors:** a changed file's name takes its change's color (green added or untracked, yellow modified, red deleted, magenta conflict) with its letter on the right, a folder the color of the worst change inside it, and files git ignores are dimmed.
+- **Icons:** each file and folder has a colored icon of its type, as in VS Code's explorer with the Material Icon Theme: `package.json` the Node hexagon, `.ts` the TS square, `src` a green folder, `.github` a folder with the GitHub mark, and an open folder its open icon. The icon is also on a filter result, above a file shown as code, and on the right-click menu.
+- **Colors:** a changed file's name takes its change's color (green added or untracked, yellow modified, red deleted, magenta conflict) with its letter on the right, a folder the color of the worst change inside it, and files git ignores are dimmed, their icon faded.
 - **Opening:** a `.md` opens formatted in the Markdown viewer beside the focused pane; pictures, PDFs and other documents open in their own app; anything else shows as read-only code in the panel, with an arrow back to the tree.
 - **Filter:** type part of a name to list the repository's files that match, every word anywhere in the path; ↑ ↓ Enter open one, Escape clears.
 - **Changed only:** the header's first button lists only what changed, under its folders; the second closes every folder.
@@ -242,6 +243,7 @@ herdr-app do pane.split --direction right --mod vjr-kit
 Credits:
 - [Lucide](https://lucide.dev) icons by Lucide Contributors (ISC; portions from Feather by Cole Bemis, MIT), from `lucide-static@0.469.0`. The license is in `kit/icons/LICENSE-lucide`.
 - [Simple Icons](https://simpleicons.org) by Simple Icons contributors (CC0), from `simple-icons@13.21.0`: GitHub. Brand marks are their owners' trademarks.
+- [Material Icon Theme](https://www.npmjs.com/package/material-icon-theme) icons by Material Extensions (MIT), from `material-icon-theme@5.40.0`: the Files panel's type icons in `mods/files/icons/`. The license is in `mods/files/icons/LICENSE-material-icon-theme`. To move to another release, change `VERSION` in `scripts/file-icons.ts` and run `bun run file-icons`, which downloads the package with `npm pack` and writes the icons and their table.
 
 ## Test panel
 
