@@ -64,13 +64,9 @@ describe("looks", () => {
 });
 
 describe("list-vjr-theme", () => {
-  test("the palette lists the vjr theme", () => {
-    expect(generateRound().mods["vjr-palette"]?.["main.js"]).toContain('["vjr", "graphite", "ink", "moss", "atom-one-dark"]');
-  });
-
   test("the palette shows keys from its own layout section", () => {
-    expect(generateRound().mods["vjr-palette"]?.["main.js"]).toContain('b.section === "layout:vjr-desk"');
-    expect(generateSquare().mods["vjr-palette"]?.["main.js"]).toContain('b.section === "layout:vjr-desk"');
+    expect(generateRound().mods["vjr-palette"]?.["main.js"]).toContain('if (section !== "global" && section !== "layout:vjr-desk") continue;');
+    expect(generateSquare().mods["vjr-palette"]?.["main.js"]).toContain('if (section !== "global" && section !== "layout:vjr-desk") continue;');
   });
 
   test("the status bar opens the copied palette", () => {
@@ -277,7 +273,7 @@ describe("square", () => {
       '        ...(inTab ? [["Close pane", "pane.close", { pane: tg.pane }]] : []),',
       '        ["Close", "tab.close", { id: tg.id }],',
       '    const icon = command === "worktree" ? "git-branch" : "terminal";',
-      'function menuIcon(command) {',
+      'function menuIcon(command, args) {',
       'function shortcut(name, args) {',
       '        ["Close", "space.close", { id: tg.id }],',
       "    closeOverlay(props()?.overlay);",
@@ -466,7 +462,7 @@ describe("markdown picker", () => {
   test("the item has a file icon and shows the picker's key", () => {
     const menu = generateRound().mods["vjr-menu"]?.["main.js"] ?? "";
     expect(menu).toContain('const MARKDOWN_PICKER = { name: "vjr-markdown" };');
-    expect(menu).toContain('function menuIcon(command) {\n  if (command === "markdown-picker") return "mods/workspace-chrome/file-text.svg";');
+    expect(menu).toContain('function menuIcon(command, args) {\n  if (command === "markdown-picker") return "mods/workspace-chrome/file-text.svg";');
     expect(menu).toContain('  if (name === "markdown-picker") return keys().find((b) => b.action === `mod.open:${MARKDOWN_PICKER.name}`)?.keys ?? "";');
   });
 
@@ -595,7 +591,7 @@ describe("move-tab", () => {
     const popup = "vjr-move-tab";
     for (const generated of [generateRound(), generateSquare()]) {
       const text = generated.mods[menu]?.["main.js"] ?? "";
-      expect(text).toContain(`const MOVE_TAB = { name: "${popup}" };\n\nfunction menuIcon(command) {`);
+      expect(text).toContain(`const MOVE_TAB = { name: "${popup}" };\n\nfunction menuIcon(command, args) {`);
       expect(text).toContain('function shortcut(name, args) {\n  if (name === "move-tab") return keys().find((b) => b.action === `mod.open:${MOVE_TAB.name}`)?.keys ?? "";\n');
     }
   });
@@ -612,7 +608,7 @@ describe("move-tab", () => {
       '        ["Close", "space.close", { id: tg.id }],',
       "    closeOverlay(props()?.overlay);",
       '  const name = command.endsWith(".close") ? "x" : "terminal";',
-      "function menuIcon(command) {",
+      "function menuIcon(command, args) {",
       "function shortcut(name, args) {",
       '    if (it[1] === "worktree") tree();',
       "",

@@ -3,7 +3,7 @@ import { type Copy, exact, type LayoutNode, type Recipe } from "./recipe";
 const CLOSE = '        ["Close", "tab.close", { id: tg.id }],';
 const CHOOSE = 'if (it[1] === "worktree")';
 const ICON = 'command === "worktree" ? "git-branch"';
-const MENU_ICON = "function menuIcon(command) {";
+const MENU_ICON = "function menuIcon(command, args) {";
 const SHORTCUT = "function shortcut(name, args) {";
 const TABS_IMPORT = 'import { spaces, panes, run, openOverlay, theme, window, shared, layout, settings } from "herdr";';
 const TAB_PRESS = '.on_mouse_down("left", (e, cx) => { cx.stop_propagation(); this.pressed = i;';

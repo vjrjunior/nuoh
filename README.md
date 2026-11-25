@@ -26,7 +26,7 @@ Then open **Settings → Look → Dark** and choose `vjr`, or run:
 herdr-app do app.theme '{"name":"vjr"}'
 ```
 
-Herdr's own command palette will not show it: its `Theme:` list holds only the four built-in themes. The layout below adds it. The choice applies to the layout on screen, and each layout keeps its own.
+Herdr's command palette lists it under `Theme:` too, with every dark theme while the window is dark. The choice applies to the layout on screen, and each layout keeps its own.
 
 For Ghostty, copy `targets/ghostty/VJR` to `~/.config/ghostty/themes/` and set `theme = VJR`.
 
@@ -74,7 +74,7 @@ A palette that does not validate installs nothing, and the last good theme stays
 
 ## Use the layout
 
-One layout for herdr-app, `vjr-desk`, built from the version you have installed: Herdr's window with the VJR theme, `vjr` in the command palette, a **Graph** button that opens Git Graph in the side panel, a Files panel of its own, a Markdown viewer you can reach from any terminal, and Spaces as a tree of each repository's worktrees, open or closed, drawn as a graph or as blocks, with the active space in its own color, your pinned repositories and your own colored folders on top. It has two looks: round corners, which are Herdr's own and the default, and square corners.
+One layout for herdr-app, `vjr-desk`, built from the version you have installed: Herdr's window with the VJR theme, a **Graph** button that opens Git Graph in the side panel, a Files panel of its own, a Markdown viewer you can reach from any terminal, and Spaces as a tree of each repository's worktrees, open or closed, drawn as a graph or as blocks, with the active space in its own color, your pinned repositories and your own colored folders on top. It has two looks: round corners, which are Herdr's own and the default, and square corners.
 
 ```sh
 bun run install-theme

@@ -8,12 +8,7 @@ export const listVjrTheme: Recipe = {
   ],
   apply({ copies, replacements, variant }) {
     const palette = copies.palette as Copy;
-    exact(palette, '...["graphite", "ink", "moss", "atom-one-dark"]', '...["vjr", "graphite", "ink", "moss", "atom-one-dark"]');
-    exact(
-      palette,
-      'b.section === "global" && b.action === want',
-      `(b.section === "global" || b.section === "layout:${variant.layout}") && b.action === want`,
-    );
+    exact(palette, 'if (section !== "global") continue;', `if (section !== "global" && section !== "layout:${variant.layout}") continue;`);
     exact(copies["workspace-status"] as Copy, 'run("app.palette")', 'run("mod.open", { name: "palette" })');
     palette.meta.overlay = { kind: "popup", at: "top", offset: 60, width: 620, height: 410 };
     replacements["app.palette"] = "palette";

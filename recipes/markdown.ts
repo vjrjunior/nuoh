@@ -3,7 +3,7 @@ import { type Copy, exact, type Recipe } from "./recipe";
 const DEFAULT_EDITOR = 'const EDITOR = { name: "Open", argv: ["open"] };';
 const CLOSE_PANE = '        ...(inTab ? [["Close pane", "pane.close", { pane: tg.pane }]] : []),';
 const CHOOSE = 'if (it[1] === "worktree")';
-const MENU_ICON = "function menuIcon(command) {";
+const MENU_ICON = "function menuIcon(command, args) {";
 const SHORTCUT = "function shortcut(name, args) {";
 const PICKER = { width: 560, height: 420 };
 

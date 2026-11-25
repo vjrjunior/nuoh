@@ -106,7 +106,7 @@ export default class Tabs extends View {
   const name = command.endsWith(".close") ? "x" : "terminal";
     const icon = command === "worktree" ? "git-branch" : "terminal";
     closeOverlay(props()?.overlay);
-    function menuIcon(command) {
+    function menuIcon(command, args) {
       return icon;
     }
     function shortcut(name, args) {
@@ -127,12 +127,15 @@ export default class Tabs extends View {
       ["mod.open", { name: "picker" }, "Tab", "Go to space or tab…", "switch"],
       ["app.settings", {}, "App", "Settings", "preferences"],
       ["app.help", {}, "App", "Keys", "keybindings"],
-      ...["graphite", "ink", "moss", "atom-one-dark"].map((n) => ["app.theme", { name: n }]),
     ];
     const hidden = new Set([
       "app.palette", "app.hide", "app.show_all",
     ]);
-    const bound = keys().find((b) => b.section === "global" && b.action === want);
+    for (const { name, light } of themes()) list.push({ name: "app.theme", args: { name } });
+    for (const { section, keys, action } of bound) {
+      if (section !== "global") continue;
+      if (action === want) return keys;
+    }
     const clone = () => openOverlay({ mod: "prompt", kind: "dialog", width: 380, props: {} });
     return v_flex().bg(t.popover).rounded(9);`),
   "frame/settings/main.js": `import { View } from "gpui-kit";
