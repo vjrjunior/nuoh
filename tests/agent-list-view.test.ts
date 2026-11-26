@@ -24,7 +24,7 @@ const agent = (address: string, status: string, over: Partial<Agent> = {}): Agen
   address,
   pane: `p-${address}`,
   space: "s1",
-  space_name: "pp-stack",
+  space_name: "web-shop",
   tab: `tab-${address}`,
   status,
   program: claude,
@@ -56,7 +56,7 @@ beforeEach(() => {
     theme: () => new Proxy({}, { get: (_x, p) => (typeof p === "string" ? `t.${p}` : undefined) }),
     agents: () => app.agents,
     terminals: () => app.terminals,
-    spaces: () => [{ id: "s1", name: "pp-stack", tabs: [{ id: "tab-a", name: "1", named: false }] }],
+    spaces: () => [{ id: "s1", name: "web-shop", tabs: [{ id: "tab-a", name: "1", named: false }] }],
     shared: (key: string) => app.shared[key],
     setShared: (key: string, value: unknown) => {
       app.shared[key] = value;
@@ -137,7 +137,7 @@ describe("a row", () => {
     app.agents = [agent("a", "blocked")];
     const row = find(draw(start()), "ag-a");
     expect(own(row, "h")).toEqual([[54]]);
-    expect(texts(row)).toEqual(["P", "pp-stack", "Needs you", "now", "lane status panel"]);
+    expect(texts(row)).toEqual(["W", "web-shop", "Needs you", "now", "lane status panel"]);
     expect(all(row, "bg")).toContainEqual(["#e3814f"]);
     expect(all(row, "bg")).toContainEqual(["t.canvas"]);
     expect(svgs(row)).toEqual(["icons/claude.svg"]);
@@ -149,7 +149,7 @@ describe("a row", () => {
     const root = draw(start());
     expect(texts(find(root, "ag-w"))).toContain("Working");
     expect(texts(find(root, "ag-d"))).toContain("Done");
-    expect(texts(find(root, "ag-i"))).toEqual(["P", "pp-stack", "now", "lane status panel"]);
+    expect(texts(find(root, "ag-i"))).toEqual(["W", "web-shop", "now", "lane status panel"]);
   });
 
   test("the focused agent's row is selected", () => {
@@ -161,7 +161,7 @@ describe("a row", () => {
 
   test("an agent on another machine names it after the space", () => {
     app.agents = [agent("vps/t7", "working")];
-    expect(texts(find(draw(start()), "ag-vps/t7"))).toEqual(["P", "pp-stack", "vps", "Working", "now", "lane status panel"]);
+    expect(texts(find(draw(start()), "ag-vps/t7"))).toEqual(["W", "web-shop", "vps", "Working", "now", "lane status panel"]);
   });
 
   test("a program without an icon gets no badge", () => {
@@ -273,7 +273,7 @@ describe("the folded sidebar", () => {
     const a = find(root, "ag-a");
     expect(own(a, "justify_center")).toEqual([[]]);
     expect(own(a, "bg")).toEqual([["t.selected"]]);
-    expect(own(a, "tooltip")).toEqual([["pp-stack"]]);
+    expect(own(a, "tooltip")).toEqual([["web-shop"]]);
     expect(all(a, "bg")).toContainEqual(["t.blocked"]);
     expect(all(a, "border_color")).toEqual([["t.surface"]]);
     expect(all(find(root, "ag-b"), "border_color")).toEqual([]);
