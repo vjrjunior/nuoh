@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from "bun:test";
-import { herdr, type Node, texts } from "./app-mocks";
+import { herdr, type Node, texts, walk } from "./app-mocks";
 import { reset, app, click, common, cx, pathTo, setup, space, style } from "./spaces-tree-harness";
 
 beforeEach(reset);
@@ -138,5 +138,57 @@ describe("bringing the active space into view", () => {
     const view = setup();
     view.render();
     expect(shownBy(view)).toEqual([2]);
+  });
+});
+
+describe("the card look", () => {
+  const named = () => {
+    herdr.theme = () => new Proxy({}, { get: (_x, p) => (typeof p === "string" ? `t.${p}` : undefined) });
+  };
+  const own = (node: Node, name: string) => node.calls.filter(([called]) => called === name).map(([, args]) => args);
+  const svgs = (node: Node) => walk(node).flatMap((n) => n.calls.filter(([c]) => c === "svg").map(([, args]) => args[0]));
+  const head = (root: Node) => root.kids[0] as Node;
+
+  test("without card, the tree keeps its chrome fill and its plain header", () => {
+    named();
+    const root = setup().render();
+    expect(own(root, "bg")).toEqual([["t.chrome"]]);
+    expect(texts(head(root))).toEqual(["Spaces"]);
+    expect(own(head(root), "h")).toEqual([[31]]);
+    expect(svgs(head(root))).toEqual(["mods/kit/icons/layers.svg", "mods/kit/icons/folder.svg", "mods/kit/icons/plus.svg"]);
+    expect(own(root.kids[1] as Node, "pb")).toEqual([[14]]);
+  });
+
+  test("with card, the card's own fill shows through, under the card header with the space count", () => {
+    named();
+    app.props = { card: true };
+    const root = setup().render();
+    expect(own(root, "bg")).toEqual([]);
+    expect(head(root).key).toBe("spaces-head");
+    expect(own(head(root), "h")).toEqual([[40]]);
+    expect(texts(head(root))).toEqual(["Spaces", "2"]);
+    expect(svgs(head(root))).toEqual(["mods/kit/icons/layers.svg", "mods/kit/icons/layers.svg", "mods/kit/icons/folder-plus.svg", "mods/kit/icons/plus.svg"]);
+    expect(own(root.kids[1] as Node, "pb")).toEqual([[8]]);
+  });
+
+  test("the card header's buttons are 28 px ghosts that still switch the style, make a folder and a space", () => {
+    app.props = { card: true };
+    const view = setup();
+    const button = pathTo(view.render(), "space-new")?.at(-1) as Node;
+    expect(own(button, "size")).toEqual([[28]]);
+    expect(own(button, "border_1")).toEqual([]);
+    click(view, "space-new");
+    expect(app.runs).toContainEqual(["space.new", undefined]);
+    click(view, "space-style");
+    expect(app.shared["spaces.style"]).toBe("blocks");
+    click(view, "space-folder");
+    expect(app.overlays.at(-1)?.props?.role).toBe("name");
+  });
+
+  test("folded to a rail, the card keeps only the new space button", () => {
+    app.props = { card: true };
+    app.sidebar = 44;
+    const root = setup().render();
+    expect(head(root).kids.map((kid) => kid.key)).toEqual(["space-new"]);
   });
 });

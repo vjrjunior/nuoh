@@ -1,7 +1,7 @@
 import { View } from "gpui-kit";
 import { h_flex, InputState, v_flex } from "gpui-base";
 import { theme } from "herdr";
-import { CONTROL, ICONS, TEXT, avatar, button, card, chip, heading, icon, iconButton, input, line, link, pill, popupRow, stepNode, statusDot } from "../../kit/kit.js";
+import { CONTROL, ICONS, ICON_SIZE, TEXT, avatar, button, card, cardHeader, chip, heading, icon, iconButton, input, line, link, pill, popupRow, stepNode, statusChip, statusDot } from "../../kit/kit.js";
 
 const STATUSES = ["working", "blocked", "done", "idle", "unknown"];
 const STEPS = ["done", "current", "bad", "todo"];
@@ -45,6 +45,27 @@ export default class Kit extends View {
       .child(chip("failed", { mark: "exclamation", color: t.blocked }, t))
       .child(chip("asking", { mark: "dot", color: t.working }, t))
       .child(chip("Sent", { color: t.working }, t));
+    const statusChips = row().children(["blocked", "working", "done"].map((name) => statusChip(name, t)));
+    const ghost = (id, name) => iconButton(id, { icon: name, tooltip: name, size: CONTROL.row, iconSize: ICON_SIZE.lg, bordered: false, onClick: noop }, t);
+    const cardHeaders = v_flex()
+      .w(300)
+      .gap(8)
+      .child(
+        v_flex()
+          .rounded(14)
+          .bg(t.surface)
+          .border_1()
+          .border_color(t.border)
+          .child(cardHeader("kit-ch-actions", { icon: "layers", label: "Spaces", count: 9 }, t).child(h_flex().items_center().child(ghost("kit-ch-folder", "folder-plus")).child(ghost("kit-ch-new", "plus")))),
+      )
+      .child(
+        v_flex()
+          .rounded(14)
+          .bg(t.surface)
+          .border_1()
+          .border_color(t.border)
+          .child(cardHeader("kit-ch-chip", { icon: "bot", label: "Agents", count: 4 }, t).child(h_flex().gap(4).items_center().child(statusChip("blocked", t, { label: "1 needs you" })).child(ghost("kit-ch-sort", "list-filter")))),
+      );
     const lines = card(t)
       .child(line("Check", { detail: "check", color: t.done, mark: "check" }, t))
       .child(line("Cross", { detail: "x", color: t.blocked, mark: "x" }, t))
@@ -102,9 +123,11 @@ export default class Kit extends View {
       .child(section("icon-buttons", "Icon buttons", t).child(iconButtons))
       .child(section("links", "Links", t).child(links))
       .child(section("chips", "Chips", t).child(chips))
+      .child(section("status-chips", "Status chips", t).child(statusChips))
       .child(section("pill", "Pill", t).child(row().child(pill("Pill", t))))
       .child(section("avatars", "Avatars", t).child(row().child(avatar("nuoh", { fill: t.accent, letter: t.accent_foreground })).child(avatar("work", { fill: t.done, letter: t.accent_foreground }, { size: 28, radius: 8 }))))
       .child(section("inputs", "Inputs", t).child(inputs))
+      .child(section("card-headers", "Card headers", t).child(cardHeaders))
       .child(section("lines", "Lines", t).child(lines))
       .child(section("popup-rows", "Popup rows", t).child(popupRows))
       .child(section("dots", "Dots", t).child(dots))

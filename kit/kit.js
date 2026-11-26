@@ -6,8 +6,12 @@ export const CONTROL = { tiny: 18, small: 22, regular: 24, square: 26, row: 28, 
 export const TEXT = { xs: 10.5, sm: 11, md: 11.5, base: 12, lg: 12.5, xl: 13, title: 13.5 };
 export const RADIUS = { chip: 3, pill: 4, control: 5, card: 6, round: 9, panel: 10 };
 export const ICON_SIZE = { sm: 11, md: 12, lg: 14 };
+export const CARD_HEADER = 40;
+export const STATUS_LABEL = { blocked: "Needs you", working: "Working", done: "Done" };
+const STATUS_FILL = { blocked: "1F", working: "1F", done: "1A" };
 export const ICONS = [
   "arrow-left",
+  "bot",
   "check",
   "check-heavy",
   "chevron-down",
@@ -21,12 +25,14 @@ export const ICONS = [
   "file-text",
   "folder",
   "folder-open",
+  "folder-plus",
   "git-branch",
   "git-compare",
   "github",
   "image",
   "layers",
   "list",
+  "list-filter",
   "monitor",
   "panel-left",
   "pin",
@@ -211,6 +217,37 @@ export function popupRow(id, { icon: iconName, dot, label, detail, selected = fa
     .child(div().flex_1().min_w(0).truncate().child(label))
     .when(detail != null, (el) => el.child(div().flex_none().text_size(TEXT.sm).text_color(t.unknown).child(detail)))
     .when(check, (el) => el.child(icon("check", { size: ICON_SIZE.lg, color: t.accent })));
+}
+
+export function statusChip(status, t, { label } = {}) {
+  const text = label ?? STATUS_LABEL[status];
+  if (text == null || STATUS_FILL[status] == null) return null;
+  return h_flex()
+    .flex_none()
+    .h(CONTROL.tiny)
+    .px(6)
+    .items_center()
+    .rounded(RADIUS.control)
+    .bg(t[status] + STATUS_FILL[status])
+    .text_size(TEXT.sm)
+    .font_medium()
+    .text_color(t[status])
+    .child(text);
+}
+
+export function cardHeader(id, { icon: iconName, label, count }, t) {
+  return h_flex()
+    .id(id)
+    .h(CARD_HEADER)
+    .flex_none()
+    .pl(14)
+    .pr(8)
+    .gap(8)
+    .items_center()
+    .child(icon(iconName, { size: ICON_SIZE.lg, color: t.muted }))
+    .child(div().flex_none().text_size(TEXT.xl).font_medium().text_color(t.muted).child(label))
+    .when(count != null, (el) => el.child(div().flex_none().text_size(TEXT.base).text_color(t.dim).child(String(count))))
+    .child(div().flex_1());
 }
 
 export function card(t) {

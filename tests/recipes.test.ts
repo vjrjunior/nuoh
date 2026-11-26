@@ -200,6 +200,7 @@ describe("nuoh", () => {
     const generated = generateNuoh();
     expect(generated.layout).toBe("nuoh");
     expect(Object.keys(generated.mods).sort()).toEqual([
+      "nuoh-agent-list",
       "nuoh-comeback",
       "nuoh-files",
       "nuoh-kit",
@@ -271,13 +272,43 @@ describe("nuoh", () => {
     expect(findNode(workspace, "files")?.content.mod).toBe("nuoh-files");
   });
 
-  test("the sidebar opens with the space's title and keeps its lists on chrome", () => {
+  test("the sidebar opens with the space's title over two cards on the gradient, with no square fill behind them", () => {
     const sidebar = findNode(nuohLayout(), "sidebar");
     expect(ids(sidebar)).toEqual(["space-title", "sidebar-lists"]);
     expect(sidebar?.background).toBeUndefined();
     expect(sidebar?.gap).toBe(8);
-    expect(findNode(sidebar, "sidebar-lists")?.background).toBe("chrome");
     expect(findNode(sidebar, "space-title")).toEqual({ id: "space-title", type: "block", size: { px: 46 }, window_drag: true, content: { mod: "nuoh-topbar", props: { role: "title" } } });
+    const lists = findNode(sidebar, "sidebar-lists");
+    expect(lists?.background).toBeUndefined();
+    expect(lists?.gap).toBe(8);
+    expect(lists?.divider).toEqual({ width: 1, color: "#00000000", hover: "accent" });
+    expect(lists?.resizable).toBeUndefined();
+    expect(ids(lists)).toEqual(["spaces", "agents"]);
+  });
+
+  test("Spaces and Agents are cards like the rail, with the tree in its card look and our own Agents list", () => {
+    const lists = findNode(nuohLayout(), "sidebar-lists");
+    const card = { background: "surface", border: { width: 1, color: "#FFFFFF12" }, radius: 14, shadow: "md" };
+    expect(findNode(lists, "spaces")).toEqual({ id: "spaces", type: "block", ...card, content: { mod: "nuoh-spaces-tree", props: { card: true } } });
+    expect(findNode(lists, "agents")).toEqual({ id: "agents", type: "block", ...card, content: { mod: "nuoh-agent-list" } });
+    expect(modsIn(nuohLayout())).not.toContain("agents");
+  });
+
+  test("the Agents list opens its sort menu as its own popup, and reaches the kit and the space colors", () => {
+    const list = generateNuoh().mods["nuoh-agent-list"] ?? {};
+    expect(list["main.js"]).toContain('openOverlay({ mod: "nuoh-agent-list", kind: "popup"');
+    expect(list["main.js"]).toContain('from "./kit.js"');
+    expect(list["kit.js"]).toContain('{ name: "nuoh-kit" }');
+    expect(Object.keys(list).sort()).toEqual(["kit.js", "logic.js", "main.js", "mod.json", "space-colors.js"]);
+  });
+
+  test("a window without the sidebar's lists fails the cards recipe", () => {
+    for (const id of ["spaces", "agents"]) {
+      const home = tempDir();
+      makeHerdrHome(home);
+      editFile(join(home, "layouts/main.json"), `"id": "${id}"`, `"id": "${id}-renamed"`);
+      expect(() => generateVariant(nuohVariant([]), { home, version: "0.1.10", repo, bun: "/bin/bun" })).toThrow(/layout node (spaces|agents) not found/);
+    }
   });
 
   test("the work column opens with the tabs and the machine pill, and its body has no padding", () => {
@@ -445,11 +476,12 @@ describe("nuoh", () => {
     expect(() => generateVariant(nuohVariant([stray]), { home, version: "0.1.10", repo, bun: "/bin/bun" })).toThrow("recipe rail-keys: the rail shows missing, which views does not have");
   });
 
-  test("an extra can't take the rail's or the frame's names", () => {
+  test("an extra can't take the rail's, the frame's or the cards' names", () => {
     const named = (name: string) => ({ name, mods: [], apply() {} });
     expect(() => nuohVariant([named("rail")])).toThrow(/rail, which is taken/);
     expect(() => nuohVariant([named("rail-keys")])).toThrow(/rail-keys, which is taken/);
     expect(() => nuohVariant([named("nuoh-frame")])).toThrow(/nuoh-frame, which is taken/);
+    expect(() => nuohVariant([named("nuoh-cards")])).toThrow(/nuoh-cards, which is taken/);
   });
 });
 

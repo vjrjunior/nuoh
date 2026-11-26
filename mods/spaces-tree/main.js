@@ -8,6 +8,7 @@ import { openNameDialog, readPinned, readState, renderPopup, saveState, startPop
 import { DRAG, withActions } from "./actions.js";
 import { withRail } from "./rail.js";
 import { withRows } from "./rows.js";
+import { CONTROL, ICON_SIZE, cardHeader, iconButton } from "../../kit/kit.js";
 
 const WAIT = 1500;
 const NARROW = 160;
@@ -273,7 +274,26 @@ export default class SpacesTree extends withRail(withRows(withActions(View))) {
     if (at >= 0) this.scroll.scroll_to_item(at);
   }
 
-  header(t, narrow) {
+  headButton(id, name, tooltip, action, t) {
+    return iconButton(id, { icon: name, tooltip, color: t.muted, size: CONTROL.row, iconSize: ICON_SIZE.lg, bordered: false, stop: true, onPress: () => this.endDrag(), onClick: action }, t);
+  }
+
+  cardHead(t) {
+    return cardHeader("spaces-head", { icon: "layers", label: "Spaces", count: spaces().length }, t).child(
+      h_flex()
+        .items_center()
+        .child(
+          this.style() === "blocks"
+            ? this.headButton("space-style", "git-branch", "Show as a graph", () => this.toggleStyle(), t)
+            : this.headButton("space-style", "layers", "Show as blocks", () => this.toggleStyle(), t),
+        )
+        .child(this.headButton("space-folder", "folder-plus", "New folder", () => openNameDialog({}), t))
+        .child(this.headButton("space-new", "plus", "New space", () => run("space.new"), t)),
+    );
+  }
+
+  header(t, narrow, card) {
+    if (card && !narrow) return this.cardHead(t);
     if (narrow) {
       return h_flex()
         .h(31)
@@ -312,6 +332,7 @@ export default class SpacesTree extends withRail(withRows(withActions(View))) {
     const { colors, changed } = assignColors(spaces(), shared("space.colors") ?? {});
     if (changed) setShared("space.colors", colors);
     const narrow = this.narrow();
+    const card = props()?.card === true;
     const groups = arrange(this.entries(), readState(), readPinned());
     const blocks = this.style() === "blocks";
     this.bringActive(groups, narrow);
@@ -319,17 +340,17 @@ export default class SpacesTree extends withRail(withRows(withActions(View))) {
     return v_flex()
       .size_full()
       .min_h(0)
-      .bg(t.chrome)
+      .when(!card, (el) => el.bg(t.chrome))
       .text_size(13)
       .when(shared(DRAG)?.moving === true, (el) => el.cursor_grabbing())
       .on_mouse_down("left", () => this.endDrag())
-      .child(this.header(t, narrow).on_mouse_down_out(() => this.forgetOldDrag()))
+      .child(this.header(t, narrow, card).on_mouse_down_out(() => this.forgetOldDrag()))
       .child(
         v_flex()
           .flex_1()
           .min_h(0)
           .px(narrow ? 0 : 8)
-          .pb(14)
+          .pb(card ? 8 : 14)
           .overflow_y_scrollbar()
           .mode("always")
           .track_scroll(this.scroll)

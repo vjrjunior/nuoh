@@ -278,17 +278,17 @@
 **Priority:** P3
 **Depends on:** Nothing
 
-### Draw nuoh's Workspace as floating cards
+### Draw nuoh's panes and panels as cards
 
-**What:** In `nuoh`, finish the Workspace view's look from the approved sketch: the Spaces tree and the Agents list as cards with a header (the Agents card carries the agent count the status bar had), the side panels (Files, Changes, Graph and any an extra adds) as cards, the sketch's pane header and the terminal's well, and the sidebar without its square `chrome` fill.
+**What:** In `nuoh`, finish the Workspace view's look from the approved sketch: the sketch's pane header (42px, the program's tile, the title, the status chip, the folder, and the split and zoom buttons), a `surface` fill on the pane frame with a `veil` on the panes without focus, the side panels (Files, Changes, Graph and any an extra adds) as cards, and the panel buttons in one bordered group with `+` right after the tabs.
 
-**Why:** The frame (gradient, rail card, top bar) is in; the cards inside it are still `vjr-desk`'s.
+**Why:** The frame and the sidebar's Spaces and Agents cards are in; the panes and the panels are still `vjr-desk`'s.
 
-**Context:** `recipes/frame.ts` (`nuoh-frame`) builds the frame and runs last in `nuoh`, so `vjr-desk` stays as it is. A node's `radius` doesn't clip its mod or children, so each card's mod rounds its own fill; Herdr's `agents` copy needs a change for the header. A button an extra adds to the tab bar keeps its own look until the extra changes it. No layout field gives the terminal a well with an inset today.
+**Context:** `recipes/cards.ts` (`nuoh-cards`) runs last in `nuoh` and draws the sidebar's cards; the panes and panels go there too. A node's `radius` doesn't clip its mod, so each card's mod paints no fill of its own and keeps its rows inset. Herdr 0.1.18's pane frame has only `header`, `background`, `shadow`, `border`, `focus`, `veil`, `radius`, `gap` and `lone`, and ignores any other field without an error: no field gives the terminal a well with an inset. A button an extra adds to the tab bar keeps its own look until the extra changes it.
 
 **Effort:** L
 **Priority:** P2
-**Depends on:** nuoh's frame (part 2a) landing
+**Depends on:** nuoh's sidebar cards (part 2b) landing
 
 ### Show a waiting update on nuoh's Settings tile
 

@@ -20,7 +20,7 @@ function render() {
 
 test("the gallery shows every section", () => {
   const root = render();
-  for (const id of ["buttons", "icon-buttons", "links", "chips", "pill", "avatars", "inputs", "lines", "popup-rows", "dots", "steps", "icons"]) {
+  for (const id of ["buttons", "icon-buttons", "links", "chips", "status-chips", "pill", "avatars", "inputs", "card-headers", "lines", "popup-rows", "dots", "steps", "icons"]) {
     expect(find(root, `kit-${id}`)).toBeDefined();
   }
 });
@@ -66,4 +66,19 @@ test("the gallery shows an input with the accent border and a quiet one with the
   const section = find(render(), "kit-inputs");
   const borders = walk(section).flatMap((n) => n.calls.filter(([c]) => c === "border_color").map(([, args]) => args[0]));
   expect(borders).toEqual(["t.accent", "t.input"]);
+});
+
+test("the gallery shows the status chips and both card headers the nuoh sidebar uses", () => {
+  const root = render();
+  expect(texts(find(root, "kit-status-chips"))).toEqual(["STATUS CHIPS", "Needs you", "Working", "Done"]);
+  const headers = find(root, "kit-card-headers");
+  expect(texts(find(headers, "kit-ch-actions"))).toEqual(["Spaces", "9"]);
+  expect(texts(find(headers, "kit-ch-chip"))).toEqual(["Agents", "4", "1 needs you"]);
+  expect(svgs(headers)).toEqual([
+    "mods/kit/icons/layers.svg",
+    "mods/kit/icons/folder-plus.svg",
+    "mods/kit/icons/plus.svg",
+    "mods/kit/icons/bot.svg",
+    "mods/kit/icons/list-filter.svg",
+  ]);
 });

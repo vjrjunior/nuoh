@@ -3,7 +3,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { type Node, walk } from "./app-mocks";
 
-const { ICONS, avatar, button, chip, iconButton, iconPath, popupRow, stepNode, toneColor } = await import("../kit/kit.js");
+const { ICONS, avatar, button, cardHeader, chip, iconButton, iconPath, popupRow, statusChip, stepNode, toneColor } = await import("../kit/kit.js");
 
 const repo = join(import.meta.dir, "..");
 const t = new Proxy({}, { get: (_x, p) => (typeof p === "string" ? `t.${p}` : undefined) }) as any;
@@ -118,6 +118,7 @@ const ADOPTERS = [
   "kit/kit.js",
   "mods/kit/main.js",
   "mods/spaces-tree/main.js",
+  "mods/agent-list/main.js",
   "mods/markdown/main.js",
   "mods/markdown/picker.js",
   "mods/files/main.js",
@@ -209,4 +210,55 @@ test("a popup row in a color tints its label and icon", () => {
   const node = popupRow("d", { icon: "x", label: "Delete", color: "t.blocked", onClick() {} }, t);
   expect(own(node, "text_color")).toContainEqual(["t.blocked"]);
   expect(calls(node, "text_color").filter(([color]) => color === "t.muted")).toEqual([]);
+});
+
+test("a status chip says what an agent's state asks of the person, on a light fill of its color", () => {
+  const cases = [
+    ["blocked", "Needs you", "t.blocked1F"],
+    ["working", "Working", "t.working1F"],
+    ["done", "Done", "t.done1A"],
+  ];
+  for (const [status, text, fill] of cases) {
+    const node = statusChip(status, t) as Node;
+    expect(node.texts).toEqual([text]);
+    expect(own(node, "bg")).toEqual([[fill]]);
+    expect(own(node, "text_color")).toEqual([[`t.${status}`]]);
+    expect(own(node, "h")).toEqual([[18]]);
+    expect(own(node, "px")).toEqual([[6]]);
+    expect(own(node, "rounded")).toEqual([[5]]);
+    expect(own(node, "text_size")).toEqual([[11]]);
+  }
+});
+
+test("an idle or unknown agent gets no status chip", () => {
+  expect(statusChip("idle", t)).toBeNull();
+  expect(statusChip("unknown", t)).toBeNull();
+  expect(statusChip(null, t)).toBeNull();
+});
+
+test("a status chip can carry its own words", () => {
+  expect((statusChip("blocked", t, { label: "2 need you" }) as Node).texts).toEqual(["2 need you"]);
+});
+
+test("a card header is 40 px with its icon, its label and its count, and keeps what it is given on the right", () => {
+  const node = cardHeader("head", { icon: "bot", label: "Agents", count: 4 }, t).child("right") as Node;
+  expect(node.key).toBe("head");
+  expect(own(node, "h")).toEqual([[40]]);
+  expect(own(node, "pl")).toEqual([[14]]);
+  expect(own(node, "pr")).toEqual([[8]]);
+  expect(svgs(node)).toEqual(["mods/kit/icons/bot.svg"]);
+  const [glyph, label, count, spacer] = node.kids;
+  expect(own(glyph as Node, "text_color")).toEqual([["t.muted"]]);
+  expect((label as Node).texts).toEqual(["Agents"]);
+  expect(own(label as Node, "text_size")).toEqual([[13]]);
+  expect(own(label as Node, "text_color")).toEqual([["t.muted"]]);
+  expect((count as Node).texts).toEqual(["4"]);
+  expect(own(count as Node, "text_color")).toEqual([["t.dim"]]);
+  expect(own(spacer as Node, "flex_1")).toEqual([[]]);
+  expect(node.texts).toEqual(["right"]);
+});
+
+test("a card header without a count shows none", () => {
+  const node = cardHeader("head", { icon: "layers", label: "Spaces" }, t) as Node;
+  expect(node.kids.flatMap((kid) => kid.texts)).toEqual(["Spaces"]);
 });

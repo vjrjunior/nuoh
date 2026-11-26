@@ -29,7 +29,7 @@ The `nuoh` layout's rail: a column of icons on the window's left edge that swaps
 - **Keys** (`railKeys`, the `rail-keys` recipe, run after the extras): each view gets `key: "ctrl-cmd-<n>"` in the rail's props and a binding `{ "command": "layout.select", "args": { "stack": "views", "child": <id> } }` in the `layout:nuoh` section of `keys.json`.
 - **Adding a view** from an extra: push a child onto `findNode(layout, "views").children` and `{ id, label, icon }` onto `findNode(layout, "rail").content.props.views`, with `icon` a kit icon's name. A layout without a `views` node is `vjr-desk`: `findNode` throws there.
 - **Mod** `mods/rail/`: `main.js` draws with the kit (`icon`, `statusDot`); `logic.js` is pure (`viewsOf`, `shownView`, `badgeOf`, `focusOf`, `followFocus`, `keyLabel`, `hint`, `keyFor`). It reads `props()`, `layout()`, `focused()`, `panes()`, `agents()`, `keys()` and `window()`, and runs `layout.select` and `mod.open`. It runs no programs and reads no files.
-- **The card:** `nuoh-frame` (`recipes/frame.ts`, run last) puts `rail` in a `rail-column` with the band above it and gives it `background: "surface"`, `border: { width: 1, color: "#FFFFFF12" }`, `radius: 16` and `shadow: "md"`. The mod draws no fill of its own, so the card's shows.
+- **The card:** `nuoh-frame` (`recipes/frame.ts`, run after the extras and the rail's keys) puts `rail` in a `rail-column` with the band above it and gives it `background: "surface"`, `border: { width: 1, color: "#FFFFFF12" }`, `radius: 16` and `shadow: "md"`. The mod draws no fill of its own, so the card's shows.
 
 ## Watch out
 
