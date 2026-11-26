@@ -32,6 +32,7 @@ export const ICONS = [
   "play",
   "plus",
   "rotate-cw",
+  "search",
   "settings",
   "square-kanban",
   "terminal",

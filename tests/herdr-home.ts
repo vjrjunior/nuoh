@@ -7,6 +7,7 @@ const LAYOUT = {
   id: "root",
   type: "row",
   titlebar: "none",
+  divider: { width: 1, color: "border" },
   children: [
     {
       id: "sidebar",
@@ -71,6 +72,10 @@ export default class Tabs extends View {
     const context = () => openOverlay({ mod: "menu", kind: "popup", width: 200, props: { tab: "tab" } });
     const add = () => openOverlay({ mod: "new-menu", kind: "popup", width: 250, height: 512 });
     const space = spaces().find(p => p.active);
+    const root = layout(), sidebar = find(root, "sidebar"), w = window();
+    const lightsPadding = w?.platform === "macos" && root?.traffic_lights
+      ? Math.max(10, (root.traffic_lights[0] + 64) / settings().zoom - (sidebar?.hidden ? 0 : sidebar?.size?.px ?? 0))
+      : 10;
     const item = (c, i) => h_flex().id(\`tab-\${c.id}\`)
         .on_mouse_down("left", (e, cx) => { cx.stop_propagation(); this.pressed = i; if (e.click_count === 2) run("tab.rename", { id: c.id }); });
     const release = (c, i) => { const from = this.pressed; this.pressed = null; if (from !== null && from !== i) run("tab.move", { id: c.id }); };
@@ -83,11 +88,14 @@ export default class Tabs extends View {
   }
 }
 `,
-  "mods/workspace-chrome/main.js": script(`    return div().rounded(6)
+  "mods/workspace-chrome/main.js": script(`    const fold = () => run("layout.resize", { id: "sidebar", px: window()?.platform === "macos" ? 76 : 44 });
+    return div().rounded(6)
+      .when(window()?.platform === "macos" && !window()?.fullscreen && !collapsed, el => el.pl(76))
       .child(row("machine", () => run("mod.open", { name: "machine-add" })))
       .child(row("search", () => run("mod.open", { name: "picker" })))
       .child(row("settings", () => run("app.settings")))
-      .child(div().size(6).rounded_full());`),
+      .child(div().size(6).rounded_full())
+      .when(!(collapsed && window()?.platform === "macos"), el => el.child(this.button("sidebar-toggle", svg("mods/workspace-chrome/sidebar.svg").size(15), toggleSidebar)));`),
   "mods/spaces/main.js": script(`    const open = () => openOverlay({ mod: "menu", kind: "popup", width: 200, height: 260, props: {} });
     return div().rounded(8).child(status === "done" ? "●" : "·");`),
   "mods/agents/main.js": script(`    const sort = () => openOverlay({ mod: "agents", kind: "popup", width: 200, height: 140, props: { sortMenu: true } });

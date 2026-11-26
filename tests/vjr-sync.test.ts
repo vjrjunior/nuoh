@@ -4,7 +4,7 @@ import { herdr, type Node } from "./app-mocks";
 type Result = { code: number; stderr: string; stdout?: string };
 type Notification = { title: string; body: string; level?: string };
 
-const app = { version: "", built: "", square: false, checking: false, shared: {} as Record<string, unknown>, result: { code: 0, stderr: "" } as Result, rejects: "" };
+const app = { version: "", built: "", square: false as boolean | null, checking: false, shared: {} as Record<string, unknown>, result: { code: 0, stderr: "" } as Result, rejects: "" };
 const execCalls: unknown[][] = [];
 const notifications: Notification[] = [];
 
@@ -152,6 +152,13 @@ describe("the square corners toggle", () => {
     await sync.tick();
     expect(app.shared[KEY]).toBe(false);
     expect(notifications.filter((notification) => notification.level === "warning")).toEqual([]);
+  });
+
+  test("a layout with one look leaves the toggle and the corners alone, and still rebuilds on an update", async () => {
+    const sync = await start({ version: "0.1.11", built: "0.1.10", square: null, shared: { [KEY]: true } });
+    expect(sync.watching).toBe(false);
+    expect(app.shared[KEY]).toBe(true);
+    expect(squareCalls()).toEqual([["--herdr-version", "0.1.11"]]);
   });
 
   test("starts nothing while Herdr checks the mod", async () => {

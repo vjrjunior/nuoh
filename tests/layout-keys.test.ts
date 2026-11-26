@@ -18,6 +18,10 @@ describe("deriveSection", () => {
     expect(deriveSection({ "ctrl-k": "app.palette" }, { "app.palette": "mod.open:vjr-palette" })).toEqual({ "ctrl-k": "mod.open:vjr-palette" });
   });
 
+  test("a command bound in global is left to global", () => {
+    expect(deriveSection({ "ctrl-1": { command: "layout.select", args: { stack: "views", child: "a" } } }, { "app.help": "mod.open:vjr-help" })).toEqual({});
+  });
+
   test("an action with no key adds nothing", () => {
     expect(deriveSection({ "cmd-t": "tab.new" }, { "app.help": "mod.open:vjr-help" })).toEqual({});
   });

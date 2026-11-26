@@ -211,6 +211,18 @@ describe("references", () => {
     expect(setup().generate().keys).toEqual({});
     expect(setup().generate(testVariant(withKey)).keys).toEqual({ "cmd-shift-m": "mod.open:test-picker" });
   });
+
+  test("a recipe's command key goes through as it is", () => {
+    const select = { command: "layout.select", args: { stack: "views", child: "picker" } };
+    const withCommand: Recipe = {
+      name: "command-key",
+      mods: [{ name: "picker", from: "mods" }],
+      apply(context) {
+        context.keys["ctrl-cmd-1"] = select;
+      },
+    };
+    expect(setup().generate(testVariant(withCommand)).keys).toEqual({ "ctrl-cmd-1": select });
+  });
 });
 
 describe("layout", () => {
@@ -228,6 +240,12 @@ describe("layout", () => {
         align: "end",
       },
     ]);
+  });
+
+  test("a layout with one look tells the sync block to leave the corners alone", () => {
+    const { generate } = setup();
+    const layout = JSON.parse(generate({ ...testVariant(recipe), oneLook: true }).layoutText);
+    expect(layout.floating.at(-1).content.props.square).toBeNull();
   });
 
   test("points the layout at the copies, including the pane header", () => {

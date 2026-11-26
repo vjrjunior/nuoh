@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { type Copy, type Editor, type LayoutNode, type ModSource, RecipeError, type RecipeContext, type Variant } from "../recipes/recipe";
+import { type Copy, type Editor, type KeyCommand, type LayoutNode, type ModSource, RecipeError, type RecipeContext, type Variant } from "../recipes/recipe";
 
 export type GenerateOptions = { home: string; version: string; repo: string; bun: string; editor?: Editor; icons?: string[] };
 export type Generated = {
@@ -8,7 +8,7 @@ export type Generated = {
   layoutText: string;
   mods: Record<string, Record<string, string>>;
   replacements: Record<string, string>;
-  keys: Record<string, string>;
+  keys: Record<string, string | KeyCommand>;
 };
 
 const REFERENCE = /(\bmod:\s*"|\{\s*name:\s*")([a-z-]+)"/g;
@@ -127,7 +127,7 @@ function modFiles(copy: Copy, version: string): Record<string, string> {
 function finishLayout(layout: LayoutNode, variant: Variant, options: GenerateOptions): LayoutNode {
   const sync = {
     id: "vjr-sync",
-    content: { mod: "vjr-sync", props: { built: options.version, repo: options.repo, bun: options.bun, square: variant.square } },
+    content: { mod: "vjr-sync", props: { built: options.version, repo: options.repo, bun: options.bun, square: variant.oneLook ? null : variant.square } },
     edge: "right",
     align: "end",
   };
@@ -147,7 +147,7 @@ export function generateVariant(variant: Variant, options: GenerateOptions): Gen
     copies[source.name] ??= readCopy(source, options);
   }
   const replacements: Record<string, string> = {};
-  const keys: Record<string, string> = {};
+  const keys: Record<string, string | KeyCommand> = {};
   applyRecipes(variant, { copies, layout, replacements, keys, variant, bun: options.bun, editor: options.editor });
   for (const copy of Object.values(copies)) {
     if (copy.files["kit.js"] !== undefined && !Object.hasOwn(copies, "kit")) throw new RecipeError(`${copy.name} uses the kit, but ${variant.layout} has no kit`);
@@ -159,6 +159,6 @@ export function generateVariant(variant: Variant, options: GenerateOptions): Gen
     layoutText: `${JSON.stringify(finishLayout(layout, variant, options), null, 2)}\n`,
     mods: Object.fromEntries(Object.values(copies).map((copy) => [`${variant.prefix}${copy.name}`, modFiles(copy, options.version)])),
     replacements: Object.fromEntries(Object.entries(replacements).map(([action, mod]) => [action, `mod.open:${variant.prefix}${mod}`])),
-    keys: Object.fromEntries(Object.entries(keys).map(([key, mod]) => [key, `mod.open:${variant.prefix}${mod}`])),
+    keys: Object.fromEntries(Object.entries(keys).map(([key, action]) => [key, typeof action === "string" ? `mod.open:${variant.prefix}${action}` : action])),
   };
 }

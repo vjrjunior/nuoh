@@ -290,6 +290,18 @@
 **Priority:** P3
 **Depends on:** Nothing
 
+### Draw nuoh's Workspace as floating cards
+
+**What:** In `nuoh`, give the Workspace view the look of the approved sketch: a gradient behind everything, the blocks as cards 8px apart, a top bar with the shown space, the side panels as cards with a well, the Spaces tree and the Agents list in cards, and the macOS window buttons in that top bar instead of on the rail.
+
+**Why:** The first part of `nuoh` only puts today's window behind the rail. The sketch is what the layout is for.
+
+**Context:** `recipes/rail.ts` builds the `views` stack; the look belongs in recipes that run only in `nuoh` (after `rail`), so `vjr-desk` stays as it is. Moving the window buttons means a new `traffic_lights` and giving the rail's top 46px back.
+
+**Effort:** L
+**Priority:** P2
+**Depends on:** nuoh's first part landing
+
 ## Completed
 
 ### Reorder the Spaces folders by dragging

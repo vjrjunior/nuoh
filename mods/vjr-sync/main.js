@@ -13,10 +13,11 @@ export default class VjrSync extends View {
     this.square = square === true;
     this.busy = false;
     if (checking() || !built) return;
-    if ((shared(SQUARE_KEY) === true) !== this.square) setShared(SQUARE_KEY, this.square);
+    const twoLooks = square !== null;
+    if (twoLooks && (shared(SQUARE_KEY) === true) !== this.square) setShared(SQUARE_KEY, this.square);
     const version = updates().app.version;
     if (version !== built) this.rebuild(cx, ["--herdr-version", version], `VJR layout stayed on ${built}`);
-    cx.timer.every(LOOK_EVERY, (cx) => this.followLook(cx));
+    if (twoLooks) cx.timer.every(LOOK_EVERY, (cx) => this.followLook(cx));
   }
 
   followLook(cx) {

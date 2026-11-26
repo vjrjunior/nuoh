@@ -1,6 +1,6 @@
 # nuoh
 
-VJR Desk for [Herdr](https://herdr.dev): the VJR theme, a dark palette of three hues (peach, mint and red) over a gray ladder, generated from one file for herdr-app and Ghostty, and a herdr-app layout built on it, with round or square corners.
+VJR Desk for [Herdr](https://herdr.dev): the VJR theme, a dark palette of three hues (peach, mint and red) over a gray ladder, generated from one file for herdr-app and Ghostty, and two herdr-app layouts built on it: `vjr-desk`, with round or square corners, and `nuoh`, the same window behind a rail of views.
 
 ## Install with an agent
 
@@ -84,6 +84,23 @@ herdr-app do layout.switch '{"name":"vjr-desk"}'
 
 Switch between layouts with `cmd-shift-l`, or with `Layout:` in the command palette. `bun run uninstall-layout` removes everything `apply-layout` created and goes back to `main` if needed. It leaves the theme installed.
 
+The same command installs a second layout, [`nuoh`](#nuoh), beside `vjr-desk`.
+
+### nuoh
+
+`nuoh` is `vjr-desk`'s window behind a rail of icons on the left that swaps the whole window between views:
+
+- **Search**, on top, opens the command palette.
+- **Workspace** is the window `vjr-desk` shows: Spaces, Agents, tabs and panels.
+- A view an extra adds, a board of tasks for example, fills the window with its own mod.
+- **Settings**, at the foot, opens Settings.
+
+The tile of the view on screen is selected, and hovering a tile shows its name and key. `ctrl-cmd-1`, `ctrl-cmd-2`... go to the views in the rail's order. The Workspace tile carries a dot in the color of the most urgent agent: needs you, done or working. When something outside the rail focuses a tab or a pane while another view is on screen (a notification, `agent.next`, the palette), the window goes back to the Workspace by itself; a pane that closes on its own doesn't move it.
+
+The macOS window buttons sit on top of the rail, so the Workspace's sidebar keeps no room for them, and it folds to 44px on every system.
+
+`nuoh` has one look, round corners. Its Settings has no Square corners toggle, and squaring `vjr-desk` leaves `nuoh` as it is. It has its own copies of the mods, installed as `nuoh-<name>`, so a change for one layout never reaches the other; what the mods keep in Herdr's shared state (Spaces folders and pins, which panels a space shows) is the same in both. Its keys are in the `layout:nuoh` section of `keys.json`. [`mods/rail/RECIPE.md`](mods/rail/RECIPE.md) describes the rail.
+
 ### Square corners
 
 **Settings › Look › Square corners** is a toggle right under the layout picker, shown only while `vjr-desk` is on screen. Turned on, it squares every corner the layout can reach, including menus, popups, the command palette, Settings, Git Graph and the Spaces tree. It is the same layout with the same mods, built again: a toast says `Squaring the corners` or `Rounding the corners`, and the layout rebuilds in a few seconds. If the rebuild fails, the toggle goes back and a warning toast says why.
@@ -105,11 +122,11 @@ With square corners, these stay rounded, because the app draws them or opens the
 
 [`RECIPE.md`](RECIPE.md) describes the layout. It follows Herdr's format: `themes/`, `mods/` and `layouts/` mirror the app's folder. The difference is that the mods are not stored here, so this repo is not ready for a plain `cp`. Community layouts ship a copy of Herdr's mods from one version, and those stop receiving Herdr's fixes. Here `recipes/` holds small edits, and `bun run apply-layout` applies them to the files of the Herdr you have installed.
 
-When Herdr updates, the invisible `vjr-sync` mod notices the new version and runs the same command, so the copies rebuild themselves within seconds. It only runs while `vjr-desk` is on screen.
+When Herdr updates, the invisible `vjr-sync` mod notices the new version and runs the same command, so the copies of both layouts rebuild themselves within seconds. It only runs while `vjr-desk` or `nuoh` is on screen.
 
 If a recipe no longer fits the new version, nothing changes in the layout: the previous copies keep running and a warning says what to run. The shipped `main` layout is never touched, so `cmd-shift-l` always has somewhere to go.
 
-- The folders in `~/.config/herdr-app/mods/vjr-*` are generated. To change one, edit `recipes/` and run `bun run apply-layout`.
+- The folders in `~/.config/herdr-app/mods/vjr-*` and `mods/nuoh-*` are generated. To change one, edit `recipes/` and run `bun run apply-layout`.
 - Run it again after changing the shortcut for the palette, Settings, help or search in the `global` section of `keys.json`.
 - The layout stores this repo's path. If you move it, run `bun run apply-layout` from the new place.
 - `~/.local/state/vjr-herdr/layout.log` records every run.
@@ -127,7 +144,8 @@ If a recipe no longer fits the new version, nothing changes in the layout: the p
 
 - **`editor`** names the Markdown viewer's first button and the Files menu's `Open in <editor>`, and gives the command they run, with the file or folder as its last argument.
 - **`extras`** are folders with more recipes, each a path or `{ path, options }`. An extra has `recipes/index.ts`, which exports `recipes` (a list of `{ name, mods, apply }`, the shape in `recipes/recipe.ts`), its mods in `mods/<name>/` and, if it brings icons, `kit/icons/*.svg`.
-  - Its recipes run in both looks after this repo's, and before `square` when the corners are square, so its mods are installed as `vjr-<name>` and come out square with Square corners on.
+  - Its recipes run in every layout after this repo's. In `vjr-desk` they run before `square` when the corners are square, so its mods are installed as `vjr-<name>` and come out square with Square corners on. In `nuoh` they run after the rail is built, and its mods are installed as `nuoh-<name>`.
+  - A recipe adds a whole view to `nuoh` by pushing a child onto `findNode(layout, "views").children` and `{ id, label, icon }` (a kit icon's name) onto `findNode(layout, "rail").content.props.views`; the rail gives it the next `ctrl-cmd-<n>`. `vjr-desk` has no `views` node, so there `findNode` throws.
   - A recipe's `mods` entry with `from: "repo"` is read from the extra's own `mods/`, and `apply` gets the extra's `options`.
   - A mod of an extra imports the kit as `../../kit/kit.js`, like this repo's, and its icons are installed next to the kit's.
   - `square: { popupRoots, frameless }` on a recipe gives its popups the square border and drops Herdr's frame, with Square corners on.
@@ -230,7 +248,7 @@ Both looks show the same folders and pins, kept with their fold in `spaces.folde
 
 ## Kit
 
-`kit/kit.js` is the UI kit of this repo's mods (the Spaces tree, Files, the Markdown viewer and Move tab): tokens (sizes, text, radii), components (`button`, `iconButton`, `input`, `link`, `chip`, `pill`, `card`, `heading`, `line`, `popupRow`, `mark`, `statusDot`, `stepNode`, `icon`, `toneColor`) and the SVG icons in `kit/icons/`. A mod imports it as `../../kit/kit.js`, and `apply-layout` copies `kit.js` into each installed mod that imports it. The icons are installed once, in the `kit` mod's `icons/` folder, where the kit reads them. A layout whose mods use the kit must include the `kit` recipe; the generator refuses otherwise.
+`kit/kit.js` is the UI kit of this repo's mods (the Spaces tree, Files, the Markdown viewer, Move tab and `nuoh`'s rail): tokens (sizes, text, radii), components (`button`, `iconButton`, `input`, `link`, `chip`, `pill`, `card`, `heading`, `line`, `popupRow`, `mark`, `statusDot`, `stepNode`, `icon`, `toneColor`) and the SVG icons in `kit/icons/`. A mod imports it as `../../kit/kit.js`, and `apply-layout` copies `kit.js` into each installed mod that imports it. The icons are installed once, in the `kit` mod's `icons/` folder, where the kit reads them. A layout whose mods use the kit must include the `kit` recipe; the generator refuses otherwise.
 
 `lib/` holds what more than one mod needs and no window shows: `checkouts.js` (a repo's worktrees and the checkout a folder is in) and `claude.js` (a Claude Code session, the options worth keeping, the command that resumes it). Herdr refuses an import from outside a mod's folder, so a mod imports a module as `../../lib/<name>.js` and `apply-layout` copies it, and what it imports, next to the mod's own files. A mod can't have a file with the name of a module it takes from `lib/`.
 

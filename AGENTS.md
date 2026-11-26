@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This repo customizes herdr-app: the VJR palette and theme (also built for Ghostty), the `vjr-desk` layout and its mods. Weigh every idea by what it does for herdr-app. `README.md` covers each part and its commands; `RECIPE.md` describes the layout.
+This repo customizes herdr-app: the VJR palette and theme (also built for Ghostty), the `vjr-desk` and `nuoh` layouts and their mods. Weigh every idea by what it does for herdr-app. `README.md` covers each part and its commands; `RECIPE.md` describes the layout.
 
 Asked only to install the layout on someone's machine? Follow [`INSTALL.md`](INSTALL.md) and skip the rest of this file: the rules below are for changing the repo.
 
@@ -48,12 +48,12 @@ Each feature or fix gets its own branch in its own worktree. The main checkout, 
 
 ## Both looks
 
-`vjr-desk` has two looks, round corners and square corners, chosen in Settings › Look › Square corners or with `bun scripts/layout.ts apply --square on|off`. Every feature works in both, built from the same recipes, as Comeback and the Spaces tree do.
+`vjr-desk` has two looks, round corners and square corners, chosen in Settings › Look › Square corners or with `bun scripts/layout.ts apply --square on|off`. `nuoh`, the second layout, has one look, round corners. Every feature works in both looks of `vjr-desk` and in `nuoh`, built from the same recipes, as Comeback and the Spaces tree do.
 
-- Add the feature's recipe to `OWN` in `recipes/variants.ts`: both looks are built from that list. With square corners, `square` runs last: it squares every corner and turns `●` and `○` into `■` and `□` in what the recipes before it produced, and it takes every `from: "repo"` mod of those recipes by itself.
-- A recipe whose mod opens a popup says so in its `square` field (`popupRoots`, `frameless`), as `recipes/move-tab.ts` does. Nothing warns when a popup is missing there, so the shot of each look in Done is the check.
+- Add the feature's recipe to `OWN` in `recipes/variants.ts`: both looks and `nuoh` are built from that list. `nuoh` adds the `rail` recipe after it, which moves the window into the `views` stack, and makes the rail's keys after the extras. With square corners, `square` runs last: it squares every corner and turns `●` and `○` into `■` and `□` in what the recipes before it produced, and it takes every `from: "repo"` mod of those recipes by itself.
+- A recipe whose mod opens a popup says so in its `square` field (`popupRoots`, `frameless`), as `recipes/move-tab.ts` does. Nothing warns when a popup is missing there, so the shot of each look in Done is the check. A change `nuoh` shows also gets a shot there.
 - What belongs to one person (their editor, a mod for their team's workflow) stays out of this repo: it goes in the local config and its `extras`, described in `README.md` › Local config.
-- Mods are installed as `vjr-<name>` in both looks. Name another mod as `mod: "<name>"` or `{ name: "<name>" }`, in double quotes, so the generator can add the prefix; it refuses a reference it cannot rewrite. Commands sent to a mod carry the same prefix (`vjr-comeback.resume`).
+- Mods are installed as `vjr-<name>` in both looks and as `nuoh-<name>` in `nuoh`. Name another mod as `mod: "<name>"` or `{ name: "<name>" }`, in double quotes, so the generator can add the prefix; it refuses a reference it cannot rewrite. Commands sent to a mod carry the same prefix (`vjr-comeback.resume`).
 
 ## UI
 

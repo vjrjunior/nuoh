@@ -1,7 +1,7 @@
 import { appendFileSync, closeSync, cpSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync, writeSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import type { Variant } from "../recipes/recipe";
-import { LEFT_ROUNDED, REPLACED, variantWith } from "../recipes/variants";
+import { LEFT_ROUNDED, REPLACED, variantsWith } from "../recipes/variants";
 import { loadExtras, readLocalConfig } from "./config";
 import { type Generated, generateVariant } from "./generate-layout";
 import { deriveSection, type KeyTable, keysText, readKeys, withoutSections, withSections } from "./layout-keys";
@@ -116,8 +116,8 @@ function installedVersion(): string {
   return version;
 }
 
-function writeBuild(build: string, generated: Generated): void {
-  for (const [mod, files] of Object.entries(generated.mods)) {
+function writeBuild(build: string, generated: Generated[]): void {
+  for (const [mod, files] of generated.flatMap((one) => Object.entries(one.mods))) {
     mkdirSync(join(build, mod), { recursive: true });
     for (const [file, text] of Object.entries(files)) {
       mkdirSync(dirname(join(build, mod, file)), { recursive: true });
@@ -143,8 +143,8 @@ function refuseForeign(paths: string[], recorded: string[], home: string): void 
   }
 }
 
-function keySections(table: KeyTable, generated: Generated): KeyTable {
-  return { [`layout:${generated.layout}`]: { ...deriveSection(table.global ?? {}, generated.replacements), ...generated.keys } };
+function keySections(table: KeyTable, generated: Generated[]): KeyTable {
+  return Object.fromEntries(generated.map((one) => [`layout:${one.layout}`, { ...deriveSection(table.global ?? {}, one.replacements), ...one.keys }]));
 }
 
 const CHECK_ONE = 'out=$(herdr-app check "$1/$2" 2>&1) || printf "%s\\t%s\\n" "$2" "$(printf "%s" "$out" | tr "\\n" " " | cut -c1-400)"';
@@ -214,8 +214,8 @@ function applyAll(options: ApplyOptions): ApplyResult {
   const config = readLocalConfig();
   const extras = loadExtras(config.extras);
   const square = options.square ?? record.square;
-  const variant = variantWith(extras.recipes, square);
-  const generated = generateVariant(variant, { home, version, repo: root, bun: process.execPath, editor: config.editor, icons: extras.icons });
+  const variants = variantsWith(extras.recipes, square);
+  const generated = variants.map((variant) => generateVariant(variant, { home, version, repo: root, bun: process.execPath, editor: config.editor, icons: extras.icons }));
   const build = join(state, `build-${process.pid}`);
   const previous = join(state, `previous-${process.pid}`);
   mkdirSync(build, { recursive: true });
@@ -224,10 +224,12 @@ function applyAll(options: ApplyOptions): ApplyResult {
     writeBuild(build, generated);
     const kept = adoptedGitGraph(home, record, build) ? ["git-graph"] : [];
     const mods = readdirSync(build).filter((mod) => !kept.includes(mod));
-    const files: Record<string, string> = {
-      [`layouts/${generated.layout}.json`]: generated.layoutText,
-      [`layouts/${generated.layout}.svg`]: readFileSync(join(root, "layouts", `${generated.layout}.svg`), "utf8"),
-    };
+    const files: Record<string, string> = Object.fromEntries(
+      generated.flatMap((one) => [
+        [`layouts/${one.layout}.json`, one.layoutText],
+        [`layouts/${one.layout}.svg`, readFileSync(join(root, "layouts", `${one.layout}.svg`), "utf8")],
+      ]),
+    );
     refuseForeign(mods.map((mod) => `mods/${mod}`), record.mods.map((mod) => `mods/${mod}`), home);
     refuseForeign(Object.keys(files), record.files, home);
 
@@ -277,7 +279,7 @@ function applyAll(options: ApplyOptions): ApplyResult {
       for (const mod of staleMods) rmSync(join(home, "mods", mod), { recursive: true, force: true });
     }
     writeRecord({ version, mods, kept, files: Object.keys(files), sections: Object.keys(sections), square });
-    if (square) warnUncovered(home, variant);
+    if (square) warnUncovered(home, variants[0] as Variant);
     return "applied";
   } finally {
     rmSync(build, { recursive: true, force: true });

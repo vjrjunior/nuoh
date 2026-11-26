@@ -1,6 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
+import type { KeyCommand } from "../recipes/recipe";
 
-export type KeyTable = Record<string, Record<string, string>>;
+export type Binding = string | KeyCommand;
+export type KeyTable = Record<string, Record<string, Binding>>;
 
 export function readKeys(path: string): KeyTable {
   if (!existsSync(path)) return {};
@@ -11,10 +13,10 @@ export function readKeys(path: string): KeyTable {
   }
 }
 
-export function deriveSection(global: Record<string, string>, replacements: Record<string, string>): Record<string, string> {
-  const section: Record<string, string> = {};
+export function deriveSection(global: Record<string, Binding>, replacements: Record<string, string>): Record<string, Binding> {
+  const section: Record<string, Binding> = {};
   for (const [key, action] of Object.entries(global)) {
-    const replacement = replacements[action];
+    const replacement = typeof action === "string" ? replacements[action] : undefined;
     if (replacement) section[key] = replacement;
   }
   return section;

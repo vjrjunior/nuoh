@@ -3,18 +3,19 @@ export type Editor = { name: string; argv: string[] };
 type SquareHints = { popupRoots?: Record<string, number>; frameless?: string[] };
 export type Copy = { name: string; files: Record<string, string>; meta: Record<string, unknown> };
 export type LayoutNode = Record<string, unknown>;
+export type KeyCommand = { command: string; args?: Record<string, unknown> };
 export type RecipeContext = {
   copies: Record<string, Copy>;
   layout: LayoutNode;
   replacements: Record<string, string>;
-  keys: Record<string, string>;
+  keys: Record<string, string | KeyCommand>;
   variant: Variant;
   bun?: string;
   editor?: Editor;
   options: Record<string, unknown>;
 };
 export type Recipe = { name: string; mods: ModSource[]; square?: SquareHints; options?: Record<string, unknown>; apply(context: RecipeContext): void };
-export type Variant = { layout: string; prefix: string; preview: string; square: boolean; recipes: Recipe[] };
+export type Variant = { layout: string; prefix: string; preview: string; square: boolean; oneLook?: boolean; recipes: Recipe[] };
 
 export class RecipeError extends Error {}
 
