@@ -7,7 +7,7 @@ description: Build a feature for this repo's herdr-app layout (vjr-desk, with ro
 
 The loop: **frame → prior art → plan → worktree and move → build → Done → land**.
 
-`AGENTS.md` holds the rules this skill orders: Herdr's guide, Planning, Worktrees, Both looks, UI, Done and Commits. Where they differ, `AGENTS.md` wins. Steps 1 to 3 only read and write the plan. Prose for the user, the plan included, follows the user's language; code and commits stay English.
+`AGENTS.md` holds the rules this skill orders: Herdr's guide, Planning, Worktrees, Both looks, UI, Done and Commits. Where they differ, `AGENTS.md` wins. Steps 1 to 3 only read and write the plan. Prose for the user, the plan included, follows the user's language, and test-panel runs are in Brazilian Portuguese; code and commits stay English.
 
 ## 1. Frame
 

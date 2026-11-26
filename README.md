@@ -292,16 +292,17 @@ bun run test-panel --close            # closes the panel in every layout
   "report": "t17",
   "steps": [
     {
-      "title": "Drag a tab onto a worktree",
+      "title": "Arrastar uma aba até uma worktree",
       "run": [{ "command": "space.select", "args": { "id": "sp..." } }],
-      "do": ["Drag the tab \"split test\" onto feat/move-tab and let go."],
-      "expect": "The row lights up, then the tab moves."
+      "do": ["Arraste a aba \"split test\" até feat/move-tab e solte."],
+      "expect": "A linha acende, depois a aba se move."
     }
   ]
 }
 ```
 
 - **Steps** run their `run` commands when they open, so a step can switch the layout, the space or the zoom for the person. A window is open in each layout in `layouts`, normally just `vjr-desk`, so it comes back after a switch, at the same step.
+- **Language:** a run is written in Brazilian Portuguese, the language of the person who answers it: its `title` and each step's `title`, `do` and `expect`. What the window names (a tooltip, a menu entry) stays as the window writes it.
 - **Both looks:** a run that checks round and square corners has one step per look. The look is not an app command, so a step's `run` cannot flip it: the step's `do` tells the person to flip Square corners in Settings, or the run's author runs `bun scripts/layout.ts apply --square on` before starting.
 - **Events** are logged on their own: spaces and tabs opened, closed, moved and reordered, a tab's pane count, the layout, and each shared key in `watch`.
 - **Shots:** each answer takes a `herdr-app shot` of the window as the person judged it, and the next step opens only once it is saved. Each change to a key in `shotOn` takes one too. They go to `~/.local/state/vjr-herdr/test-panel/<id>/` unless the run names `shots`.
