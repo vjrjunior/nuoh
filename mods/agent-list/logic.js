@@ -1,4 +1,4 @@
-import { cleanTitle } from "../../lib/agent-title.js";
+import { cleanTitle, tellingTitle } from "../../lib/agent-title.js";
 
 export const RANK = { blocked: 4, done: 3, working: 2, idle: 1 };
 export const SORTS = [
@@ -9,8 +9,6 @@ export const SORT_KEY = "agents.sort";
 export const NARROW_BELOW = 160;
 export const KEEP_DAYS = 30;
 const DAY = 86400000;
-
-const PATH = /^[~/]|^[A-Za-z]:\\/;
 
 export function findNode(node, id) {
   if (node?.id === id) return node;
@@ -32,7 +30,7 @@ export function sortOf(value) {
 const same = (a, b) => Boolean(a) && Boolean(b) && a.toLowerCase() === b.toLowerCase();
 
 function telling(text, agent) {
-  if (!text || PATH.test(text) || text.includes("@")) return false;
+  if (!tellingTitle(text)) return false;
   if (text === agent.address || same(text, agent.program?.name) || same(text, agent.program?.key)) return false;
   return true;
 }

@@ -21,6 +21,12 @@ describe("paneTitle", () => {
     expect(paneTitle({ name: null, title: "⠋ ", terminal: "t1", program: claude })).toBe("Claude Code");
   });
 
+  test("is the program's name when the title is only where a shell is", () => {
+    const zsh = { name: "zsh", key: "shell" };
+    expect(paneTitle({ name: null, title: "me@laptop:/private/tmp/app", terminal: "t1", program: zsh })).toBe("zsh");
+    expect(paneTitle({ name: null, title: "~/code/app", terminal: "t1", program: zsh })).toBe("zsh");
+  });
+
   test("is shell when nothing else names it", () => {
     expect(paneTitle({ name: null, title: "", terminal: "t1", program: { name: "" } })).toBe("shell");
     expect(paneTitle({ name: null, title: "", terminal: null })).toBe("shell");

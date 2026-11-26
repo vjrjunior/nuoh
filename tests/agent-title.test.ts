@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { cleanTitle } from "../lib/agent-title.js";
+import { cleanTitle, tellingTitle } from "../lib/agent-title.js";
 
 describe("cleanTitle", () => {
   test("drops the status glyph and the separator an agent puts before its title", () => {
@@ -16,5 +16,20 @@ describe("cleanTitle", () => {
     expect(cleanTitle("~/code/app")).toBe("~/code/app");
     expect(cleanTitle("#42 checkout")).toBe("#42 checkout");
     expect(cleanTitle(null)).toBe("");
+  });
+});
+
+describe("tellingTitle", () => {
+  test("a title that says what runs tells", () => {
+    expect(tellingTitle("Fix login")).toBe(true);
+    expect(tellingTitle("vim README.md")).toBe(true);
+  });
+
+  test("a shell's place, a path or user@host, tells nothing", () => {
+    expect(tellingTitle("~/code/app")).toBe(false);
+    expect(tellingTitle("/private/tmp/app")).toBe(false);
+    expect(tellingTitle("C:\\Users\\me")).toBe(false);
+    expect(tellingTitle("me@laptop:~/code/app")).toBe(false);
+    expect(tellingTitle("")).toBe(false);
   });
 });

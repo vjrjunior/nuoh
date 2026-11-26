@@ -1,11 +1,11 @@
-import { cleanTitle } from "../../lib/agent-title.js";
+import { cleanTitle, tellingTitle } from "../../lib/agent-title.js";
 
 export const NARROW_BELOW = 320;
 
 export function paneTitle(pane) {
   if (pane?.name) return pane.name;
   const live = cleanTitle(pane?.title);
-  if (live && live !== pane?.terminal) return live;
+  if (tellingTitle(live) && live !== pane?.terminal) return live;
   return pane?.program?.name || "shell";
 }
 
