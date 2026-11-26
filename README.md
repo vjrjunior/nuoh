@@ -301,9 +301,8 @@ bun run test-panel --close            # closes the panel in every layout
 }
 ```
 
-- **Steps** run their `run` commands when they open, so a step can switch the layout, the space or the zoom for the person. A window is open in each layout in `layouts`, normally just `vjr-desk`, so it comes back after a switch, at the same step.
+- **Steps** run their `run` commands when they open, so a step can switch the layout, the space or the zoom for the person. A window is open in each layout in `layouts`, the ones the change shows in, so it comes back after a switch, at the same step.
 - **Language:** a run is written in Brazilian Portuguese, the language of the person who answers it: its `title` and each step's `title`, `do` and `expect`. What the window names (a tooltip, a menu entry) stays as the window writes it.
-- **Both looks:** a run that checks round and square corners has one step per look. The look is not an app command, so a step's `run` cannot flip it: the step's `do` tells the person to flip Square corners in Settings, or the run's author runs `bun scripts/layout.ts apply --square on` before starting.
 - **Events** are logged on their own: spaces and tabs opened, closed, moved and reordered, a tab's pane count, the layout, and each shared key in `watch`.
 - **Shots:** each answer takes a `herdr-app shot` of the window as the person judged it, and the next step opens only once it is saved. Each change to a key in `shotOn` takes one too. They go to `~/.local/state/vjr-herdr/test-panel/<id>/` unless the run names `shots`.
 - **When the last step is answered,** the panel types a one-line summary into the terminal in `report` with `hc send`, so the Claude that wrote the run gets the result without anyone going back to it.

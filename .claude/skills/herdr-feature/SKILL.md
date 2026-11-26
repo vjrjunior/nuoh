@@ -1,6 +1,6 @@
 ---
 name: herdr-feature
-description: Build a feature for this repo's herdr-app layout (vjr-desk, with round and with square corners) - a mod, a panel, a button, a key, a recipe or a layout change, or an item from an inventory in docs/. Runs prior art and the plan, creates the feature's worktree and moves this session into it while the plan waits for approval, then builds for both looks and closes with the repo's Done checks. Use for /herdr-feature, "nova feature no herdr", "criar um mod", "adicionar ao layout", "construir o item N do inventário".
+description: Build a feature for this repo's herdr-app layouts (vjr-desk and nuoh) - a mod, a panel, a button, a key, a recipe or a layout change, or an item from an inventory in docs/. Runs prior art and the plan, creates the feature's worktree and moves this session into it while the plan waits for approval, then builds it and closes with the repo's Done checks. Use for /herdr-feature, "nova feature no herdr", "criar um mod", "adicionar ao layout", "construir o item N do inventário".
 ---
 
 # herdr-feature
@@ -13,7 +13,7 @@ The loop: **frame → prior art → plan → worktree and move → build → Don
 
 0. `MAIN` below is the main checkout: `dirname "$(git rev-parse --path-format=absolute --git-common-dir)"`.
 1. Herdr's guide reaches the session through `CLAUDE.md`. Read it again, in one read, only when a reminder says it changed. Run `herdr-app --version`.
-2. Say in a few lines what the person sees and does in `vjr-desk`, with round and with square corners, and where it lands: a new mod, one of ours (`mods/spaces-tree`, `comeback`, `move-tab`, `markdown`), a recipe that patches a copy of a Herdr mod (as `recipes/move-tab.ts` patches `menu` and `tabs`), or the layout tree.
+2. Say in a few lines what the person sees and does in `vjr-desk` and in `nuoh`, and where it lands: a new mod, one of ours (`mods/spaces-tree`, `comeback`, `move-tab`, `markdown`), a recipe that patches a copy of a Herdr mod (as `recipes/move-tab.ts` patches `menu` and `tabs`), or the layout tree.
 
 ## 2. Prior art and questions
 
@@ -32,7 +32,7 @@ Name the branch (`feat/`, `fix/`, `chore/`, `docs/`, `refactor/` plus a topic) a
 1. **Goal**: what the person sees and does.
 2. **Prior art**: the searches run, each candidate with its link, verdict and what we take ("nothing fits" counts).
 3. **Herdr's guide**: the sections the change relies on.
-4. **In each look**: how it looks in `vjr-desk` with round and with square corners.
+4. **In each layout**: how it looks in `vjr-desk` and in `nuoh`.
 5. **Decisions**: what you chose without asking, so the user can overturn it at approval.
 6. **Changes**: the files, in the order they'll be touched.
 7. **Done → proof**: each behavior and what proves it: a `tests/` case, a layout shot or a test-panel step.
@@ -62,7 +62,7 @@ In the worktree, with the plan approved:
 
 - Logic goes in a pure module (`mods/<name>/logic.js`, no `herdr` import) tested in `tests/<name>.test.ts`; the view in `tests/<name>-view.test.ts` through `tests/app-mocks.ts`.
 - Start from the closest recipe: `recipes/markdown.ts` (a pane mod), `recipes/comeback.ts` (an invisible floating worker), `recipes/move-tab.ts` (patches Herdr's `menu` and `tabs` and binds a key).
-- Wire both looks as `AGENTS.md` › Both looks says, and draw with the kit as `AGENTS.md` › UI says.
+- Wire it into both layouts as `AGENTS.md` › Both looks says, and draw with the kit as `AGENTS.md` › UI says.
 - Before writing a mod or a recipe, read `references/pitfalls.md`.
 - Try it with `bun run apply-layout` from the worktree, then `herdr-app status`. The window runs one build: the folder that ran it last.
 - A bug outside the feature gets its own branch and worktree. To try the fix live, apply from its worktree, then apply from the feature's again before going on; say which build is live. Or ask to land the fix first, then rebase the feature on `main`, so its build carries both.
@@ -71,7 +71,7 @@ In the worktree, with the plan approved:
 
 All of `AGENTS.md` › Done. The live checks go in one test-panel run, `$MAIN/docs/runs/<topic>.json`:
 
-- `"layouts"` names `vjr-desk`, with one step per look that shows the change; the shot each answer takes is that look's Done shot. A step's `run` cannot flip the look, so the step's `do` tells the person to flip Square corners in Settings › Look, and the last step puts the look back as it was.
+- `"layouts"` names each layout the change shows in; the shot each answer takes is that layout's Done shot. No step turns Square corners on or off.
 - `"report"` is `$HC_TERMINAL_ID`, so the summary comes back to this session.
 - The run acts on the person's real window. What it changes, it does to spaces and tabs it creates, or its last step puts back.
 - Read `bun run test-panel --results` and match each `passed` with its events: a pass whose events don't show the change is a finding.
