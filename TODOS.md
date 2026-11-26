@@ -230,18 +230,6 @@
 **Priority:** P2
 **Depends on:** Nothing
 
-### Take a test panel answer's shot before the next step runs
-
-**What:** Make the shot each answer takes show the window as the person judged it, before the next step's `run` commands change the layout or the space.
-
-**Why:** In a draft run, the shot of one step showed the window after the next step's `run` commands had already changed it. A shot that shows another state can't be the Done shot for that step.
-
-**Context:** `tools/test-panel/` takes the shot when the answer is recorded and opens the next step at the same moment. The shot needs to finish before the next step's `run` starts.
-
-**Effort:** S
-**Priority:** P2
-**Depends on:** Nothing
-
 ### Group the Spaces tree's spaces by machine
 
 **What:** Give the Spaces tree a header per machine once a space lives on another one, as Herdr's `spaces` has: the machine's name and state, its `+`, the `hc machine login <name>` line with Copy for one that needs a login, and Connect for one that was rebuilt.

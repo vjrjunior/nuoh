@@ -11,6 +11,13 @@ const WIDTH = 380;
 const AT = { x: 560, y: 64 };
 
 const pad = (n) => String(n).padStart(2, "0");
+const shotFile = (name) => (plan.shots ? `${plan.shots}/${name}.png` : null);
+
+async function capture(file) {
+  try {
+    await exec("herdr-app", ["shot", file]);
+  } catch {}
+}
 
 function fresh() {
   return { run: plan.id, step: -1, results: [], log: [], seen: null, closed: false, reported: false };
@@ -43,14 +50,8 @@ export default class TestPanel extends View {
   }
 
   shot(name, cx) {
-    if (!plan.shots) return null;
-    const file = `${plan.shots}/${name}.png`;
-    cx.spawn(async () => {
-      try {
-        await exec("herdr-app", ["shot", file]);
-      } catch {}
-    });
-    return file;
+    const file = shotFile(name);
+    if (file) cx.spawn(() => capture(file));
   }
 
   go(state, step, cx) {
@@ -68,17 +69,24 @@ export default class TestPanel extends View {
   answer(verdict, cx) {
     const state = this.state();
     const step = plan.steps[state.step];
-    if (!step) return;
+    if (!step || this.answering) return;
+    this.answering = true;
     const note = this.note.value().trim();
     this.note.set_value("");
-    const shot = this.shot(`${pad(state.step + 1)}-${verdict}`, cx);
-    const results = [...state.results.filter((item) => item.step !== state.step), { step: state.step, title: step.title, verdict, note, at: Date.now(), shot }];
-    this.go({ ...state, results }, state.step + 1, cx);
+    const at = Date.now();
+    const shot = shotFile(`${pad(state.step + 1)}-${verdict}`);
+    cx.spawn(async (cx) => {
+      if (shot) await capture(shot);
+      this.answering = false;
+      const now = this.state();
+      const results = [...now.results.filter((item) => item.step !== state.step), { step: state.step, title: step.title, verdict, note, at, shot }];
+      this.go({ ...now, results }, state.step + 1, cx);
+    });
   }
 
   back(cx) {
     const state = this.state();
-    if (state.step <= 0) return;
+    if (state.step <= 0 || this.answering) return;
     setShared(KEY, { ...state, step: state.step - 1 });
     cx.notify();
   }
