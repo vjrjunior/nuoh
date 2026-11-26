@@ -1,4 +1,4 @@
-# vjrjunior-herdr
+# nuoh
 
 VJR Desk for [Herdr](https://herdr.dev): the VJR theme, a dark palette of three hues (peach, mint and red) over a gray ladder, generated from one file for herdr-app and Ghostty, and a herdr-app layout built on it, with round or square corners.
 
@@ -7,7 +7,7 @@ VJR Desk for [Herdr](https://herdr.dev): the VJR theme, a dark palette of three 
 Paste this into Claude Code, or any coding agent with a shell, on the machine that runs herdr-app:
 
 ```
-Install the VJR Desk layout for herdr-app by following https://github.com/vjrjunior/vjrjunior-herdr/blob/main/INSTALL.md
+Install the VJR Desk layout for herdr-app by following https://github.com/vjrjunior/nuoh/blob/main/INSTALL.md
 ```
 
 [`INSTALL.md`](INSTALL.md) tells the agent what to check, what to run, what each mod reads and runs, and how to undo it. The rest of this file describes each part.

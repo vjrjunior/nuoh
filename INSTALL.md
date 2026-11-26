@@ -41,8 +41,8 @@ It refuses to overwrite a file it did not create.
 The clone has to stay: the layout stores its path and rebuilds from it when Herdr updates. Ask where the person keeps repositories, or use the folder below.
 
 ```sh
-git clone https://github.com/vjrjunior/vjrjunior-herdr ~/.local/share/vjrjunior-herdr
-cd ~/.local/share/vjrjunior-herdr
+git clone https://github.com/vjrjunior/nuoh ~/.local/share/nuoh
+cd ~/.local/share/nuoh
 bun run install-theme
 bun run apply-layout
 herdr-app do layout.switch '{"name":"vjr-desk"}'
@@ -72,8 +72,10 @@ The Markdown viewer's first button opens a file in its own app. To make it open 
 
 ## Update
 
+Run it in the clone's folder: `~/.local/share/nuoh`, or `~/.local/share/vjrjunior-herdr` for a clone made before the repository was renamed (`git pull` follows GitHub's redirect).
+
 ```sh
-cd ~/.local/share/vjrjunior-herdr && git pull && bun run install-theme && bun run apply-layout
+cd ~/.local/share/nuoh && git pull && bun run install-theme && bun run apply-layout
 ```
 
 Herdr updates need nothing: the layout rebuilds itself.
@@ -81,7 +83,7 @@ Herdr updates need nothing: the layout rebuilds itself.
 ## Uninstall
 
 ```sh
-cd ~/.local/share/vjrjunior-herdr
+cd ~/.local/share/nuoh
 bun run uninstall-layout    # removes the layout, its mods and key section; goes back to main if needed
 bun run uninstall-theme     # restores what was there before
 ```
