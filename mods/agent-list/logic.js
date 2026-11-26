@@ -1,3 +1,5 @@
+import { cleanTitle } from "../../lib/agent-title.js";
+
 export const RANK = { blocked: 4, done: 3, working: 2, idle: 1 };
 export const SORTS = [
   { id: "priority", label: "Priority", icon: "list" },
@@ -8,9 +10,6 @@ export const NARROW_BELOW = 160;
 export const KEEP_DAYS = 30;
 const DAY = 86400000;
 
-const CODEX_MARK = /^\[ [!.] \] /;
-const WAIT_MARK = /^[✋⏳]️?\s/u;
-const LEAD = /^[^\p{L}\p{N}\p{Ps}\p{Pi}\p{Emoji_Presentation}~/#]+/u;
 const PATH = /^[~/]|^[A-Za-z]:\\/;
 
 export function findNode(node, id) {
@@ -28,15 +27,6 @@ export function isNarrow(root) {
 
 export function sortOf(value) {
   return SORTS.find((sort) => sort.id === value) ?? SORTS[0];
-}
-
-export function cleanTitle(text) {
-  let rest = text ?? "";
-  for (;;) {
-    const next = rest.trimStart().replace(CODEX_MARK, "").replace(WAIT_MARK, "").replace(LEAD, "");
-    if (next === rest) return rest.trim();
-    rest = next;
-  }
 }
 
 const same = (a, b) => Boolean(a) && Boolean(b) && a.toLowerCase() === b.toLowerCase();

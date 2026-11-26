@@ -278,17 +278,17 @@
 **Priority:** P3
 **Depends on:** Nothing
 
-### Draw nuoh's panes and panels as cards
+### Inset nuoh's terminal well
 
-**What:** In `nuoh`, finish the Workspace view's look from the approved sketch: the sketch's pane header (42px, the program's tile, the title, the status chip, the folder, and the split and zoom buttons), a `surface` fill on the pane frame with a `veil` on the panes without focus, the side panels (Files, Changes, Graph and any an extra adds) as cards, and the panel buttons in one bordered group with `+` right after the tabs.
+**What:** Draw the sketch's terminal well in `nuoh`'s panes: the terminal 6px inside the card under the header, with 10px corners and a `#FFFFFF0A` line, faded to 0.6 without focus.
 
-**Why:** The frame and the sidebar's Spaces and Agents cards are in; the panes and the panels are still `vjr-desk`'s.
+**Why:** Herdr 0.1.18's pane frame has no inset, so the terminal runs from the header to the card's line, square at the bottom where the card is round.
 
-**Context:** `recipes/cards.ts` (`nuoh-cards`) runs last in `nuoh` and draws the sidebar's cards; the panes and panels go there too. A node's `radius` doesn't clip its mod, so each card's mod paints no fill of its own and keeps its rows inset. Herdr 0.1.18's pane frame has only `header`, `background`, `shadow`, `border`, `focus`, `veil`, `radius`, `gap` and `lone`, and ignores any other field without an error: no field gives the terminal a well with an inset. A button an extra adds to the tab bar keeps its own look until the extra changes it.
+**Context:** `recipes/cards.ts` (`nuoh-cards`) sets the pane frame; `mods/pane-header/RECIPE.md` › Watch out says what the frame can't do. The frame has only `header`, `background`, `shadow`, `border`, `focus`, `veil`, `radius`, `gap` and `lone`, ignores any other field without an error, and doesn't clip the terminal to its `radius`. Check each Herdr release's guide for an inset or padding on the pane frame.
 
-**Effort:** L
-**Priority:** P2
-**Depends on:** nuoh's sidebar cards (part 2b) landing
+**Effort:** S
+**Priority:** P3
+**Depends on:** a pane frame field in Herdr that insets the terminal
 
 ### Show a waiting update on nuoh's Settings tile
 
@@ -303,6 +303,10 @@
 **Depends on:** nothing
 
 ## Completed
+
+### Draw nuoh's panes and panels as cards
+
+**Completed:** 2026-11-26. `nuoh-cards` gives the pane frame a `surface` fill, a 0.4 `veil` and our own 42px `pane-header` (the program's tile, the title, the status chip, the folder, and split, zoom and close on hover); every block beside the panes is a card holding its panel 6px in; nuoh's copy of Git Graph draws the 10px well Files and Changes draw; the panel buttons sit in one group with `+` right after the tabs. The well's inset waits on Herdr (Inset nuoh's terminal well).
 
 ### Reorder the Spaces folders by dragging
 

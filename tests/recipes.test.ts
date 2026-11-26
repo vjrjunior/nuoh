@@ -203,11 +203,13 @@ describe("nuoh", () => {
       "nuoh-agent-list",
       "nuoh-comeback",
       "nuoh-files",
+      "nuoh-git-graph",
       "nuoh-kit",
       "nuoh-markdown",
       "nuoh-menu",
       "nuoh-move-tab",
       "nuoh-palette",
+      "nuoh-pane-header",
       "nuoh-rail",
       "nuoh-settings",
       "nuoh-spaces-tree",
@@ -299,7 +301,7 @@ describe("nuoh", () => {
     expect(list["main.js"]).toContain('openOverlay({ mod: "nuoh-agent-list", kind: "popup"');
     expect(list["main.js"]).toContain('from "./kit.js"');
     expect(list["kit.js"]).toContain('{ name: "nuoh-kit" }');
-    expect(Object.keys(list).sort()).toEqual(["kit.js", "logic.js", "main.js", "mod.json", "space-colors.js"]);
+    expect(Object.keys(list).sort()).toEqual(["agent-title.js", "kit.js", "logic.js", "main.js", "mod.json", "space-colors.js"]);
   });
 
   test("a window without the sidebar's lists fails the cards recipe", () => {
@@ -331,12 +333,117 @@ describe("nuoh", () => {
     expect(modsIn(root)).not.toContain("nuoh-workspace-status");
   });
 
-  test("panes are cards with 14 px corners and a peach line as wide as the resting one", () => {
+  test("panes are surface cards with 14 px corners, a shadow, a peach line as wide as the resting one, and a veil on the others", () => {
     const pane = findNode(nuohLayout(), "main")?.content.pane;
     expect(pane.radius).toBe(14);
     expect(pane.border).toEqual({ width: 1, color: "#FFFFFF12" });
     expect(pane.focus).toEqual({ width: 1, color: "#FFC799B3" });
-    expect(pane.header).toEqual({ content: { mod: "pane" }, height: 30 });
+    expect(pane.background).toBe("surface");
+    expect(pane.shadow).toBe("md");
+    expect(pane.veil).toBe(0.4);
+  });
+
+  test("each pane opens with our own 42 px header, which carries the kit and the title cleaner", () => {
+    const generated = generateNuoh();
+    const pane = findNode(JSON.parse(generated.layoutText), "main")?.content.pane;
+    expect(pane.header).toEqual({ content: { mod: "nuoh-pane-header" }, height: 42, position: "top", reveal: "always" });
+    const header = generated.mods["nuoh-pane-header"] ?? {};
+    expect(Object.keys(header).sort()).toEqual(["agent-title.js", "kit.js", "logic.js", "main.js", "mod.json"]);
+    expect(header["logic.js"]).toContain('from "./agent-title.js"');
+    expect(header["kit.js"]).toContain('{ name: "nuoh-kit" }');
+    expect(JSON.parse(header["mod.json"] ?? "{}").place).toBe("none");
+  });
+
+  test("the panels and any block an extra puts beside the panes are cards that hold the panel 6 px in", () => {
+    const panelExtra = {
+      name: "side-panel",
+      mods: [],
+      apply({ layout }: { layout: Record<string, any> }) {
+        findNode(layout, "work-body")?.children.push({ id: "side", type: "block", hidden: true, size: { px: 380 }, content: { mod: "files" } });
+      },
+    };
+    const home = tempDir();
+    makeHerdrHome(home);
+    const layout = JSON.parse(generateVariant(nuohVariant([panelExtra]), { home, version: "0.1.10", repo, bun: "/bin/bun" }).layoutText);
+    const card = { background: "surface", border: { width: 1, color: "#FFFFFF12" }, radius: 14, shadow: "md", padding: 6 };
+    expect(findNode(layout, "panel")).toMatchObject({ type: "column", hidden: true, ...card });
+    expect(findNode(layout, "side")).toMatchObject({ type: "block", hidden: true, size: { px: 380 }, ...card });
+    expect(findNode(layout, "main")?.background).toBeUndefined();
+    expect(findNode(layout, "main")?.padding).toBeUndefined();
+  });
+
+  test("the Graph is nuoh's own copy, its box a 10 px well like Files and Changes", () => {
+    const generated = generateNuoh();
+    expect(graphChild(generated)).toEqual({ id: "graph", type: "block", content: { mod: "nuoh-git-graph" } });
+    const graph = generated.mods["nuoh-git-graph"]?.["graph.js"] ?? "";
+    expect(graph).toContain('v_flex().id("git-graph").size_full().min_h(0).rounded(10).overflow_hidden().bg(t.background).border_1().border_color(t.border)');
+    expect(graph).not.toContain("paneFrame(layout())?.radius");
+    expect(graph).toContain('openOverlay({ mod: "nuoh-git-graph", kind: "popup"');
+  });
+
+  test("the + sits right after the last tab, and the panel buttons sit in a group at the right", () => {
+    const tabs = nuohTabs();
+    expect(tabs).toContain('h_flex().id("tab-scroll").flex_initial().min_w(0)');
+    expect(tabs).toContain(".overflow_x_scroll().track_scroll(this.scroll)");
+    expect(tabs).not.toContain('id("tab-scroll").flex_1()');
+    expect(tabs).not.toContain("overflow_x_scrollbar");
+    const group = '.child(h_flex().id("panel-group").flex_none().gap(2).p(3).items_center().rounded(11).bg(t.surface).border_1().border_color(t.foreground + "12")';
+    const order = [
+      'h_flex().id("tab-scroll")',
+      '.child(button("tab-new", "+"',
+      ".child(div().flex_1())",
+      group,
+      'panelButton("files"',
+      'panelButton("changes"',
+      'panelButton("graph"',
+      ")\n      .when(w?.buttons,",
+    ].map((text) => tabs.indexOf(text));
+    expect(order.every((at) => at >= 0)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+  });
+
+  test("an extra's button between the + and the window buttons lands in the group", () => {
+    const toggle = {
+      name: "toggle",
+      mods: [{ name: "tabs", from: "mods" as const }],
+      apply({ copies }: { copies: Record<string, { files: Record<string, string> }> }) {
+        const tabs = copies.tabs as { files: Record<string, string> };
+        tabs.files["main.js"] = (tabs.files["main.js"] ?? "").replace('.when(enabled.includes("files")', '.child(h_flex().id("toggle"))\n      .when(enabled.includes("files")');
+      },
+    };
+    const home = tempDir();
+    makeHerdrHome(home);
+    const tabs = generateVariant(nuohVariant([toggle]), { home, version: "0.1.10", repo, bun: "/bin/bun" }).mods["nuoh-tabs"]?.["main.js"] ?? "";
+    const group = tabs.indexOf('id("panel-group")');
+    expect(group).toBeGreaterThan(0);
+    expect(tabs.indexOf('id("toggle")')).toBeGreaterThan(group);
+    expect(tabs.indexOf('id("toggle")')).toBeLessThan(tabs.indexOf('panelButton("files"'));
+  });
+
+  test("vjr-desk keeps Herdr's pane header, its panels and its tab bar in both looks", () => {
+    for (const generated of [generateRound(), generateSquare()]) {
+      const root = JSON.parse(generated.layoutText);
+      const pane = findNode(root, "main")?.content.pane;
+      expect(pane.header.content.mod).toBe(generated.mods["vjr-pane"] ? "vjr-pane" : "pane");
+      expect(pane.veil).toBeUndefined();
+      expect(pane.background).toBeUndefined();
+      expect(findNode(root, "panel")?.background).toBeUndefined();
+      expect(findNode(root, "panel")?.padding).toBeUndefined();
+      expect(generated.mods["vjr-pane-header"]).toBeUndefined();
+      const tabs = generated.mods["vjr-tabs"]?.["main.js"] ?? "";
+      expect(tabs).not.toContain("panel-group");
+      expect(tabs).not.toContain("flex_initial");
+    }
+    expect(graphChild(generateRound())?.content.mod).toBe("git-graph");
+  });
+
+  test("a tab bar that changed fails the cards recipe", () => {
+    for (const from of ['.id("tab-scroll").flex_1()', ".overflow_x_scrollbar().track_scroll(this.scroll)", '.child(button("tab-new", "+"', ".when(w?.buttons,"]) {
+      const home = tempDir();
+      makeHerdrHome(home);
+      editFile(join(home, "mods/tabs/main.js"), from, "");
+      expect(() => generateVariant(nuohVariant([]), { home, version: "0.1.10", repo, bun: "/bin/bun" })).toThrow(/recipe nuoh-cards: tabs:/);
+    }
   });
 
   test("ctrl-cmd-1 selects the Workspace", () => {

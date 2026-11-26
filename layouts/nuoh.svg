@@ -59,10 +59,30 @@
   <rect x="12.6" y="58.6" width="7.6" height="0.8" rx="0.4" fill="#707070"/>
   <rect x="32" y="1" width="13" height="3" rx="1" fill="#1C1C1C" stroke="#232323" stroke-width="0.3"/>
   <rect x="47" y="2" width="6" height="1" rx="0.5" fill="#505050"/>
-  <rect x="84" y="1.8" width="1.6" height="1.6" rx="0.4" fill="#505050"/>
-  <rect x="87" y="1.8" width="1.6" height="1.6" rx="0.4" fill="#505050"/>
-  <rect x="90" y="1.8" width="1.6" height="1.6" rx="0.4" fill="#505050"/>
+  <rect x="54.2" y="1.9" width="1.4" height="0.3" rx="0.15" fill="#505050"/>
+  <rect x="54.75" y="1.35" width="0.3" height="1.4" rx="0.15" fill="#505050"/>
+  <rect x="80.4" y="0.9" width="12.4" height="3.2" rx="1" fill="#161616" stroke="#262626" stroke-width="0.3"/>
+  <rect x="81.4" y="1.7" width="1.6" height="1.6" rx="0.4" fill="#505050"/>
+  <rect x="82.6" y="1.4" width="0.7" height="0.7" rx="0.35" fill="#FFC799"/>
+  <rect x="84.3" y="1.7" width="1.6" height="1.6" rx="0.4" fill="#505050"/>
+  <rect x="87.2" y="1.7" width="1.6" height="1.6" rx="0.4" fill="#505050"/>
+  <rect x="90.1" y="1.7" width="1.6" height="1.6" rx="0.4" fill="#505050"/>
   <rect x="94" y="0.8" width="13" height="3.4" rx="1.1" fill="#161616" stroke="#262626" stroke-width="0.3"/>
-  <rect x="32" y="5" width="52" height="58" rx="1.6" fill="#101010" stroke="#FFC799" stroke-width="0.5"/>
-  <rect x="85" y="5" width="22" height="58" rx="1.6" fill="#101010" stroke="#262626" stroke-width="0.5"/>
+  <rect x="32" y="5" width="52" height="58" rx="1.6" fill="#161616" stroke="#FFC799" stroke-width="0.5"/>
+  <rect x="33.2" y="6" width="1.8" height="1.8" rx="0.5" fill="#262626"/>
+  <rect x="33.7" y="6.5" width="0.8" height="0.8" rx="0.2" fill="#E3814F"/>
+  <rect x="35.8" y="6.4" width="11" height="1" rx="0.5" fill="#FFFFFF"/>
+  <rect x="47.6" y="6.1" width="4.4" height="1.6" rx="0.4" fill="#FFC7991F"/>
+  <rect x="48.2" y="6.6" width="3.2" height="0.6" rx="0.3" fill="#FFC799"/>
+  <rect x="72" y="6.5" width="10.6" height="0.8" rx="0.4" fill="#505050"/>
+  <path d="M32.25 8.8 H83.75 V61.4 A1.35 1.35 0 0 1 82.4 62.75 H33.6 A1.35 1.35 0 0 1 32.25 61.4 Z" fill="#101010"/>
+  <rect x="34" y="11" width="18" height="0.9" rx="0.45" fill="#707070"/>
+  <rect x="34" y="13" width="26" height="0.9" rx="0.45" fill="#A0A0A0"/>
+  <rect x="34" y="15" width="12" height="0.9" rx="0.45" fill="#707070"/>
+  <rect x="85" y="5" width="22" height="58" rx="1.6" fill="#161616" stroke="#262626" stroke-width="0.5"/>
+  <rect x="85.6" y="5.6" width="20.8" height="56.8" rx="1.1" fill="#101010" stroke="#262626" stroke-width="0.3"/>
+  <rect x="86.8" y="7" width="6" height="1" rx="0.5" fill="#A0A0A0"/>
+  <rect x="86.8" y="10" width="14" height="0.8" rx="0.4" fill="#707070"/>
+  <rect x="86.8" y="12" width="11" height="0.8" rx="0.4" fill="#707070"/>
+  <rect x="86.8" y="14" width="16" height="0.8" rx="0.4" fill="#707070"/>
 </svg>

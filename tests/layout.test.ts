@@ -77,11 +77,13 @@ describe("apply", () => {
       "nuoh-agent-list",
       "nuoh-comeback",
       "nuoh-files",
+      "nuoh-git-graph",
       "nuoh-kit",
       "nuoh-markdown",
       "nuoh-menu",
       "nuoh-move-tab",
       "nuoh-palette",
+      "nuoh-pane-header",
       "nuoh-rail",
       "nuoh-settings",
       "nuoh-spaces-tree",
@@ -231,7 +233,7 @@ describe("apply", () => {
 
     apply();
 
-    expect(log().filter((line) => line.startsWith("check "))).toHaveLength(27);
+    expect(log().filter((line) => line.startsWith("check "))).toHaveLength(29);
   });
 
   test("checks the mods side by side", () => {
@@ -240,7 +242,7 @@ describe("apply", () => {
 
     apply(["--square", "on"], { FAKE_HERDR_CHECK_SLEEP: "0.5" });
 
-    expect(log().filter((line) => line.startsWith("check "))).toHaveLength(36);
+    expect(log().filter((line) => line.startsWith("check "))).toHaveLength(38);
     expect(Date.now() - started).toBeLessThan(8000);
   });
 
@@ -250,7 +252,7 @@ describe("apply", () => {
     apply();
 
     expect(record().version).toBe("0.1.10");
-    expect(record().mods).toHaveLength(27);
+    expect(record().mods).toHaveLength(29);
     expect(record().kept).toEqual([]);
     expect(record().files.sort()).toEqual(["layouts/nuoh.json", "layouts/nuoh.svg", "layouts/vjr-desk.json", "layouts/vjr-desk.svg"]);
     expect(record().sections).toEqual(["layout:vjr-desk", "layout:nuoh"]);

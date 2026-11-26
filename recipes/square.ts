@@ -19,8 +19,8 @@ function squareCorner(_match: string, side?: string): string {
   return side === "_full" ? ".rounded(0)" : `.rounded${side ?? ""}(0)`;
 }
 
-const GRAPH_RADIUS = ".rounded(paneFrame(layout())?.radius ?? 0)";
-const GIT_GRAPH: ModSource = { name: "git-graph", from: "repo" };
+export const GRAPH_RADIUS = ".rounded(paneFrame(layout())?.radius ?? 0)";
+export const GIT_GRAPH: ModSource = { name: "git-graph", from: "repo" };
 
 export function squareFor(recipes: Recipe[]): Recipe {
   const own = new Map<string, ModSource>([[GIT_GRAPH.name, GIT_GRAPH]]);

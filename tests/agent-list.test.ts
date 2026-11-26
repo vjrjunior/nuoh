@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { repo } from "./helpers";
 
-const { RANK, agentTitle, ago, arrange, cleanTitle, crowdedTabs, isNarrow, kidStatus, machineOf, mostUrgent, needsYou, readChanged, sortOf, subTree, track } = await import(
+const { RANK, agentTitle, ago, arrange, crowdedTabs, isNarrow, kidStatus, machineOf, mostUrgent, needsYou, readChanged, sortOf, subTree, track } = await import(
   "../mods/agent-list/logic.js"
 );
 
@@ -16,22 +16,6 @@ const addresses = (rows: Agent[]) => rows.map((row) => row.address);
 
 describe("the title", () => {
   const claude = { name: "Claude Code", key: "claude" };
-
-  test("drops the status glyph and the separator an agent puts before its title", () => {
-    expect(cleanTitle("✳ Fix login")).toBe("Fix login");
-    expect(cleanTitle("⠋ - Thinking")).toBe("Thinking");
-    expect(cleanTitle("[ ! ] Review the diff")).toBe("Review the diff");
-    expect(cleanTitle("✋ Waiting for you")).toBe("Waiting for you");
-    expect(cleanTitle("⏳ Building")).toBe("Building");
-  });
-
-  test("keeps a title that opens with a bracket, an emoji or a path", () => {
-    expect(cleanTitle("[web] login")).toBe("[web] login");
-    expect(cleanTitle("🔴 login")).toBe("🔴 login");
-    expect(cleanTitle("~/code/app")).toBe("~/code/app");
-    expect(cleanTitle("#42 checkout")).toBe("#42 checkout");
-    expect(cleanTitle(null)).toBe("");
-  });
 
   test("is the pane's name, then the tab's name when someone named it, then the agent's own title, then the program", () => {
     const base = { address: "t1", title: "✳ Fix login", program: claude };
@@ -177,5 +161,6 @@ describe("the sidebar", () => {
 });
 
 test("logic.js imports nothing from the app", () => {
-  expect(readFileSync(join(repo, "mods/agent-list/logic.js"), "utf8")).not.toContain("import");
+  const imports = [...readFileSync(join(repo, "mods/agent-list/logic.js"), "utf8").matchAll(/from "([^"]+)"/g)].map((match) => match[1]);
+  expect(imports).toEqual(["../../lib/agent-title.js"]);
 });

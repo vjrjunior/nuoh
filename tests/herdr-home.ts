@@ -98,10 +98,12 @@ export default class Tabs extends View {
     const release = (c, i) => { const from = this.pressed; this.pressed = null; if (from !== null && from !== i) run("tab.move", { id: c.id }); };
     return h_flex().size_full().min_w(0).px(10).pl(lightsPadding).gap(3).items_center().bg(t.chrome).border_b(1).border_color(t.border).rounded(7)
       .on_mouse_up("left", () => { this.pressed = null; })
+      .child(h_flex().id("tab-scroll").flex_1().min_w(0).h_full().items_center().gap(3).overflow_x_scrollbar().track_scroll(this.scroll).children([]))
       .child(button("tab-new", "+", () => openOverlay({ mod: "new-menu", kind: "popup", width: 250, height: 512 })))
       .when(enabled.includes("files"), el => el.child(panelButton("files", "Files", "mods/files/file.svg")))
       .when(enabled.includes("changes"), el => el.child(panelButton("changes", "Changes", "mods/changes/changes.svg")))
-      .child(div().size(6).rounded(3));
+      .child(div().size(6).rounded(3))
+      .when(w?.buttons, el => el.child(button("close-window", "x", () => run("window.close"))));
   }
 }
 `,
