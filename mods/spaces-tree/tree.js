@@ -1,4 +1,5 @@
 import { base, checkoutOf } from "../../lib/checkouts.js";
+import { PALETTE } from "../../lib/space-colors.js";
 
 const URGENCY = ["blocked", "done", "working", "idle"];
 
@@ -93,13 +94,6 @@ export function buildTree(spaces, looks, repos) {
   return out;
 }
 
-export const PALETTE = ["ansi6", "ansi3", "ansi4", "ansi5", "ansi2", "ansi1"];
-const MARK = { ansi6: "#22a99a", ansi3: "#e3814f", ansi4: "#5b8def", ansi5: "#8b7cf6", ansi2: "#3fae6a", ansi1: "#d9649a" };
-
-export function paint(color, t) {
-  if (typeof color === "string" && color.startsWith("#")) return color;
-  return MARK[color] ?? t[color] ?? t.dim;
-}
 const FALLBACK = 60000;
 const OPENING = 3000;
 

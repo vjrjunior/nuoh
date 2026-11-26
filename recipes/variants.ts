@@ -1,5 +1,6 @@
 import { comeback } from "./comeback";
 import { files } from "./files";
+import { nuohFrame } from "./frame";
 import { gitGraphPanel } from "./git-graph-panel";
 import { kit } from "./kit";
 import { listVjrTheme } from "./list-vjr-theme";
@@ -14,7 +15,7 @@ import { squareFor } from "./square";
 const OWN: Recipe[] = [listVjrTheme, look, kit, gitGraphPanel, spacesTree, comeback, markdown, moveTab, files];
 
 function refuseTaken(extras: Recipe[]): void {
-  const taken = [...OWN, rail, railKeys].map((recipe) => recipe.name);
+  const taken = [...OWN, rail, railKeys, nuohFrame].map((recipe) => recipe.name);
   for (const recipe of extras) {
     if (taken.includes(recipe.name) || recipe.name === "square") throw new Error(`an extra recipe is named ${recipe.name}, which is taken`);
     taken.push(recipe.name);
@@ -29,7 +30,7 @@ export function variantWith(extras: Recipe[], square: boolean): Variant {
 
 export function nuohVariant(extras: Recipe[]): Variant {
   refuseTaken(extras);
-  return { layout: "nuoh", prefix: "nuoh-", preview: "layouts/nuoh.svg", square: false, oneLook: true, recipes: [...OWN, rail, ...extras, railKeys] };
+  return { layout: "nuoh", prefix: "nuoh-", preview: "layouts/nuoh.svg", square: false, oneLook: true, recipes: [...OWN, rail, ...extras, railKeys, nuohFrame] };
 }
 
 export function variantsWith(extras: Recipe[], square: boolean): Variant[] {

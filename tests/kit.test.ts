@@ -3,7 +3,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { type Node, walk } from "./app-mocks";
 
-const { ICONS, button, chip, iconButton, iconPath, popupRow, stepNode, toneColor } = await import("../kit/kit.js");
+const { ICONS, avatar, button, chip, iconButton, iconPath, popupRow, stepNode, toneColor } = await import("../kit/kit.js");
 
 const repo = join(import.meta.dir, "..");
 const t = new Proxy({}, { get: (_x, p) => (typeof p === "string" ? `t.${p}` : undefined) }) as any;
@@ -91,6 +91,22 @@ test("a button's icon takes iconColor while the label keeps the text color", () 
   const plain = button("b", { label: "GitHub", icon: "github", onClick() {} }, t);
   const plainIcon = plain.kids.find((k) => k.calls.some(([c]) => c === "svg")) as Node;
   expect(own(plainIcon, "text_color")).toEqual([["t.foreground"]]);
+});
+
+test("an avatar is its name's first letter, bold, on its fill", () => {
+  const node = avatar("nuoh", { fill: "#22a99a", letter: "#ffffff" }, { size: 28, radius: 8 });
+  expect(own(node, "size")).toEqual([[28]]);
+  expect(own(node, "rounded")).toEqual([[8]]);
+  expect(own(node, "bg")).toEqual([["#22a99a"]]);
+  expect(own(node, "text_color")).toEqual([["#ffffff"]]);
+  expect(node.texts).toEqual(["N"]);
+});
+
+test("an avatar without a name shows a question mark, 22 px with 6 px corners", () => {
+  const node = avatar("", { fill: "t.dim", letter: "t.foreground" });
+  expect(own(node, "size")).toEqual([[22]]);
+  expect(own(node, "rounded")).toEqual([[6]]);
+  expect(node.texts).toEqual(["?"]);
 });
 
 test("kit.js has no hex color", () => {

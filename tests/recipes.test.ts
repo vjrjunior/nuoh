@@ -193,6 +193,8 @@ describe("look", () => {
 
 describe("nuoh", () => {
   const nuohLayout = () => JSON.parse(generateNuoh().layoutText);
+  const nuohTabs = () => generateNuoh().mods["nuoh-tabs"]?.["main.js"] ?? "";
+  const ids = (node: Record<string, any> | null) => (node?.children ?? []).map((child: { id: string }) => child.id);
 
   test("is its own layout with its own copies, named nuoh-", () => {
     const generated = generateNuoh();
@@ -209,45 +211,49 @@ describe("nuoh", () => {
       "nuoh-settings",
       "nuoh-spaces-tree",
       "nuoh-tabs",
-      "nuoh-workspace-chrome",
-      "nuoh-workspace-status",
+      "nuoh-topbar",
     ]);
     expect(modsIn(nuohLayout()).filter((mod) => mod.startsWith("vjr-"))).toEqual(["vjr-sync"]);
   });
 
-  test("the rail comes first, 68 px in the sidebar's color, and the views stack fills the rest", () => {
+  test("the window sits on a gradient, its blocks 8 px apart and 8 px from the edges, with no lines between them", () => {
     const root = nuohLayout();
-    expect(root.children.map((child: { id: string }) => child.id)).toEqual(["rail", "views"]);
+    expect(ids(root)).toEqual(["rail-column", "views"]);
+    expect(root.background).toEqual({ gradient: ["#181818", "#0D0D0D"], angle: 180 });
+    expect(root.padding).toBe(8);
+    expect(root.gap).toBe(8);
     expect(root.resizable).toBe(false);
-    expect(root.divider).toEqual({ width: 1, color: "border" });
-    const [rail, views] = root.children;
+    expect(root.divider).toBeUndefined();
+  });
+
+  test("the rail column keeps a 46 px band for the traffic lights over the rail, a 54 px card", () => {
+    const column = findNode(nuohLayout(), "rail-column");
+    expect(column).toMatchObject({ type: "column", size: { px: 54 }, resizable: false, gap: 8 });
+    expect(ids(column)).toEqual(["lights", "rail"]);
+    const [lights, rail] = column?.children ?? [];
+    expect(lights).toEqual({ id: "lights", type: "block", size: { px: 46 }, window_drag: true, content: { mod: "nuoh-topbar", props: { role: "lights" } } });
     expect(rail).toEqual({
       id: "rail",
       type: "block",
-      size: { px: 68 },
-      background: "chrome",
-      window_drag: true,
+      background: "surface",
+      border: { width: 1, color: "#FFFFFF12" },
+      radius: 16,
+      shadow: "md",
       content: { mod: "nuoh-rail", props: { views: [{ id: "workspace", label: "Workspace", icon: "terminal", key: "ctrl-cmd-1" }] } },
     });
-    expect(views.type).toBe("stack");
-    expect(views.active).toBe("workspace");
-    expect(views.children.map((child: { id: string }) => child.id)).toEqual(["workspace"]);
   });
 
-  test("the Workspace is today's window, with its children and divider, under the views", () => {
-    const root = nuohLayout();
-    const workspace = findNode(root, "workspace");
-    expect(workspace?.type).toBe("row");
-    expect(workspace?.divider).toEqual({ width: 1, color: "border" });
-    expect(workspace?.children.map((child: { id: string }) => child.id)).toEqual(["sidebar", "work"]);
-    expect(findNode(workspace, "spaces")?.content.mod).toBe("nuoh-spaces-tree");
-    expect(findNode(workspace, "files")?.content.mod).toBe("nuoh-files");
+  test("the views stack fills the rest and starts on the Workspace", () => {
+    const views = findNode(nuohLayout(), "views");
+    expect(views?.type).toBe("stack");
+    expect(views?.active).toBe("workspace");
+    expect(ids(views)).toEqual(["workspace"]);
   });
 
-  test("the fields only the root reads stay on the root, with the traffic lights over the rail", () => {
+  test("the fields only the root reads stay on the root, with the traffic lights centered in the band", () => {
     const root = nuohLayout();
     expect(root.titlebar).toBe("none");
-    expect(root.traffic_lights).toEqual([14, 16]);
+    expect(root.traffic_lights).toEqual([18, 24]);
     expect(root.terminal_menu).toBe("nuoh-menu");
     expect(root.theme).toEqual({ light: "paper", dark: "vjr" });
     expect(root.preview).toBe("layouts/nuoh.svg");
@@ -255,54 +261,153 @@ describe("nuoh", () => {
     expect(root.floating.at(-1).content.props.square).toBeNull();
   });
 
+  test("the Workspace puts the sidebar and the work 8 px apart, with a line between them only on hover", () => {
+    const workspace = findNode(nuohLayout(), "workspace");
+    expect(workspace?.type).toBe("row");
+    expect(workspace?.gap).toBe(8);
+    expect(workspace?.divider).toEqual({ width: 1, color: "#00000000", hover: "accent" });
+    expect(ids(workspace)).toEqual(["sidebar", "work"]);
+    expect(findNode(workspace, "spaces")?.content.mod).toBe("nuoh-spaces-tree");
+    expect(findNode(workspace, "files")?.content.mod).toBe("nuoh-files");
+  });
+
+  test("the sidebar opens with the space's title and keeps its lists on chrome", () => {
+    const sidebar = findNode(nuohLayout(), "sidebar");
+    expect(ids(sidebar)).toEqual(["space-title", "sidebar-lists"]);
+    expect(sidebar?.background).toBeUndefined();
+    expect(sidebar?.gap).toBe(8);
+    expect(findNode(sidebar, "sidebar-lists")?.background).toBe("chrome");
+    expect(findNode(sidebar, "space-title")).toEqual({ id: "space-title", type: "block", size: { px: 46 }, window_drag: true, content: { mod: "nuoh-topbar", props: { role: "title" } } });
+  });
+
+  test("the work column opens with the tabs and the machine pill, and its body has no padding", () => {
+    const work = findNode(nuohLayout(), "work");
+    expect(work?.gap).toBe(8);
+    expect(ids(work)).toEqual(["work-top", "work-body"]);
+    const top = findNode(work, "work-top");
+    expect(top).toMatchObject({ type: "row", size: { px: 46 }, resizable: false, window_drag: true });
+    expect(ids(top)).toEqual(["tabs", "machine"]);
+    expect(findNode(top, "tabs")).toEqual({ id: "tabs", type: "block", window_drag: true, content: { mod: "nuoh-tabs" } });
+    expect(findNode(top, "machine")).toEqual({ id: "machine", type: "block", size: { px: 160 }, window_drag: true, content: { mod: "nuoh-topbar", props: { role: "machine" } } });
+    expect(findNode(work, "work-body")?.padding).toBeUndefined();
+    expect(findNode(work, "work-body")?.gap).toBe(8);
+  });
+
+  test("the Herdr block, the sidebar's footer and the status bar are gone, and so are their mods", () => {
+    const root = nuohLayout();
+    for (const id of ["brand", "sidebar-footer", "status"]) expect(findNode(root, id)).toBeNull();
+    expect(modsIn(root)).not.toContain("nuoh-workspace-chrome");
+    expect(modsIn(root)).not.toContain("nuoh-workspace-status");
+  });
+
+  test("panes are cards with 14 px corners and a peach line as wide as the resting one", () => {
+    const pane = findNode(nuohLayout(), "main")?.content.pane;
+    expect(pane.radius).toBe(14);
+    expect(pane.border).toEqual({ width: 1, color: "#FFFFFF12" });
+    expect(pane.focus).toEqual({ width: 1, color: "#FFC799B3" });
+    expect(pane.header).toEqual({ content: { mod: "pane" }, height: 30 });
+  });
+
   test("ctrl-cmd-1 selects the Workspace", () => {
     expect(generateNuoh().keys["ctrl-cmd-1"]).toEqual({ command: "layout.select", args: { stack: "views", child: "workspace" } });
   });
 
-  test("the sidebar's top keeps no room for the traffic lights and folds to 44 px everywhere", () => {
-    const chrome = generateNuoh().mods["nuoh-workspace-chrome"]?.["main.js"] ?? "";
-    expect(chrome).not.toContain("el.pl(76)");
-    expect(chrome).not.toContain("? 76 : 44");
-    expect(chrome).toContain('px: 44 }');
-    expect(chrome).toContain('.child(this.button("sidebar-toggle", svg("mods/workspace-chrome/sidebar.svg").size(15), toggleSidebar));');
-    expect(chrome).not.toContain("collapsed && window()?.platform");
+  test("the tab bar draws on the window's gradient, with no room kept for the traffic lights", () => {
+    const tabs = nuohTabs();
+    expect(tabs).toContain("h_flex().size_full().min_w(0).px(10).gap(3).items_center().rounded(7)");
+    expect(tabs).not.toContain(".pl(lightsPadding)");
+    expect(tabs).not.toContain(".border_b(1)");
   });
 
-  test("the tab bar counts the rail in the room the traffic lights need", () => {
-    expect(generateNuoh().mods["nuoh-tabs"]?.["main.js"]).toContain('- (sidebar?.hidden ? 0 : sidebar?.size?.px ?? 0) - (find(root, "rail")?.size?.px ?? 0))');
+  test("tabs are 32 px pills, and only the active one has a fill and a line", () => {
+    const tabs = nuohTabs();
+    expect(tabs).toContain(".h(32).px(12).gap(8).rounded(9).items_center().flex_none().text_size(13)");
+    expect(tabs).toContain(".border(1).when(c.active, el => el.border_color(t.border).bg(t.raised))");
+    expect(tabs).not.toContain("t.chrome");
   });
 
-  test("vjr-desk keeps its sidebar top, its fold and its tab bar", () => {
+  test("panel buttons show only their icon and name themselves in a tooltip", () => {
+    const tabs = nuohTabs();
+    expect(tabs).toContain("h_flex().id(`panel-${id}`).h(28).px(7).gap(5).flex_none().items_center().rounded(8).tooltip(label)");
+    expect(tabs).toContain(".child(svg(icon).size(14));");
+    expect(tabs).not.toContain(".child(label)");
+    expect(tabs).toContain(".when(on, el => el.bg(t.selected))");
+  });
+
+  test("an extra's button filled like a panel button loses the chrome fill too", () => {
+    const toggle = {
+      name: "toggle",
+      mods: [{ name: "tabs", from: "mods" as const }],
+      apply({ copies }: { copies: Record<string, { files: Record<string, string> }> }) {
+        const tabs = copies.tabs as { files: Record<string, string> };
+        tabs.files["main.js"] = (tabs.files["main.js"] ?? "").replace(".child(div().size(6).rounded(3))", '.child(h_flex().id("toggle").bg(on ? t.selected : t.chrome))');
+      },
+    };
+    const home = tempDir();
+    makeHerdrHome(home);
+    const tabs = generateVariant(nuohVariant([toggle]), { home, version: "0.1.10", repo, bun: "/bin/bun" }).mods["nuoh-tabs"]?.["main.js"] ?? "";
+    expect(tabs).toContain('.child(h_flex().id("toggle").when(on, el => el.bg(t.selected)))');
+  });
+
+  test("vjr-desk keeps its Herdr block, footer, status bar and tab bar", () => {
     const generated = generateRound();
+    const root = JSON.parse(generated.layoutText);
+    for (const id of ["brand", "sidebar-footer", "status", "tabs"]) expect(findNode(root, id)).not.toBeNull();
+    expect(findNode(root, "work-body")?.padding).toBe(8);
+    expect(findNode(root, "main")?.content.pane.radius).toBe(10);
+    expect(root.background).toBeUndefined();
     expect(generated.mods["vjr-workspace-chrome"]?.["main.js"]).toContain("el.pl(76)");
-    expect(generated.mods["vjr-workspace-chrome"]?.["main.js"]).toContain('window()?.platform === "macos" ? 76 : 44');
-    expect(generated.mods["vjr-tabs"]?.["main.js"]).not.toContain('find(root, "rail")');
+    expect(generated.mods["vjr-tabs"]?.["main.js"]).toContain(".pl(lightsPadding).gap(3).items_center().bg(t.chrome).border_b(1)");
+    expect(generated.mods["vjr-tabs"]?.["main.js"]).toContain(".child(svg(icon).size(14)).child(label);");
     expect(generated.mods["vjr-rail"]).toBeUndefined();
-    expect(findNode(JSON.parse(generated.layoutText), "views")).toBeNull();
+    expect(generated.mods["vjr-topbar"]).toBeUndefined();
+    for (const id of ["views", "rail-column", "space-title", "work-top"]) expect(findNode(root, id)).toBeNull();
   });
 
-  test("the rail opens nuoh's own palette and Settings", () => {
-    const rail = generateNuoh().mods["nuoh-rail"]?.["main.js"] ?? "";
+  test("the rail and the top bar open nuoh's own palette and Settings, and Herdr's Add machine", () => {
+    const generated = generateNuoh();
+    const rail = generated.mods["nuoh-rail"]?.["main.js"] ?? "";
     expect(rail).toContain('const PALETTE = { name: "nuoh-palette" };');
     expect(rail).toContain('const SETTINGS = { name: "nuoh-settings" };');
-    expect(generateNuoh().mods["nuoh-rail"]?.["kit.js"]).toContain('{ name: "nuoh-kit" }');
+    expect(generated.mods["nuoh-rail"]?.["kit.js"]).toContain('{ name: "nuoh-kit" }');
+    expect(generated.mods["nuoh-topbar"]?.["main.js"]).toContain('const MACHINE_ADD = { name: "machine-add" };');
   });
 
-  test("the kit carries the search icon", () => {
-    expect(generateNuoh().mods["nuoh-kit"]?.["icons/search.svg"]).toContain("<svg");
+  test("the top bar carries its own copies of the kit and the space colors", () => {
+    const topbar = generateNuoh().mods["nuoh-topbar"] ?? {};
+    expect(topbar["main.js"]).toContain('from "./kit.js"');
+    expect(topbar["main.js"]).toContain('from "./space-colors.js"');
+    expect(topbar["space-colors.js"]).toContain("export function paint");
+    expect(JSON.parse(topbar["mod.json"] ?? "{}").place).toBe("none");
   });
 
-  test("a sidebar top or a tab bar that changed fails the rail recipe", () => {
-    for (const [file, from] of [
-      ["mods/workspace-chrome/main.js", "el => el.pl(76))"],
-      ["mods/workspace-chrome/main.js", '? 76 : 44'],
-      ["mods/workspace-chrome/main.js", '.when(!(collapsed && window()?.platform === "macos"), '],
-      ["mods/tabs/main.js", "- (sidebar?.hidden ? 0 : sidebar?.size?.px ?? 0))"],
-    ] as const) {
+  test("the kit carries the rail's and the top bar's icons", () => {
+    const kit = generateNuoh().mods["nuoh-kit"] ?? {};
+    for (const name of ["search", "panel-left", "monitor", "server", "git-branch", "chevron-down"]) expect(kit[`icons/${name}.svg`]).toContain("<svg");
+  });
+
+  test("a tab bar that changed fails the frame recipe", () => {
+    for (const from of [
+      ".pl(lightsPadding).gap(3).items_center().bg(t.chrome)",
+      ".h(29).px(10).gap(7)",
+      ".border_color(c.active ? t.border : t.chrome)",
+      ".h(26).px(8).gap(5).flex_none().items_center().rounded(6)",
+      ".child(svg(icon).size(14)).child(label)",
+      ".bg(on ? t.selected : t.chrome)",
+    ]) {
       const home = tempDir();
       makeHerdrHome(home);
-      editFile(join(home, file), from, "");
-      expect(() => generateVariant(nuohVariant([]), { home, version: "0.1.10", repo, bun: "/bin/bun" })).toThrow(/recipe rail:/);
+      editFile(join(home, "mods/tabs/main.js"), from, "");
+      expect(() => generateVariant(nuohVariant([]), { home, version: "0.1.10", repo, bun: "/bin/bun" })).toThrow(/recipe nuoh-frame:/);
+    }
+  });
+
+  test("a window without the blocks the frame moves or removes fails the frame recipe", () => {
+    for (const id of ["brand", "sidebar-footer", "status", "sidebar-lists", "tabs", "work-body"]) {
+      const home = tempDir();
+      makeHerdrHome(home);
+      editFile(join(home, "layouts/main.json"), `"id": "${id}"`, `"id": "${id}-renamed"`);
+      expect(() => generateVariant(nuohVariant([]), { home, version: "0.1.10", repo, bun: "/bin/bun" })).toThrow(`recipe nuoh-frame: layout node ${id} not found`);
     }
   });
 
@@ -340,10 +445,11 @@ describe("nuoh", () => {
     expect(() => generateVariant(nuohVariant([stray]), { home, version: "0.1.10", repo, bun: "/bin/bun" })).toThrow("recipe rail-keys: the rail shows missing, which views does not have");
   });
 
-  test("an extra can't take the rail's names", () => {
+  test("an extra can't take the rail's or the frame's names", () => {
     const named = (name: string) => ({ name, mods: [], apply() {} });
     expect(() => nuohVariant([named("rail")])).toThrow(/rail, which is taken/);
     expect(() => nuohVariant([named("rail-keys")])).toThrow(/rail-keys, which is taken/);
+    expect(() => nuohVariant([named("nuoh-frame")])).toThrow(/nuoh-frame, which is taken/);
   });
 });
 

@@ -2,7 +2,7 @@ import { div } from "gpui-kit";
 import { v_flex, h_flex, InputState } from "gpui-base";
 import { props, theme, shared, setShared, closeOverlay, openOverlay } from "herdr";
 import { createFolder, deleteFolder, fileUnit, folderOf, newFolderId, nextColor, pinFolder, readFolders, readPins, recolorFolder, renameFolder } from "./folders.js";
-import { PALETTE, paint } from "./tree.js";
+import { PALETTE, paint } from "../../lib/space-colors.js";
 import { CONTROL, TEXT, button, input, popupRow } from "../../kit/kit.js";
 
 export const FOLDERS = "spaces.folders";

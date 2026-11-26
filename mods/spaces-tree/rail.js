@@ -1,7 +1,8 @@
 import { div } from "gpui-kit";
 import { h_flex } from "gpui-base";
 import { spaces, agents } from "herdr";
-import { paint, rowsOf } from "./tree.js";
+import { paint } from "../../lib/space-colors.js";
+import { rowsOf } from "./tree.js";
 import { folderTail } from "./folders.js";
 import { icon, statusDot } from "../../kit/kit.js";
 

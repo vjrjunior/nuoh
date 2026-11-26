@@ -12,20 +12,30 @@ const LAYOUT = {
     {
       id: "sidebar",
       type: "column",
+      background: "chrome",
       children: [
         { id: "brand", type: "block", content: { mod: "workspace-chrome" } },
-        { id: "spaces", type: "block", content: { mod: "spaces" } },
-        { id: "agents", type: "block", content: { mod: "agents" } },
+        {
+          id: "sidebar-lists",
+          type: "column",
+          children: [
+            { id: "spaces", type: "block", content: { mod: "spaces" } },
+            { id: "agents", type: "block", content: { mod: "agents" } },
+          ],
+        },
+        { id: "sidebar-footer", type: "block", content: { mod: "workspace-chrome", props: { footer: true } } },
       ],
     },
     {
       id: "work",
       type: "column",
       children: [
-        { id: "tabs", type: "block", content: { mod: "tabs" } },
+        { id: "tabs", type: "block", size: { px: 42 }, window_drag: true, content: { mod: "tabs" } },
         {
           id: "work-body",
           type: "row",
+          padding: 8,
+          gap: 8,
           children: [
             {
               id: "main",
@@ -76,10 +86,17 @@ export default class Tabs extends View {
     const lightsPadding = w?.platform === "macos" && root?.traffic_lights
       ? Math.max(10, (root.traffic_lights[0] + 64) / settings().zoom - (sidebar?.hidden ? 0 : sidebar?.size?.px ?? 0))
       : 10;
-    const item = (c, i) => h_flex().id(\`tab-\${c.id}\`)
+    const item = (c, i) => h_flex().id(\`tab-\${c.id}\`).h(29).px(10).gap(7).rounded(7).items_center().flex_none().text_size(12.8)
+        .border(1).border_color(c.active ? t.border : t.chrome).bg(c.active ? t.raised : t.chrome).text_color(c.active ? t.foreground : t.muted)
         .on_mouse_down("left", (e, cx) => { cx.stop_propagation(); this.pressed = i; if (e.click_count === 2) run("tab.rename", { id: c.id }); });
+    const panelButton = (id, label, icon) => {
+      const on = panel && !panel.hidden && body?.active === id;
+      return h_flex().id(\`panel-\${id}\`).h(26).px(8).gap(5).flex_none().items_center().rounded(6)
+        .text_size(12).bg(on ? t.selected : t.chrome).text_color(on ? t.foreground : t.muted)
+        .on_click(() => run("layout.show", { id: "panel" })).child(svg(icon).size(14)).child(label);
+    };
     const release = (c, i) => { const from = this.pressed; this.pressed = null; if (from !== null && from !== i) run("tab.move", { id: c.id }); };
-    return h_flex().rounded(7)
+    return h_flex().size_full().min_w(0).px(10).pl(lightsPadding).gap(3).items_center().bg(t.chrome).border_b(1).border_color(t.border).rounded(7)
       .on_mouse_up("left", () => { this.pressed = null; })
       .child(button("tab-new", "+", () => openOverlay({ mod: "new-menu", kind: "popup", width: 250, height: 512 })))
       .when(enabled.includes("files"), el => el.child(panelButton("files", "Files", "mods/files/file.svg")))

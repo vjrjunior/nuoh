@@ -1,10 +1,11 @@
 import { div } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
 import { spaces, agents, run, shared } from "herdr";
-import { branchLabel, counts, foldedTail, holdsActive, isFolded, paint } from "./tree.js";
+import { LETTER, paint, spaceColor } from "../../lib/space-colors.js";
+import { branchLabel, counts, foldedTail, holdsActive, isFolded } from "./tree.js";
 import { folderOf, folderOrder, folderTail } from "./folders.js";
 import { readState } from "./popups.js";
-import { CONTROL, ICON_SIZE, TEXT, icon, iconButton, statusDot, toneColor } from "../../kit/kit.js";
+import { CONTROL, ICON_SIZE, TEXT, avatar, icon, iconButton, statusDot, toneColor } from "../../kit/kit.js";
 
 const RAIL = 18.25;
 const HEAD = 36;
@@ -25,8 +26,7 @@ const faded = (color) => alpha(color, "B3");
 export const withRows = (Base) =>
   class extends Base {
     fill(space, t) {
-      if (!space) return t.dim;
-      return paint((shared("space.colors") ?? {})[space.id] ?? "ansi6", t);
+      return spaceColor(space, shared("space.colors"), t);
     }
 
     band(folder, entries, t) {
@@ -112,17 +112,7 @@ export const withRows = (Base) =>
     }
 
     avatar(row, t) {
-      return h_flex()
-        .size(AVATAR)
-        .flex_none()
-        .rounded(6)
-        .bg(this.fill(row.space, t))
-        .items_center()
-        .justify_center()
-        .text_size(12)
-        .font_bold()
-        .text_color("#ffffff")
-        .child([...row.name][0]?.toUpperCase() ?? "?");
+      return avatar(row.name, { fill: this.fill(row.space, t), letter: LETTER }, { size: AVATAR });
     }
 
     statusDot(status, t) {

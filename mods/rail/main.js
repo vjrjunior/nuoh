@@ -6,7 +6,7 @@ import { VIEWS, WORKSPACE, badgeOf, focusOf, followFocus, hint, keyFor, shownVie
 
 const PALETTE = { name: "palette" };
 const SETTINGS = { name: "settings" };
-const TOP_BAND = 46;
+const INSET = 7;
 const TILE = 40;
 const TILE_RADIUS = 11;
 const GLYPH = 18;
@@ -39,13 +39,13 @@ export default class Rail extends View {
       .justify_center()
       .rounded(TILE_RADIUS)
       .text_color(selected ? t.foreground : t.muted)
-      .when(selected, (el) => el.bg(t.selected))
+      .when(selected, (el) => el.bg(t.selected).border_1().border_color(t.input))
       .when(!selected, (el) => el.hover((s) => s.bg(t.hover).text_color(t.foreground)))
       .tooltip(label)
       .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
       .on_click(() => onClick())
       .child(icon(glyph, { size: GLYPH }))
-      .when(badge != null, (el) => el.child(statusDot(t[badge], { size: BADGE }).absolute().top(2).right(2).border(2).border_color(t.chrome)));
+      .when(badge != null, (el) => el.child(statusDot(t[badge], { size: BADGE }).absolute().top(2).right(2).border(2).border_color(t.surface)));
   }
 
   render() {
@@ -60,10 +60,8 @@ export default class Rail extends View {
       .id("rail")
       .size_full()
       .items_center()
-      .pt(TOP_BAND)
-      .pb(12)
+      .py(INSET)
       .gap(6)
-      .bg(t.chrome)
       .child(
         this.tile("search", { glyph: "search", label: hint("Search", keyFor(bindings, [`mod.open:${PALETTE.name}`, "app.palette"]), platform), onClick: () => run("mod.open", PALETTE) }, t),
       )

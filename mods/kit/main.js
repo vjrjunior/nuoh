@@ -1,7 +1,7 @@
 import { View } from "gpui-kit";
 import { h_flex, InputState, v_flex } from "gpui-base";
 import { theme } from "herdr";
-import { CONTROL, ICONS, TEXT, button, card, chip, heading, icon, iconButton, input, line, link, pill, popupRow, stepNode, statusDot } from "../../kit/kit.js";
+import { CONTROL, ICONS, TEXT, avatar, button, card, chip, heading, icon, iconButton, input, line, link, pill, popupRow, stepNode, statusDot } from "../../kit/kit.js";
 
 const STATUSES = ["working", "blocked", "done", "idle", "unknown"];
 const STEPS = ["done", "current", "bad", "todo"];
@@ -103,6 +103,7 @@ export default class Kit extends View {
       .child(section("links", "Links", t).child(links))
       .child(section("chips", "Chips", t).child(chips))
       .child(section("pill", "Pill", t).child(row().child(pill("Pill", t))))
+      .child(section("avatars", "Avatars", t).child(row().child(avatar("nuoh", { fill: t.accent, letter: t.accent_foreground })).child(avatar("work", { fill: t.done, letter: t.accent_foreground }, { size: 28, radius: 8 }))))
       .child(section("inputs", "Inputs", t).child(inputs))
       .child(section("lines", "Lines", t).child(lines))
       .child(section("popup-rows", "Popup rows", t).child(popupRows))

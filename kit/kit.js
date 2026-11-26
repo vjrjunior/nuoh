@@ -27,12 +27,15 @@ export const ICONS = [
   "image",
   "layers",
   "list",
+  "monitor",
+  "panel-left",
   "pin",
   "pin-off",
   "play",
   "plus",
   "rotate-cw",
   "search",
+  "server",
   "settings",
   "square-kanban",
   "terminal",
@@ -146,6 +149,20 @@ export function link(id, { label, icon: iconName, onClick }, t) {
     .on_click((_e, cx) => onClick?.(cx))
     .child(label)
     .when(iconName != null, (el) => el.child(icon(iconName, { size: ICON_SIZE.sm })));
+}
+
+export function avatar(name, { fill, letter }, { size = 22, radius = 6, textSize = 12 } = {}) {
+  return h_flex()
+    .size(size)
+    .flex_none()
+    .rounded(radius)
+    .bg(fill)
+    .items_center()
+    .justify_center()
+    .text_size(textSize)
+    .font_bold()
+    .text_color(letter)
+    .child([...(name ?? "")][0]?.toUpperCase() ?? "?");
 }
 
 export function chip(text, { mark: kind, color }, t) {

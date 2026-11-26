@@ -97,9 +97,15 @@ The same command installs a second layout, [`nuoh`](#nuoh), beside `vjr-desk`.
 
 The tile of the view on screen is selected, and hovering a tile shows its name and key. `ctrl-cmd-1`, `ctrl-cmd-2`... go to the views in the rail's order. The Workspace tile carries a dot in the color of the most urgent agent: needs you, done or working. When something outside the rail focuses a tab or a pane while another view is on screen (a notification, `agent.next`, the palette), the window goes back to the Workspace by itself; a pane that closes on its own doesn't move it.
 
-The macOS window buttons sit on top of the rail, so the Workspace's sidebar keeps no room for them, and it folds to 44px on every system.
+The window sits on a dark gradient, its blocks 8px apart and 8px from the edges:
 
-`nuoh` has one look, round corners. Its Settings has no Square corners toggle, and squaring `vjr-desk` leaves `nuoh` as it is. It has its own copies of the mods, installed as `nuoh-<name>`, so a change for one layout never reaches the other; what the mods keep in Herdr's shared state (Spaces folders and pins, which panels a space shows) is the same in both. Its keys are in the `layout:nuoh` section of `keys.json`. [`mods/rail/RECIPE.md`](mods/rail/RECIPE.md) describes the rail.
+- **The rail** is a card with round corners. Above it, a 46px band holds the macOS window buttons.
+- **The top bar** runs along that band. Over the sidebar: a button that folds the sidebar to 44px and opens it again, the shown space's avatar in its color, its name and a chip with the branch of the focused pane. In the middle, the tabs, the active one a light pill. On the right, the panel buttons (only their icon, with the name in a tooltip) and a pill with the space's machine, `This computer` or its name, which opens Add machine.
+- **Panes** are cards with 14px corners and a peach line around the focused one.
+
+The rail and the top bar take over what `vjr-desk` puts in the Herdr block on top of the sidebar, its footer and the status bar, so `nuoh` has none of the three: search and Settings are on the rail, the fold button, the space and its branch in the top bar, Add machine on the machine pill.
+
+`nuoh` has one look, round corners. Its Settings has no Square corners toggle, and squaring `vjr-desk` leaves `nuoh` as it is. It has its own copies of the mods, installed as `nuoh-<name>`, so a change for one layout never reaches the other; what the mods keep in Herdr's shared state (Spaces folders and pins, which panels a space shows) is the same in both. Its keys are in the `layout:nuoh` section of `keys.json`. [`mods/rail/RECIPE.md`](mods/rail/RECIPE.md) describes the rail and [`mods/topbar/RECIPE.md`](mods/topbar/RECIPE.md) the frame and its top bar.
 
 ### Square corners
 
@@ -144,7 +150,7 @@ If a recipe no longer fits the new version, nothing changes in the layout: the p
 
 - **`editor`** names the Markdown viewer's first button and the Files menu's `Open in <editor>`, and gives the command they run, with the file or folder as its last argument.
 - **`extras`** are folders with more recipes, each a path or `{ path, options }`. An extra has `recipes/index.ts`, which exports `recipes` (a list of `{ name, mods, apply }`, the shape in `recipes/recipe.ts`), its mods in `mods/<name>/` and, if it brings icons, `kit/icons/*.svg`.
-  - Its recipes run in every layout after this repo's. In `vjr-desk` they run before `square` when the corners are square, so its mods are installed as `vjr-<name>` and come out square with Square corners on. In `nuoh` they run after the rail is built, and its mods are installed as `nuoh-<name>`.
+  - Its recipes run in every layout after this repo's. In `vjr-desk` they run before `square` when the corners are square, so its mods are installed as `vjr-<name>` and come out square with Square corners on. In `nuoh` they run after the rail is built and before `nuoh-frame`, so they find the tab bar, the panels and the `work-body` row as Herdr ships them; `nuoh-frame` then takes the chrome fill off every button the tab bar fills like a panel button. Its mods are installed as `nuoh-<name>`.
   - A recipe adds a whole view to `nuoh` by pushing a child onto `findNode(layout, "views").children` and `{ id, label, icon }` (a kit icon's name) onto `findNode(layout, "rail").content.props.views`; the rail gives it the next `ctrl-cmd-<n>`. `vjr-desk` has no `views` node, so there `findNode` throws.
   - A recipe's `mods` entry with `from: "repo"` is read from the extra's own `mods/`, and `apply` gets the extra's `options`.
   - A mod of an extra imports the kit as `../../kit/kit.js`, like this repo's, and its icons are installed next to the kit's.
@@ -248,9 +254,9 @@ Both looks show the same folders and pins, kept with their fold in `spaces.folde
 
 ## Kit
 
-`kit/kit.js` is the UI kit of this repo's mods (the Spaces tree, Files, the Markdown viewer, Move tab and `nuoh`'s rail): tokens (sizes, text, radii), components (`button`, `iconButton`, `input`, `link`, `chip`, `pill`, `card`, `heading`, `line`, `popupRow`, `mark`, `statusDot`, `stepNode`, `icon`, `toneColor`) and the SVG icons in `kit/icons/`. A mod imports it as `../../kit/kit.js`, and `apply-layout` copies `kit.js` into each installed mod that imports it. The icons are installed once, in the `kit` mod's `icons/` folder, where the kit reads them. A layout whose mods use the kit must include the `kit` recipe; the generator refuses otherwise.
+`kit/kit.js` is the UI kit of this repo's mods (the Spaces tree, Files, the Markdown viewer, Move tab, and `nuoh`'s rail and top bar): tokens (sizes, text, radii), components (`avatar`, `button`, `iconButton`, `input`, `link`, `chip`, `pill`, `card`, `heading`, `line`, `popupRow`, `mark`, `statusDot`, `stepNode`, `icon`, `toneColor`) and the SVG icons in `kit/icons/`. A mod imports it as `../../kit/kit.js`, and `apply-layout` copies `kit.js` into each installed mod that imports it. The icons are installed once, in the `kit` mod's `icons/` folder, where the kit reads them. A layout whose mods use the kit must include the `kit` recipe; the generator refuses otherwise.
 
-`lib/` holds what more than one mod needs and no window shows: `checkouts.js` (a repo's worktrees and the checkout a folder is in) and `claude.js` (a Claude Code session, the options worth keeping, the command that resumes it). Herdr refuses an import from outside a mod's folder, so a mod imports a module as `../../lib/<name>.js` and `apply-layout` copies it, and what it imports, next to the mod's own files. A mod can't have a file with the name of a module it takes from `lib/`.
+`lib/` holds what more than one mod needs and no window shows: `checkouts.js` (a repo's worktrees and the checkout a folder is in), `claude.js` (a Claude Code session, the options worth keeping, the command that resumes it) and `space-colors.js` (the six avatar colors and the one each space has). Herdr refuses an import from outside a mod's folder, so a mod imports a module as `../../lib/<name>.js` and `apply-layout` copies it, and what it imports, next to the mod's own files. A mod can't have a file with the name of a module it takes from `lib/`.
 
 `mods/kit/` is a gallery that shows every component and icon. Open it beside the focused terminal:
 

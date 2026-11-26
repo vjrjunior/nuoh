@@ -20,7 +20,7 @@ function render() {
 
 test("the gallery shows every section", () => {
   const root = render();
-  for (const id of ["buttons", "icon-buttons", "links", "chips", "pill", "inputs", "lines", "popup-rows", "dots", "steps", "icons"]) {
+  for (const id of ["buttons", "icon-buttons", "links", "chips", "pill", "avatars", "inputs", "lines", "popup-rows", "dots", "steps", "icons"]) {
     expect(find(root, `kit-${id}`)).toBeDefined();
   }
 });

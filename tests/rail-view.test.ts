@@ -57,8 +57,11 @@ describe("tiles", () => {
     expect(svgs(root)).toEqual(["mods/kit/icons/search.svg", "mods/kit/icons/terminal.svg", "mods/kit/icons/square-kanban.svg", "mods/kit/icons/settings.svg"]);
   });
 
-  test("leave room for the traffic lights on top of the rail", () => {
-    expect(calls(draw(start()), "pt")).toEqual([46]);
+  test("sit 7 px inside the card's top and bottom, on the card's own fill", () => {
+    const root = draw(start());
+    expect(calls(root, "py")).toEqual([7]);
+    expect(calls(root, "pt")).toEqual([]);
+    expect(calls(root, "bg")).toEqual([]);
   });
 
   test("are 40 px with 11 px corners", () => {
@@ -71,8 +74,10 @@ describe("tiles", () => {
     active = "board";
     const root = draw(start());
     expect(calls(find(root, "rail-board"), "bg")).toEqual(["t.selected"]);
+    expect(calls(find(root, "rail-board"), "border_color")).toEqual(["t.input"]);
     expect(calls(find(root, "rail-board"), "text_color")).toEqual(["t.foreground"]);
     expect(calls(find(root, "rail-workspace"), "bg")).toEqual([]);
+    expect(calls(find(root, "rail-workspace"), "border_color")).toEqual([]);
     expect(calls(find(root, "rail-workspace"), "text_color")).toEqual(["t.muted"]);
   });
 
@@ -111,11 +116,11 @@ describe("clicks", () => {
 describe("the Workspace badge", () => {
   const badge = (root: Node) => walk(find(root, "rail-workspace")).find((node) => calls(node, "absolute").length > 0);
 
-  test("shows the most urgent agent, ringed in the rail's color", () => {
+  test("shows the most urgent agent, ringed in the rail card's color", () => {
     agentList = [{ status: "working" }, { status: "blocked" }];
     const dot = badge(draw(start())) as Node;
     expect(calls(dot, "bg")).toEqual(["t.blocked"]);
-    expect(calls(dot, "border_color")).toEqual(["t.chrome"]);
+    expect(calls(dot, "border_color")).toEqual(["t.surface"]);
   });
 
   test("stays off when no agent needs anything", () => {

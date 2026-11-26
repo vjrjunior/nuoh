@@ -292,15 +292,27 @@
 
 ### Draw nuoh's Workspace as floating cards
 
-**What:** In `nuoh`, give the Workspace view the look of the approved sketch: a gradient behind everything, the blocks as cards 8px apart, a top bar with the shown space, the side panels as cards with a well, the Spaces tree and the Agents list in cards, and the macOS window buttons in that top bar instead of on the rail.
+**What:** In `nuoh`, finish the Workspace view's look from the approved sketch: the Spaces tree and the Agents list as cards with a header (the Agents card carries the agent count the status bar had), the side panels (Files, Changes, Graph and any an extra adds) as cards, the sketch's pane header and the terminal's well, and the sidebar without its square `chrome` fill.
 
-**Why:** The first part of `nuoh` only puts today's window behind the rail. The sketch is what the layout is for.
+**Why:** The frame (gradient, rail card, top bar) is in; the cards inside it are still `vjr-desk`'s.
 
-**Context:** `recipes/rail.ts` builds the `views` stack; the look belongs in recipes that run only in `nuoh` (after `rail`), so `vjr-desk` stays as it is. Moving the window buttons means a new `traffic_lights` and giving the rail's top 46px back.
+**Context:** `recipes/frame.ts` (`nuoh-frame`) builds the frame and runs last in `nuoh`, so `vjr-desk` stays as it is. A node's `radius` doesn't clip its mod or children, so each card's mod rounds its own fill; Herdr's `agents` copy needs a change for the header. A button an extra adds to the tab bar keeps its own look until the extra changes it. No layout field gives the terminal a well with an inset today.
 
 **Effort:** L
 **Priority:** P2
-**Depends on:** nuoh's first part landing
+**Depends on:** nuoh's frame (part 2a) landing
+
+### Show a waiting update on nuoh's Settings tile
+
+**What:** Put the accent dot Herdr's sidebar footer draws on Settings when an app update is ready (`updates().app.ready`) on the rail's Settings tile.
+
+**Why:** `nuoh` dropped the sidebar's footer, and with it the only sign in the window that an update waits for a restart.
+
+**Context:** `mods/rail/main.js` draws the tiles; the Workspace badge shows how a dot sits on a tile. `updates` has to join the mocked `herdr` functions in `tests/app-mocks.ts`.
+
+**Effort:** S
+**Priority:** P3
+**Depends on:** nothing
 
 ## Completed
 

@@ -1,4 +1,5 @@
-import { holdsActive, leastUsed, mostUrgent, PALETTE, rowsOf } from "./tree.js";
+import { PALETTE } from "../../lib/space-colors.js";
+import { holdsActive, leastUsed, mostUrgent, rowsOf } from "./tree.js";
 
 const NEEDS = new Set(["blocked", "done"]);
 
