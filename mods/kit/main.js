@@ -1,7 +1,7 @@
 import { View } from "gpui-kit";
 import { h_flex, InputState, v_flex } from "gpui-base";
 import { theme } from "herdr";
-import { CONTROL, ICONS, ICON_SIZE, TEXT, avatar, button, card, cardHeader, chip, heading, icon, iconButton, input, line, link, pill, popupRow, stepNode, statusChip, statusDot } from "../../kit/kit.js";
+import { CONTROL, ICONS, ICON_SIZE, TEXT, avatar, barPill, button, card, cardHeader, chip, heading, icon, iconButton, input, line, link, pill, popupRow, stepNode, statusChip, statusDot, viewCard, viewTile } from "../../kit/kit.js";
 
 const STATUSES = ["working", "blocked", "done", "idle", "unknown"];
 const STEPS = ["done", "current", "bad", "todo"];
@@ -66,6 +66,17 @@ export default class Kit extends View {
           .border_color(t.border)
           .child(cardHeader("kit-ch-chip", { icon: "bot", label: "Agents", count: 4 }, t).child(h_flex().gap(4).items_center().child(statusChip("blocked", t, { label: "1 needs you" })).child(ghost("kit-ch-sort", "list-filter")))),
       );
+    const viewParts = v_flex()
+      .gap(8)
+      .child(
+        row()
+          .gap(10)
+          .child(viewTile("layers", t))
+          .child(barPill("kit-bp-label", { icon: "rotate-cw", label: "Read 2m ago", tooltip: "Read again", onClick: noop }, t))
+          .child(barPill("kit-bp-failed", { icon: "rotate-cw", label: "Failed", color: t.blocked, onClick: noop }, t))
+          .child(barPill("kit-bp-square", { icon: "settings", tooltip: "Settings", onClick: noop }, t)),
+      )
+      .child(viewCard("kit-view-card", t).w(300).child(cardHeader("kit-vc-head", { icon: "bot", label: "A view card", count: 2 }, t)));
     const lines = card(t)
       .child(line("Check", { detail: "check", color: t.done, mark: "check" }, t))
       .child(line("Cross", { detail: "x", color: t.blocked, mark: "x" }, t))
@@ -128,6 +139,7 @@ export default class Kit extends View {
       .child(section("avatars", "Avatars", t).child(row().child(avatar("nuoh", { fill: t.accent, letter: t.accent_foreground })).child(avatar("work", { fill: t.done, letter: t.accent_foreground }, { size: 28, radius: 8 }))))
       .child(section("inputs", "Inputs", t).child(inputs))
       .child(section("card-headers", "Card headers", t).child(cardHeaders))
+      .child(section("view-parts", "View parts", t).child(viewParts))
       .child(section("lines", "Lines", t).child(lines))
       .child(section("popup-rows", "Popup rows", t).child(popupRows))
       .child(section("dots", "Dots", t).child(dots))

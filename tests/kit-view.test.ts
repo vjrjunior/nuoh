@@ -20,7 +20,7 @@ function render() {
 
 test("the gallery shows every section", () => {
   const root = render();
-  for (const id of ["buttons", "icon-buttons", "links", "chips", "status-chips", "pill", "avatars", "inputs", "card-headers", "lines", "popup-rows", "dots", "steps", "icons"]) {
+  for (const id of ["buttons", "icon-buttons", "links", "chips", "status-chips", "pill", "avatars", "inputs", "card-headers", "view-parts", "lines", "popup-rows", "dots", "steps", "icons"]) {
     expect(find(root, `kit-${id}`)).toBeDefined();
   }
 });
@@ -81,4 +81,12 @@ test("the gallery shows the status chips and both card headers the nuoh sidebar 
     "mods/kit/icons/bot.svg",
     "mods/kit/icons/list-filter.svg",
   ]);
+});
+
+test("the gallery shows the view parts the nuoh views draw their bands and cards with", () => {
+  const section = find(render(), "kit-view-parts");
+  expect(texts(find(section, "kit-bp-label"))).toEqual(["Read 2m ago"]);
+  expect(texts(find(section, "kit-bp-square"))).toEqual([]);
+  expect(find(section, "kit-view-card")).toBeDefined();
+  expect(svgs(section)).toEqual(expect.arrayContaining(["mods/kit/icons/layers.svg", "mods/kit/icons/rotate-cw.svg", "mods/kit/icons/settings.svg"]));
 });

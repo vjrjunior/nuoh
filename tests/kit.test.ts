@@ -3,7 +3,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { type Node, walk } from "./app-mocks";
 
-const { ICONS, avatar, button, cardHeader, chip, iconButton, iconPath, popupRow, statusChip, stepNode, toneColor } = await import("../kit/kit.js");
+const { ICONS, avatar, barPill, button, cardHeader, chip, iconButton, iconPath, popupRow, statusChip, stepNode, toneColor, viewCard, viewTile } = await import("../kit/kit.js");
 
 const repo = join(import.meta.dir, "..");
 const t = new Proxy({}, { get: (_x, p) => (typeof p === "string" ? `t.${p}` : undefined) }) as any;
@@ -261,4 +261,59 @@ test("a card header is 40 px with its icon, its label and its count, and keeps w
 test("a card header without a count shows none", () => {
   const node = cardHeader("head", { icon: "layers", label: "Spaces" }, t) as Node;
   expect(node.kids.flatMap((kid) => kid.texts)).toEqual(["Spaces"]);
+});
+
+test("a view tile is a 28 px rounded square with a 16 px icon in the foreground", () => {
+  const node = viewTile("brain", t) as Node;
+  expect(own(node, "size")).toEqual([[28]]);
+  expect(own(node, "rounded")).toEqual([[8]]);
+  expect(own(node, "bg")).toEqual([["t.foreground14"]]);
+  expect(own(node, "border_color")).toEqual([["t.foreground1F"]]);
+  expect(svgs(node)).toEqual(["mods/kit/icons/brain.svg"]);
+  expect(own(node.kids[0] as Node, "size")).toEqual([[16]]);
+  expect(own(node.kids[0] as Node, "text_color")).toEqual([["t.foreground"]]);
+});
+
+test("a bar pill is 34 px high on the surface, keeps its press from the window drag and runs its click", () => {
+  const order: string[] = [];
+  const node = barPill("sync", { icon: "rotate-cw", label: "Read 2m ago", tooltip: "Read again", onClick: () => order.push("click") }, t) as Node;
+  expect(node.key).toBe("sync");
+  expect(own(node, "h")).toEqual([[34]]);
+  expect(own(node, "px")).toEqual([[10]]);
+  expect(own(node, "w")).toEqual([]);
+  expect(own(node, "rounded")).toEqual([[10]]);
+  expect(own(node, "bg")).toEqual([["t.surface"]]);
+  expect(own(node, "border_color")).toEqual([["t.foreground12"]]);
+  expect(own(node, "tooltip")).toEqual([["Read again"]]);
+  expect(walk(node).flatMap((n) => n.texts)).toEqual(["Read 2m ago"]);
+  expect(own(node.kids[0] as Node, "size")).toEqual([[13]]);
+  expect(own(node.kids[0] as Node, "text_color")).toEqual([["t.muted"]]);
+  node.handlers["down:left"][0]({}, { stop_propagation: () => order.push("stop") });
+  node.handlers.click[0]({}, {});
+  expect(order).toEqual(["stop", "click"]);
+});
+
+test("a bar pill without a label is a 34 px square with a 14 px icon", () => {
+  const node = barPill("gear", { icon: "settings", onClick() {} }, t) as Node;
+  expect(own(node, "w")).toEqual([[34]]);
+  expect(own(node, "px")).toEqual([]);
+  expect(own(node, "tooltip")).toEqual([]);
+  expect(node.texts).toEqual([]);
+  expect(own(node.kids[0] as Node, "size")).toEqual([[14]]);
+});
+
+test("a bar pill can spin its icon and color it", () => {
+  const node = barPill("sync", { icon: "rotate-cw", label: "Reading…", spin: true, color: "t.blocked", onClick() {} }, t) as Node;
+  expect(own(node.kids[0] as Node, "spin")).toEqual([[900]]);
+  expect(own(node.kids[0] as Node, "text_color")).toEqual([["t.blocked"]]);
+  expect(own(barPill("still", { icon: "rotate-cw", label: "Read", onClick() {} }, t).kids[0] as Node, "spin")).toEqual([]);
+});
+
+test("a view card is a surface card with 14 px corners, a light line and a medium shadow", () => {
+  const node = viewCard("today", t) as Node;
+  expect(node.key).toBe("today");
+  expect(own(node, "bg")).toEqual([["t.surface"]]);
+  expect(own(node, "rounded")).toEqual([[14]]);
+  expect(own(node, "border_color")).toEqual([["t.foreground12"]]);
+  expect(own(node, "shadow_md")).toEqual([[]]);
 });

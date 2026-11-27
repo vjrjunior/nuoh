@@ -16,6 +16,7 @@ export const ICONS = [
   "bell",
   "bot",
   "brain",
+  "building-2",
   "calendar",
   "check",
   "check-heavy",
@@ -32,6 +33,7 @@ export const ICONS = [
   "eye",
   "file",
   "file-text",
+  "flag",
   "folder",
   "folder-open",
   "folder-plus",
@@ -264,6 +266,46 @@ export function cardHeader(id, { icon: iconName, label, count }, t) {
     .child(div().flex_none().text_size(TEXT.xl).font_medium().text_color(t.muted).child(label))
     .when(count != null, (el) => el.child(div().flex_none().text_size(TEXT.base).text_color(t.dim).child(String(count))))
     .child(div().flex_1());
+}
+
+export function viewTile(iconName, t) {
+  return h_flex()
+    .size(28)
+    .flex_none()
+    .items_center()
+    .justify_center()
+    .rounded(8)
+    .bg(t.foreground + "14")
+    .border_1()
+    .border_color(t.foreground + "1F")
+    .child(icon(iconName, { size: 16, color: t.foreground }));
+}
+
+export function barPill(id, { icon: iconName, label, spin = false, color, tooltip, onClick }, t) {
+  const glyph = icon(iconName, { size: label == null ? ICON_SIZE.lg : 13, color: color ?? t.muted });
+  return h_flex()
+    .id(id)
+    .flex_none()
+    .h(34)
+    .when(label == null, (el) => el.w(34).justify_center())
+    .when(label != null, (el) => el.px(10).gap(6))
+    .items_center()
+    .rounded(10)
+    .bg(t.surface)
+    .border_1()
+    .border_color(t.foreground + "12")
+    .text_size(TEXT.lg)
+    .text_color(t.muted)
+    .hover((s) => s.bg(t.hover).text_color(t.foreground))
+    .when(tooltip != null, (el) => el.tooltip(tooltip))
+    .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
+    .on_click((_e, cx) => onClick?.(cx))
+    .child(spin ? glyph.spin(900) : glyph)
+    .when(label != null, (el) => el.child(div().child(label)));
+}
+
+export function viewCard(id, t) {
+  return v_flex().id(id).min_w(0).bg(t.surface).rounded(14).border_1().border_color(t.foreground + "12").shadow_md();
 }
 
 export function card(t) {
