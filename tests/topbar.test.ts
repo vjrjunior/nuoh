@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { avatarLook, paint, spaceColor } from "../lib/space-colors.js";
-import { branchOf, foldSidebar, isNarrow, machineOf, roleOf, shownSpace } from "../mods/topbar/logic.js";
+import { branchOf, foldSidebar, machineOf, roleOf, shownSpace } from "../mods/topbar/logic.js";
 
 const t = new Proxy({}, { get: (_x, p) => (typeof p === "string" ? `t.${p}` : undefined) }) as Record<string, string>;
 const withSidebar = (px?: number) => ({ id: "root", children: [{ id: "views", children: [{ id: "sidebar", size: px == null ? undefined : { px } }] }] });
@@ -17,13 +17,6 @@ describe("roles", () => {
 });
 
 describe("folding the sidebar", () => {
-  test("goes by the sidebar's width: under 160 px it is folded", () => {
-    expect(isNarrow(withSidebar(44))).toBe(true);
-    expect(isNarrow(withSidebar(159))).toBe(true);
-    expect(isNarrow(withSidebar(160))).toBe(false);
-    expect(isNarrow(withSidebar())).toBe(false);
-  });
-
   test("an open sidebar folds to 44 px and keeps its width to come back to", () => {
     expect(foldSidebar(withSidebar(300), 268)).toEqual({ save: 300, collapsed: true, px: 44 });
   });

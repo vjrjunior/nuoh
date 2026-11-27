@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { checkoutOf, parseWorktrees, placeOf } from "../lib/checkouts.js";
 import { isShell, parseSession, quote, resumeCommand } from "../lib/claude.js";
+import { findNode, isNarrow, sidebarPx } from "../lib/layout-tree.js";
 
 const SESSION_ID = "152ba1e2-45b7-4fc9-83c9-33b8dfdadf6e";
 const space = (id: string, over = {}) => ({ id, tabs: [], folder: "", ...over });
@@ -113,5 +114,24 @@ describe("the command", () => {
 
   test("refuses a folder it can't type", () => {
     expect(resumeCommand({ session: SESSION_ID, args: ["--dangerously-skip-permissions"], cwd: "/w/it's" })).toBeNull();
+  });
+});
+
+describe("the layout tree", () => {
+  const withSidebar = (px?: number) => ({ id: "root", children: [{ id: "views", children: [{ id: "sidebar", size: px == null ? undefined : { px } }] }] });
+
+  test("findNode reaches a node at any depth, and gives null for one the tree doesn't have", () => {
+    expect(findNode(withSidebar(268), "sidebar")).toEqual({ id: "sidebar", size: { px: 268 } });
+    expect(findNode(withSidebar(268), "missing")).toBeNull();
+    expect(findNode(null, "sidebar")).toBeNull();
+  });
+
+  test("the sidebar is folded under 160 px, and open without a width", () => {
+    expect(sidebarPx(withSidebar(44))).toBe(44);
+    expect(isNarrow(withSidebar(44))).toBe(true);
+    expect(isNarrow(withSidebar(159))).toBe(true);
+    expect(isNarrow(withSidebar(160))).toBe(false);
+    expect(isNarrow(withSidebar())).toBe(false);
+    expect(isNarrow({ id: "root" })).toBe(false);
   });
 });

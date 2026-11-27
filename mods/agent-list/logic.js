@@ -6,22 +6,8 @@ export const SORTS = [
   { id: "grouped", label: "Grouped by space", icon: "layers" },
 ];
 export const SORT_KEY = "agents.sort";
-export const NARROW_BELOW = 160;
 export const KEEP_DAYS = 30;
 const DAY = 86400000;
-
-export function findNode(node, id) {
-  if (node?.id === id) return node;
-  for (const child of node?.children ?? []) {
-    const found = findNode(child, id);
-    if (found) return found;
-  }
-  return null;
-}
-
-export function isNarrow(root) {
-  return (findNode(root, "sidebar")?.size?.px ?? Infinity) < NARROW_BELOW;
-}
 
 export function sortOf(value) {
   return SORTS.find((sort) => sort.id === value) ?? SORTS[0];

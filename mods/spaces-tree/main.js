@@ -2,6 +2,7 @@ import { View } from "gpui-kit";
 import { v_flex, h_flex, ScrollHandle } from "gpui-base";
 import { spaces, panes, run, exec, theme, shared, setShared, watchFolder, window, nextCommand, layout, props } from "herdr";
 import { parseWorktrees, placeOf as place } from "../../lib/checkouts.js";
+import { isNarrow } from "../../lib/layout-tree.js";
 import { assignColors, buildTree, canOpen, duePlaces, liveFolds, parseRefs, readLook, repoName } from "./tree.js";
 import { activeChild, arrange, entryOfSpace, revealFor } from "./folders.js";
 import { openNameDialog, readPinned, readState, renderPopup, saveState, startPopup } from "./popups.js";
@@ -11,16 +12,6 @@ import { withRows } from "./rows.js";
 import { CONTROL, ICON_SIZE, cardHeader, iconButton } from "../../kit/kit.js";
 
 const WAIT = 1500;
-const NARROW = 160;
-
-function findNode(node, id) {
-  if (node?.id === id) return node;
-  for (const child of node?.children ?? []) {
-    const found = findNode(child, id);
-    if (found) return found;
-  }
-  return null;
-}
 
 const git = (args, cwd) => exec("git", ["--no-optional-locks", "-c", "core.fsmonitor=false", ...args], { cwd });
 
@@ -75,7 +66,7 @@ export default class SpacesTree extends withRail(withRows(withActions(View))) {
   }
 
   narrow() {
-    return (findNode(layout(), "sidebar")?.size?.px ?? Infinity) < NARROW;
+    return isNarrow(layout());
   }
 
   folded() {

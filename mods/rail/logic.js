@@ -1,17 +1,10 @@
+import { findNode } from "../../lib/layout-tree.js";
+
 export const VIEWS = "views";
 export const WORKSPACE = "workspace";
 
 const URGENCY = ["blocked", "done", "working"];
 const MAC_KEYS = { ctrl: "⌃", alt: "⌥", shift: "⇧", cmd: "⌘" };
-
-export function findNode(node, id) {
-  if (node?.id === id) return node;
-  for (const child of node?.children ?? []) {
-    const found = findNode(child, id);
-    if (found) return found;
-  }
-  return null;
-}
 
 export function viewsOf(props) {
   const given = Array.isArray(props?.views) ? props.views : [];

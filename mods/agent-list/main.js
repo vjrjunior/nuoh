@@ -3,7 +3,8 @@ import { h_flex, v_flex } from "gpui-base";
 import { agents, closeOverlay, layout, openOverlay, props, run, setAgentOrder, setShared, shared, spaces, terminals, theme } from "herdr";
 import { CONTROL, ICON_SIZE, TEXT, avatar, cardHeader, icon, iconButton, popupRow, statusChip, statusDot } from "../../kit/kit.js";
 import { avatarLook } from "../../lib/space-colors.js";
-import { SORTS, SORT_KEY, agentTitle, ago, arrange, crowdedTabs, isNarrow, kidStatus, machineOf, mostUrgent, needsYou, readChanged, sortOf, track } from "./logic.js";
+import { isNarrow } from "../../lib/layout-tree.js";
+import { SORTS, SORT_KEY, agentTitle, ago, arrange, crowdedTabs, kidStatus, machineOf, mostUrgent, needsYou, readChanged, sortOf, track } from "./logic.js";
 
 const ROW = 54;
 const SUB_ROW = 26;

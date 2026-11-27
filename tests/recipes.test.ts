@@ -205,7 +205,7 @@ describe("nuoh", () => {
     expect(list["main.js"]).toContain('openOverlay({ mod: "nuoh-agent-list", kind: "popup"');
     expect(list["main.js"]).toContain('from "./kit.js"');
     expect(list["kit.js"]).toContain('{ name: "nuoh-kit" }');
-    expect(Object.keys(list).sort()).toEqual(["agent-title.js", "kit.js", "logic.js", "main.js", "mod.json", "space-colors.js"]);
+    expect(Object.keys(list).sort()).toEqual(["agent-title.js", "kit.js", "layout-tree.js", "logic.js", "main.js", "mod.json", "space-colors.js"]);
   });
 
   test("a window without the sidebar's lists fails the cards recipe", () => {

@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { repo } from "./helpers";
 
-const { RANK, agentTitle, ago, arrange, crowdedTabs, isNarrow, kidStatus, machineOf, mostUrgent, needsYou, readChanged, sortOf, subTree, track } = await import(
+const { RANK, agentTitle, ago, arrange, crowdedTabs, kidStatus, machineOf, mostUrgent, needsYou, readChanged, sortOf, subTree, track } = await import(
   "../mods/agent-list/logic.js"
 );
 
@@ -148,15 +148,6 @@ describe("counts", () => {
     const { rows, urgency } = arrange(list, [kid("k", "b", "blocked")], { sort: "priority", since: never });
     expect(needsYou(rows, urgency)).toBe(2);
     expect(urgency.get("c")).toBe(RANK.idle);
-  });
-});
-
-describe("the sidebar", () => {
-  test("is folded below 160 px", () => {
-    const at = (px: number) => ({ id: "root", children: [{ id: "sidebar", size: { px } }] });
-    expect(isNarrow(at(44))).toBe(true);
-    expect(isNarrow(at(268))).toBe(false);
-    expect(isNarrow({ id: "root" })).toBe(false);
   });
 });
 

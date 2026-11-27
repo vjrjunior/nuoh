@@ -1,29 +1,12 @@
-export const SIDEBAR = "sidebar";
+import { isNarrow, sidebarPx } from "../../lib/layout-tree.js";
+
 export const ROLES = ["lights", "title", "machine"];
-export const NARROW_BELOW = 160;
 export const FOLDED_PX = 44;
 export const OPEN_PX = 268;
 export const THIS_COMPUTER = "This computer";
 
-export function findNode(node, id) {
-  if (node?.id === id) return node;
-  for (const child of node?.children ?? []) {
-    const found = findNode(child, id);
-    if (found) return found;
-  }
-  return null;
-}
-
 export function roleOf(props) {
   return ROLES.includes(props?.role) ? props.role : "lights";
-}
-
-export function sidebarPx(root) {
-  return findNode(root, SIDEBAR)?.size?.px ?? null;
-}
-
-export function isNarrow(root) {
-  return (sidebarPx(root) ?? Infinity) < NARROW_BELOW;
 }
 
 export function foldSidebar(root, saved) {

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { badgeOf, findNode, focusOf, followFocus, hint, keyFor, keyLabel, shownView, viewsOf } from "../mods/rail/logic.js";
+import { badgeOf, focusOf, followFocus, hint, keyFor, keyLabel, shownView, viewsOf } from "../mods/rail/logic.js";
 
 const layoutWith = (views: Record<string, unknown>) => ({ id: "root", type: "row", children: [{ id: "rail", type: "block" }, { id: "views", type: "stack", ...views }] });
 
@@ -42,11 +42,6 @@ describe("the shown view", () => {
   test("is the first view when the layout has no views stack", () => {
     expect(shownView({ id: "root", children: [] }, views)).toBe("workspace");
     expect(shownView(null, [])).toBeNull();
-  });
-
-  test("findNode reaches a node at any depth", () => {
-    expect(findNode(layoutWith({ children: [{ id: "workspace", children: [{ id: "sidebar" }] }] }), "sidebar")).toEqual({ id: "sidebar" });
-    expect(findNode(layoutWith({}), "missing")).toBeNull();
   });
 });
 

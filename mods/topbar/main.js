@@ -3,7 +3,8 @@ import { h_flex } from "gpui-base";
 import { focused, layout, panes, props, run, setShared, shared, spaces, theme } from "herdr";
 import { CONTROL, ICON_SIZE, avatar, icon, iconButton } from "../../kit/kit.js";
 import { avatarLook } from "../../lib/space-colors.js";
-import { SIDEBAR, branchOf, foldSidebar, isNarrow, machineOf, roleOf, shownSpace } from "./logic.js";
+import { SIDEBAR, isNarrow } from "../../lib/layout-tree.js";
+import { branchOf, foldSidebar, machineOf, roleOf, shownSpace } from "./logic.js";
 
 const MACHINE_ADD = { name: "machine-add" };
 const AVATAR = 28;
