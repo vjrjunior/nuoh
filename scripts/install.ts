@@ -24,7 +24,7 @@ type InstallRecord = { targets: Record<string, Entry> };
 const root = join(import.meta.dir, "..");
 const state = stateDir();
 const recordPath = join(state, "install.json");
-const TEMP_PREFIX = ".vjr-herdr.tmp-";
+const TEMP_PREFIX = ".nuoh.tmp-";
 
 const TARGETS: Target[] = [
   {

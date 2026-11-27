@@ -146,7 +146,7 @@ describe("install", () => {
   test("removes a temp left by an interrupted run", () => {
     const { homes, install } = setup();
     install();
-    writeFileSync(join(homes.ghostty, ".vjr-herdr.tmp-99999"), "partial");
+    writeFileSync(join(homes.ghostty, ".nuoh.tmp-99999"), "partial");
 
     expect(install().code).toBe(0);
 

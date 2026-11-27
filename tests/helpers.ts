@@ -7,7 +7,7 @@ export const repo = join(import.meta.dir, "..");
 const tempDirs: string[] = [];
 
 export function tempDir(): string {
-  const dir = realpathSync(mkdtempSync(join(tmpdir(), "vjr-herdr-test-")));
+  const dir = realpathSync(mkdtempSync(join(tmpdir(), "nuoh-test-")));
   tempDirs.push(dir);
   return dir;
 }
