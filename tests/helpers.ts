@@ -1,8 +1,6 @@
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { Recipe, Variant } from "../recipes/recipe";
-import { variantWith } from "../recipes/variants";
 
 export const repo = join(import.meta.dir, "..");
 
@@ -66,10 +64,6 @@ export function run(root: string, script: string, args: string[], env: Record<st
     stderr: "pipe",
   });
   return { code: result.exitCode, stdout: result.stdout.toString(), stderr: result.stderr.toString() };
-}
-
-export function bothLooks(extras: Recipe[] = []): Variant[] {
-  return [variantWith(extras, false), variantWith(extras, true)];
 }
 
 export function modsIn(node: unknown): string[] {

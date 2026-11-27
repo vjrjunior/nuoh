@@ -9,7 +9,6 @@ const PICKER = { width: 560, height: 420 };
 
 export const markdown: Recipe = {
   name: "markdown",
-  square: { popupRoots: { markdown: 1 }, frameless: ["markdown"] },
   mods: [
     { name: "markdown", from: "repo" },
     { name: "menu", from: "mods" },

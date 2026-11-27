@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { type Copy, exact, pattern, type Recipe, RecipeError, type Variant } from "../recipes/recipe";
-import { generateVariant } from "../scripts/generate-layout";
+import { type Copy, exact, pattern, type Recipe, RecipeError } from "../recipes/recipe";
+import { generateWith } from "../scripts/generate-layout";
 import { modsIn, removeTempDirs, tempDir } from "./helpers";
 import { makeHerdrHome } from "./herdr-home";
 
@@ -36,8 +36,6 @@ const broken: Recipe = {
   },
 };
 
-const testVariant = (...recipes: Recipe[]): Variant => ({ layout: "test-desk", prefix: "test-", preview: "layouts/test-desk.svg", square: false, recipes });
-
 function setup(overrides: Record<string, string> = {}) {
   const home = tempDir();
   const repo = tempDir();
@@ -55,7 +53,7 @@ function setup(overrides: Record<string, string> = {}) {
     writeFileSync(join(repo, "mods", name, "main.js"), `${kitImport}export default class Mod {}\n`);
     writeFileSync(join(repo, "mods", name, "mod.json"), '{ "place": "none" }\n');
   }
-  const generate = (variant = testVariant(recipe)) => generateVariant(variant, { home, version: "0.1.10", repo, bun: "/bin/bun" });
+  const generate = (recipes: Recipe[] = [recipe]) => generateWith(recipes, { home, version: "0.1.10", repo, bun: "/bin/bun" });
   return { home, repo, generate };
 }
 
@@ -64,17 +62,17 @@ const sample = (): Copy => ({ name: "sample", files: { "main.js": "alpha beta al
 describe("copies", () => {
   test("copies only the mod's code and mod.json", () => {
     const generated = setup().generate();
-    expect(Object.keys(generated.mods["test-tabs"] ?? {}).sort()).toEqual(["main.js", "mod.json"]);
+    expect(Object.keys(generated.mods["nuoh-tabs"] ?? {}).sort()).toEqual(["main.js", "mod.json"]);
   });
 
   test("reads frame screens from the frame folder", () => {
     const generated = setup().generate();
-    expect(generated.mods["test-palette"]?.["main.js"]).toContain("Type a command");
+    expect(generated.mods["nuoh-palette"]?.["main.js"]).toContain("Type a command");
   });
 
   test("reads repo sources from the repo's mods folder", () => {
     const generated = setup().generate();
-    expect(generated.mods["test-git-graph"]?.["graph.js"]).toBeDefined();
+    expect(generated.mods["nuoh-git-graph"]?.["graph.js"]).toBeDefined();
   });
 
   test("a repo mod's own icons are installed with it, and only its SVGs", () => {
@@ -82,14 +80,14 @@ describe("copies", () => {
     mkdirSync(join(repo, "mods/git-graph/icons"), { recursive: true });
     writeFileSync(join(repo, "mods/git-graph/icons/lane.svg"), '<svg xmlns="http://www.w3.org/2000/svg"></svg>\n');
     writeFileSync(join(repo, "mods/git-graph/icons/LICENSE-lanes"), "MIT\n");
-    const files = generate().mods["test-git-graph"] ?? {};
+    const files = generate().mods["nuoh-git-graph"] ?? {};
     expect(files["icons/lane.svg"]).toContain("<svg");
     expect(Object.keys(files).filter((name) => name.startsWith("icons/"))).toEqual(["icons/lane.svg"]);
   });
 
   test("records where each copy came from", () => {
     const generated = setup().generate();
-    expect(JSON.parse(generated.mods["test-tabs"]?.["mod.json"] ?? "{}").cloned_from).toEqual({ name: "tabs", version: "0.1.10" });
+    expect(JSON.parse(generated.mods["nuoh-tabs"]?.["mod.json"] ?? "{}").cloned_from).toEqual({ name: "tabs", version: "0.1.10" });
   });
 
   test("names the mod when a source is missing", () => {
@@ -100,40 +98,40 @@ describe("copies", () => {
 });
 
 describe("the kit", () => {
-  const modsOf = (...recipes: Recipe[]) => setup().generate(testVariant(...recipes)).mods;
+  const modsOf = (...recipes: Recipe[]) => setup().generate(recipes).mods;
 
   test("a repo mod that imports the kit gets its own copy of it", () => {
     const mods = modsOf(withKit, userRecipe);
-    expect(mods["test-user"]?.["main.js"]).toContain('from "./kit.js"');
-    expect(mods["test-user"]?.["main.js"]).not.toContain("../../kit/kit.js");
-    expect(mods["test-user"]?.["kit.js"]).toContain('{ name: "test-kit" }');
+    expect(mods["nuoh-user"]?.["main.js"]).toContain('from "./kit.js"');
+    expect(mods["nuoh-user"]?.["main.js"]).not.toContain("../../kit/kit.js");
+    expect(mods["nuoh-user"]?.["kit.js"]).toContain('{ name: "nuoh-kit" }');
   });
 
   test("the kit mod carries the icons", () => {
-    expect(modsOf(withKit, userRecipe)["test-kit"]?.["icons/eye.svg"]).toContain("<svg");
+    expect(modsOf(withKit, userRecipe)["nuoh-kit"]?.["icons/eye.svg"]).toContain("<svg");
   });
 
   test("a mod without the kit import gets no kit", () => {
-    expect(modsOf(withKit, userRecipe, recipe)["test-git-graph"]?.["kit.js"]).toBeUndefined();
+    expect(modsOf(withKit, userRecipe, recipe)["nuoh-git-graph"]?.["kit.js"]).toBeUndefined();
   });
 
   test("a mod that uses the kit in a layout without the kit refuses", () => {
-    expect(() => setup().generate(testVariant(userRecipe))).toThrow("user uses the kit, but test-desk has no kit");
+    expect(() => setup().generate([userRecipe])).toThrow("user uses the kit, but nuoh has no kit");
   });
 
   test("a single-quoted kit import is rewritten too", () => {
     const { repo, generate } = setup();
     writeFileSync(join(repo, "mods/user/main.js"), "import { KIT } from '../../kit/kit.js';\nexport default class Mod {}\n");
-    const mods = generate(testVariant(withKit, userRecipe)).mods;
-    expect(mods["test-user"]?.["main.js"]).toContain("from './kit.js'");
-    expect(mods["test-user"]?.["main.js"]).not.toContain("kit/kit.js");
-    expect(mods["test-user"]?.["kit.js"]).toContain("test-kit");
+    const mods = generate([withKit, userRecipe]).mods;
+    expect(mods["nuoh-user"]?.["main.js"]).toContain("from './kit.js'");
+    expect(mods["nuoh-user"]?.["main.js"]).not.toContain("kit/kit.js");
+    expect(mods["nuoh-user"]?.["kit.js"]).toContain("nuoh-kit");
   });
 
   test("a kit import by another path refuses", () => {
     const { repo, generate } = setup();
     writeFileSync(join(repo, "mods/user/main.js"), 'import { KIT } from "../kit/kit.js";\nexport default class Mod {}\n');
-    expect(() => generate(testVariant(withKit, userRecipe))).toThrow('import the kit as "../../kit/kit.js"');
+    expect(() => generate([withKit, userRecipe])).toThrow('import the kit as "../../kit/kit.js"');
   });
 });
 
@@ -172,19 +170,19 @@ describe("exact and pattern", () => {
 describe("references", () => {
   test("rewires mod and name references to the copies", () => {
     const generated = setup().generate();
-    expect(generated.mods["test-tabs"]?.["main.js"]).toContain('mod: "test-menu"');
-    expect(generated.mods["test-workspace-chrome"]?.["main.js"]).toContain('{ name: "test-picker" }');
+    expect(generated.mods["nuoh-tabs"]?.["main.js"]).toContain('mod: "nuoh-menu"');
+    expect(generated.mods["nuoh-workspace-chrome"]?.["main.js"]).toContain('{ name: "nuoh-picker" }');
   });
 
   test("keeps references to mods without a copy", () => {
     const generated = setup().generate();
-    expect(generated.mods["test-palette"]?.["main.js"]).toContain('mod: "prompt"');
-    expect(generated.mods["test-workspace-chrome"]?.["main.js"]).toContain('{ name: "machine-add" }');
+    expect(generated.mods["nuoh-palette"]?.["main.js"]).toContain('mod: "prompt"');
+    expect(generated.mods["nuoh-workspace-chrome"]?.["main.js"]).toContain('{ name: "machine-add" }');
   });
 
   test("ignores names inherited from Object", () => {
     const { generate } = setup({ "mods/tabs/main.js": 'run({ name: "constructor" })' });
-    expect(generate().mods["test-tabs"]?.["main.js"]).toContain('{ name: "constructor" }');
+    expect(generate().mods["nuoh-tabs"]?.["main.js"]).toContain('{ name: "constructor" }');
   });
 
   test("fails on a reference written in another quote style", () => {
@@ -193,11 +191,11 @@ describe("references", () => {
   });
 
   test("names the recipe in a failure", () => {
-    expect(() => setup().generate(testVariant(broken))).toThrow(/recipe broken:/);
+    expect(() => setup().generate([broken])).toThrow(/recipe broken:/);
   });
 
   test("translates replacements to the copy names", () => {
-    expect(setup().generate().replacements).toEqual({ "app.palette": "mod.open:test-palette" });
+    expect(setup().generate().replacements).toEqual({ "app.palette": "mod.open:nuoh-palette" });
   });
 
   test("translates recipe keys to the copy names", () => {
@@ -209,7 +207,7 @@ describe("references", () => {
       },
     };
     expect(setup().generate().keys).toEqual({});
-    expect(setup().generate(testVariant(withKey)).keys).toEqual({ "cmd-shift-m": "mod.open:test-picker" });
+    expect(setup().generate([withKey]).keys).toEqual({ "cmd-shift-m": "mod.open:nuoh-picker" });
   });
 
   test("a recipe's command key goes through as it is", () => {
@@ -221,7 +219,7 @@ describe("references", () => {
         context.keys["ctrl-cmd-1"] = select;
       },
     };
-    expect(setup().generate(testVariant(withCommand)).keys).toEqual({ "ctrl-cmd-1": select });
+    expect(setup().generate([withCommand]).keys).toEqual({ "ctrl-cmd-1": select });
   });
 });
 
@@ -230,28 +228,22 @@ describe("layout", () => {
     const { repo, generate } = setup();
     const layout = JSON.parse(generate().layoutText);
     expect(layout.theme).toEqual({ light: "paper", dark: "vjr" });
-    expect(layout.preview).toBe("layouts/test-desk.svg");
+    expect(layout.preview).toBe("layouts/nuoh.svg");
     expect(layout.cloned_from).toEqual({ name: "main", version: "0.1.10" });
     expect(layout.floating).toEqual([
       {
         id: "vjr-sync",
-        content: { mod: "vjr-sync", props: { built: "0.1.10", repo, bun: "/bin/bun", square: false } },
+        content: { mod: "vjr-sync", props: { built: "0.1.10", repo, bun: "/bin/bun" } },
         edge: "right",
         align: "end",
       },
     ]);
   });
 
-  test("a layout with one look tells the sync block to leave the corners alone", () => {
-    const { generate } = setup();
-    const layout = JSON.parse(generate({ ...testVariant(recipe), oneLook: true }).layoutText);
-    expect(layout.floating.at(-1).content.props.square).toBeNull();
-  });
-
   test("points the layout at the copies, including the pane header", () => {
     const mods = modsIn(JSON.parse(setup().generate().layoutText));
-    expect(mods).toContain("test-tabs");
-    expect(mods).toContain("test-pane");
+    expect(mods).toContain("nuoh-tabs");
+    expect(mods).toContain("nuoh-pane");
     expect(mods).not.toContain("tabs");
   });
 
@@ -267,7 +259,7 @@ describe("layout", () => {
         context.layout.terminal_menu = "menu";
       },
     };
-    expect(JSON.parse(setup().generate(testVariant(withMenu)).layoutText).terminal_menu).toBe("test-menu");
+    expect(JSON.parse(setup().generate([withMenu]).layoutText).terminal_menu).toBe("nuoh-menu");
   });
 
   test("leaves the installed main layout untouched", () => {
@@ -279,8 +271,8 @@ describe("layout", () => {
 
   test("a source read twice by two recipes is copied once", () => {
     const other: Recipe = { name: "other", mods: [{ name: "tabs", from: "mods" }], apply() {} };
-    const generated = setup().generate(testVariant(recipe, other));
-    expect(Object.keys(generated.mods).filter((name) => name === "test-tabs")).toHaveLength(1);
+    const generated = setup().generate([recipe, other]);
+    expect(Object.keys(generated.mods).filter((name) => name === "nuoh-tabs")).toHaveLength(1);
   });
 });
 
@@ -296,7 +288,7 @@ describe("shared modules", () => {
 
   test("a mod that imports from lib gets a copy of the module and of what it imports", () => {
     const { generate } = withLib('import { claude } from "../../lib/claude.js";\nexport { base } from "../../lib/paths.js";\n');
-    const user = generate(testVariant(withKit, userRecipe)).mods["test-user"];
+    const user = generate([withKit, userRecipe]).mods["nuoh-user"];
     expect(user?.["main.js"]).toContain('import { claude } from "./claude.js"');
     expect(user?.["main.js"]).toContain('export { base } from "./paths.js"');
     expect(user?.["main.js"]).not.toContain("../../lib/");
@@ -306,7 +298,7 @@ describe("shared modules", () => {
 
   test("a mod that imports nothing from lib gets none of it", () => {
     const { generate } = withLib("");
-    expect(Object.keys(generate(testVariant(withKit, userRecipe)).mods["test-user"] ?? {}).sort()).toEqual(["kit.js", "main.js", "mod.json"]);
+    expect(Object.keys(generate([withKit, userRecipe]).mods["nuoh-user"] ?? {}).sort()).toEqual(["kit.js", "main.js", "mod.json"]);
   });
 
   function withExtra(main: string) {
@@ -324,7 +316,7 @@ describe("shared modules", () => {
 
   test("an extra's mod takes a lib module from the extra before the layout's", () => {
     const { generate, work } = withExtra('import { tasks } from "../../lib/tasks.js";\nimport { base } from "../../lib/paths.js";\n');
-    const mod = generate(testVariant(work)).mods["test-work"];
+    const mod = generate([work]).mods["nuoh-work"];
     expect(mod?.["tasks.js"]).toContain("export const tasks");
     expect(mod?.["paths.js"]).toContain('"extra"');
     expect(mod?.["claude.js"]).toContain("export const claude");
@@ -333,19 +325,19 @@ describe("shared modules", () => {
   test("the layout's own mods never see an extra's lib", () => {
     const { repo, generate, work } = withExtra('import { base } from "../../lib/paths.js";\n');
     writeFileSync(join(repo, "mods/user/main.js"), 'import { KIT } from "../../kit/kit.js";\nimport { base } from "../../lib/paths.js";\nexport default class Mod {}\n');
-    const { mods } = generate(testVariant(withKit, userRecipe, work));
-    expect(mods["test-user"]?.["paths.js"]).toContain('"base"');
-    expect(mods["test-work"]?.["paths.js"]).toContain('"extra"');
+    const { mods } = generate([withKit, userRecipe, work]);
+    expect(mods["nuoh-user"]?.["paths.js"]).toContain('"base"');
+    expect(mods["nuoh-work"]?.["paths.js"]).toContain('"extra"');
   });
 
   test("a lib module found nowhere names where it looked", () => {
     const { generate, work, extra } = withExtra('import { gone } from "../../lib/gone.js";\n');
-    expect(() => generate(testVariant(work))).toThrow(`work: lib/gone.js not found in ${join(extra, "lib")}`);
+    expect(() => generate([work])).toThrow(`work: lib/gone.js not found in ${join(extra, "lib")}`);
   });
 
   test("a mod with a file named like a lib module refuses", () => {
     const { repo, generate } = withLib('import { claude } from "../../lib/claude.js";\n');
     writeFileSync(join(repo, "mods/user/paths.js"), "export const mine = 1;\n");
-    expect(() => generate(testVariant(withKit, userRecipe))).toThrow("user/paths.js has the name of a module in lib/");
+    expect(() => generate([withKit, userRecipe])).toThrow("user/paths.js has the name of a module in lib/");
   });
 });

@@ -8,7 +8,6 @@ const MOVE_POPUP_WIDTH = 240;
 
 export const spacesTree: Recipe = {
   name: "spaces-tree",
-  square: { popupRoots: { "spaces-tree": 3 } },
   mods: [
     { name: "spaces-tree", from: "repo" },
     { name: "menu", from: "mods" },

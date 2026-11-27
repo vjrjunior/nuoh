@@ -23,7 +23,6 @@ const BAR_MOVE =
 
 export const moveTab: Recipe = {
   name: "move-tab",
-  square: { popupRoots: { "move-tab": 1 }, frameless: ["move-tab"] },
   mods: [
     { name: "move-tab", from: "repo" },
     { name: "menu", from: "mods" },

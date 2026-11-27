@@ -1,6 +1,6 @@
 import { CARD_LINE, GAP, HIDDEN_LINE, PANE_RADIUS } from "./frame";
+import { GIT_GRAPH, GRAPH_RADIUS } from "./git-graph-panel";
 import { type Copy, exact, findNode, type LayoutNode, type Recipe, RecipeError } from "./recipe";
-import { GIT_GRAPH, GRAPH_RADIUS } from "./square";
 
 const CARD = { background: "surface", border: { width: 1, color: CARD_LINE }, radius: PANE_RADIUS, shadow: "md" };
 export const PANEL_INSET = 6;

@@ -6,7 +6,7 @@ import { makeHerdrHome } from "./herdr-home";
 
 afterEach(removeTempDirs);
 
-const OURS = /^(mods\/vjr-|mods\/nuoh-|mods\/git-graph|layouts\/vjr-desk|layouts\/nuoh|keys\.json)/;
+const OURS = /^(mods\/vjr-sync|mods\/nuoh-|mods\/git-graph|layouts\/nuoh|keys\.json)/;
 
 function allFiles(folder: string): string[] {
   return readdirSync(folder, { withFileTypes: true }).flatMap((entry) => {
@@ -38,8 +38,8 @@ function setup(root = copyRepo(), homes = makeHomes()) {
     keys: () => JSON.parse(readFileSync(join(home, "keys.json"), "utf8")),
     record: () => JSON.parse(readFileSync(join(homes.state, "layout.json"), "utf8")),
     writeRecord: (record: unknown) => writeFileSync(join(homes.state, "layout.json"), JSON.stringify(record)),
-    layout: (name = "vjr-desk") => JSON.parse(readFileSync(join(home, `layouts/${name}.json`), "utf8")),
-    syncProps: (name = "vjr-desk") => JSON.parse(readFileSync(join(home, `layouts/${name}.json`), "utf8")).floating.at(-1).content.props,
+    layout: () => JSON.parse(readFileSync(join(home, "layouts/nuoh.json"), "utf8")),
+    syncProps: () => JSON.parse(readFileSync(join(home, "layouts/nuoh.json"), "utf8")).floating.at(-1).content.props,
     modMeta: (name: string) => JSON.parse(readFileSync(join(home, "mods", name, "mod.json"), "utf8")),
     simulateAppFiles() {
       for (const name of readdirSync(join(home, "mods")).filter((entry) => /^(vjr-|nuoh-|git-graph)/.test(entry))) {
@@ -57,21 +57,14 @@ function setup(root = copyRepo(), homes = makeHomes()) {
 
 describe("apply", () => {
   test("installs the copies, the sync mod, Git Graph, the layout and its preview", () => {
-    const { home, apply } = setup();
+    const { home, apply, layout } = setup();
 
     const result = apply();
 
     expect(result.code).toBe(0);
     expect(result.stdout).toContain("applied");
-    expect(readdirSync(join(home, "mods")).filter((name) => name.startsWith("vjr-"))).toHaveLength(13);
+    expect(existsSync(join(home, "mods/vjr-sync/main.js"))).toBe(true);
     expect(existsSync(join(home, "mods/git-graph/LICENSE"))).toBe(true);
-    expect(readdirSync(join(home, "layouts")).filter((name) => name.startsWith("vjr-")).sort()).toEqual(["vjr-desk.json", "vjr-desk.svg"]);
-  });
-
-  test("one apply installs nuoh beside vjr-desk, with copies of its own and the same sync mod and Git Graph", () => {
-    const { home, apply, layout } = setup();
-
-    expect(apply().code).toBe(0);
 
     expect(readdirSync(join(home, "mods")).filter((name) => name.startsWith("nuoh-")).sort()).toEqual([
       "nuoh-agent-list",
@@ -91,16 +84,7 @@ describe("apply", () => {
       "nuoh-topbar",
     ]);
     expect(readdirSync(join(home, "layouts")).filter((name) => name.startsWith("nuoh")).sort()).toEqual(["nuoh.json", "nuoh.svg"]);
-    expect(layout("nuoh").floating.map((block: { content: { mod: string } }) => block.content.mod)).toEqual(["nuoh-comeback", "nuoh-move-tab", "vjr-sync"]);
-  });
-
-  test("nuoh's sync block keeps out of the corners", () => {
-    const { apply, syncProps } = setup();
-
-    apply(["--square", "on"]);
-
-    expect(syncProps("nuoh").square).toBeNull();
-    expect(syncProps("vjr-desk").square).toBe(true);
+    expect(layout().floating.map((block: { content: { mod: string } }) => block.content.mod)).toEqual(["nuoh-comeback", "nuoh-move-tab", "vjr-sync"]);
   });
 
   test("nuoh's keys take the rail's views in order", () => {
@@ -117,25 +101,14 @@ describe("apply", () => {
     });
   });
 
-  test("square corners leave nuoh as it is", () => {
-    const { home, apply } = setup();
-    apply();
-    const before = snapshot(home);
-    const nuoh = (files: Record<string, string>) => Object.fromEntries(Object.entries(files).filter(([path]) => /^(mods\/nuoh-|layouts\/nuoh)/.test(path)));
-
-    expect(apply(["--square", "on"]).stdout).toContain("applied");
-
-    expect(nuoh(snapshot(home))).toEqual(nuoh(before));
-  });
-
   test("apply installs the kit's icons once", () => {
     const { home, apply } = setup();
 
     apply();
 
-    expect(existsSync(join(home, "mods/vjr-kit/icons/eye.svg"))).toBe(true);
-    expect(existsSync(join(home, "mods/vjr-kit/kit.js"))).toBe(true);
-    expect(existsSync(join(home, "mods/vjr-markdown/icons"))).toBe(false);
+    expect(existsSync(join(home, "mods/nuoh-kit/icons/eye.svg"))).toBe(true);
+    expect(existsSync(join(home, "mods/nuoh-kit/kit.js"))).toBe(true);
+    expect(existsSync(join(home, "mods/nuoh-markdown/icons"))).toBe(false);
   });
 
   test("stores absolute paths for the sync mod", () => {
@@ -143,42 +116,18 @@ describe("apply", () => {
 
     apply();
 
-    expect(syncProps()).toEqual({ built: "0.1.10", repo: root, bun: process.execPath, square: false });
-  });
-
-  test("writes the key sections", () => {
-    const { apply, keys } = setup();
-
-    apply();
-
-    expect(keys()["layout:vjr-desk"]).toEqual({
-      "cmd-shift-p": "mod.open:vjr-palette",
-      "cmd-,": "mod.open:vjr-settings",
-      "cmd-shift-o": "mod.open:vjr-markdown",
-      "cmd-shift-m": "mod.open:vjr-move-tab",
-    });
-  });
-
-  test("with square corners the section also opens the copied help and picker", () => {
-    const { apply, keys } = setup();
-
-    apply(["--square", "on"]);
-
-    expect(keys()["layout:vjr-desk"]["cmd-,"]).toBe("mod.open:vjr-settings");
-    expect(keys()["layout:vjr-desk"]["cmd-/"]).toBe("mod.open:vjr-help");
-    expect(keys()["layout:vjr-desk"]["cmd-p"]).toBe("mod.open:vjr-picker");
-    expect(keys()["layout:vjr-desk"]["cmd-shift-m"]).toBe("mod.open:vjr-move-tab");
+    expect(syncProps()).toEqual({ built: "0.1.10", repo: root, bun: process.execPath });
   });
 
   test("a recipe's key wins over a global key the layout replaces", () => {
     const { home, apply, keys } = setup();
     const table = keys();
-    writeFileSync(join(home, "keys.json"), JSON.stringify({ ...table, global: { ...table.global, "cmd-shift-m": "app.help" } }));
+    writeFileSync(join(home, "keys.json"), JSON.stringify({ ...table, global: { ...table.global, "cmd-shift-m": "app.palette" } }));
 
-    apply(["--square", "on"]);
+    apply();
 
-    expect(keys()["layout:vjr-desk"]["cmd-shift-m"]).toBe("mod.open:vjr-move-tab");
-    expect(keys()["layout:vjr-desk"]["cmd-/"]).toBe("mod.open:vjr-help");
+    expect(keys()["layout:nuoh"]["cmd-shift-m"]).toBe("mod.open:nuoh-move-tab");
+    expect(keys()["layout:nuoh"]["cmd-shift-p"]).toBe("mod.open:nuoh-palette");
   });
 
   test("keeps the rest of keys.json", () => {
@@ -197,7 +146,7 @@ describe("apply", () => {
 
     expect(apply().code).toBe(0);
 
-    expect(Object.keys(keys()).sort()).toEqual(["layout:nuoh", "layout:vjr-desk"]);
+    expect(Object.keys(keys())).toEqual(["layout:nuoh"]);
   });
 
   test("never touches shipped files or layout state", () => {
@@ -233,16 +182,16 @@ describe("apply", () => {
 
     apply();
 
-    expect(log().filter((line) => line.startsWith("check "))).toHaveLength(29);
+    expect(log().filter((line) => line.startsWith("check "))).toHaveLength(17);
   });
 
   test("checks the mods side by side", () => {
     const { apply, log } = setup();
     const started = Date.now();
 
-    apply(["--square", "on"], { FAKE_HERDR_CHECK_SLEEP: "0.5" });
+    apply([], { FAKE_HERDR_CHECK_SLEEP: "0.5" });
 
-    expect(log().filter((line) => line.startsWith("check "))).toHaveLength(38);
+    expect(log().filter((line) => line.startsWith("check "))).toHaveLength(17);
     expect(Date.now() - started).toBeLessThan(8000);
   });
 
@@ -252,11 +201,10 @@ describe("apply", () => {
     apply();
 
     expect(record().version).toBe("0.1.10");
-    expect(record().mods).toHaveLength(29);
+    expect(record().mods).toHaveLength(17);
     expect(record().kept).toEqual([]);
-    expect(record().files.sort()).toEqual(["layouts/nuoh.json", "layouts/nuoh.svg", "layouts/vjr-desk.json", "layouts/vjr-desk.svg"]);
-    expect(record().sections).toEqual(["layout:vjr-desk", "layout:nuoh"]);
-    expect(record().square).toBe(false);
+    expect(record().files.sort()).toEqual(["layouts/nuoh.json", "layouts/nuoh.svg"]);
+    expect(record().sections).toEqual(["layout:nuoh"]);
   });
 
   test("a second run with nothing changed writes nothing", () => {
@@ -279,42 +227,42 @@ describe("apply", () => {
 
     expect(apply(["--herdr-version", "0.1.11"]).stdout).toContain("applied");
 
-    expect(modMeta("vjr-tabs").cloned_from.version).toBe("0.1.11");
+    expect(modMeta("nuoh-tabs").cloned_from.version).toBe("0.1.11");
     expect(syncProps().built).toBe("0.1.11");
   });
 
   test("a change in a shipped mod reaches its copy", () => {
     const { home, apply } = setup();
-    apply(["--square", "on"]);
-    const path = join(home, "mods/agents/main.js");
+    apply();
+    const path = join(home, "mods/tabs/main.js");
     writeFileSync(path, `${readFileSync(path, "utf8")}\nexport const fixed = true;\n`);
 
     apply();
 
-    expect(readFileSync(join(home, "mods/vjr-agents/main.js"), "utf8")).toContain("fixed = true");
+    expect(readFileSync(join(home, "mods/nuoh-tabs/main.js"), "utf8")).toContain("fixed = true");
   });
 
   test("replaced copies lose the files the old version had", () => {
     const { home, apply, simulateAppFiles } = setup();
     apply();
     simulateAppFiles();
-    writeFileSync(join(home, "mods/vjr-tabs/stale.js"), "export {};\n");
+    writeFileSync(join(home, "mods/nuoh-tabs/stale.js"), "export {};\n");
 
     apply();
 
-    expect(existsSync(join(home, "mods/vjr-tabs/stale.js"))).toBe(false);
+    expect(existsSync(join(home, "mods/nuoh-tabs/stale.js"))).toBe(false);
   });
 
   test("a mod no recipe generates anymore disappears on the next run", () => {
     const { home, apply, record, writeRecord } = setup();
     apply();
-    mkdirSync(join(home, "mods/vjr-old"));
-    writeRecord({ ...record(), mods: [...record().mods, "vjr-old"] });
+    mkdirSync(join(home, "mods/nuoh-old"));
+    writeRecord({ ...record(), mods: [...record().mods, "nuoh-old"] });
 
     apply();
 
-    expect(existsSync(join(home, "mods/vjr-old"))).toBe(false);
-    expect(record().mods).not.toContain("vjr-old");
+    expect(existsSync(join(home, "mods/nuoh-old"))).toBe(false);
+    expect(record().mods).not.toContain("nuoh-old");
   });
 
   test("adopts an identical git-graph without writing to it", () => {
@@ -358,23 +306,6 @@ describe("apply", () => {
     expect(syncProps().repo).toBe(root);
   });
 
-  test("with square corners, warns about shipped mods with corners that no recipe covers", () => {
-    const { home, apply } = setup();
-    const installed = JSON.parse(readFileSync(join(home, "installed.json"), "utf8"));
-    makeHerdrHome(home, {
-      "mods/brand-new/main.js": "x.rounded(4)\n",
-      "mods/prompt/main.js": "x.rounded(4)\n",
-      "installed.json": JSON.stringify({ ...installed, "brand-new": {}, prompt: {} }),
-    });
-
-    const result = apply(["--square", "on"]);
-
-    expect(result.stderr).toContain("brand-new");
-    expect(result.stderr).not.toContain("prompt");
-    expect(result.stderr).not.toContain("mods/spaces ");
-    expect(apply(["--square", "off"]).stderr).not.toContain("brand-new");
-  });
-
   test("stops when the theme is not installed", () => {
     const { home, apply } = setup();
     rmSync(join(home, "themes/vjr.json"));
@@ -398,7 +329,7 @@ describe("failures", () => {
     const result = apply(["--herdr-version", "0.1.11"]);
 
     expect(result.code).toBe(1);
-    expect(result.stderr).toContain("recipe list-vjr-theme:");
+    expect(result.stderr).toContain("recipe palette:");
     expect(ours(home)).toEqual(before);
   });
 
@@ -407,10 +338,10 @@ describe("failures", () => {
     apply();
     const before = ours(home);
 
-    const result = apply(["--herdr-version", "0.1.11"], { FAKE_HERDR_CHECK_FAIL: "vjr-tabs" });
+    const result = apply(["--herdr-version", "0.1.11"], { FAKE_HERDR_CHECK_FAIL: "nuoh-tabs" });
 
     expect(result.code).toBe(1);
-    expect(result.stderr).toContain("vjr-tabs");
+    expect(result.stderr).toContain("nuoh-tabs");
     expect(ours(home)).toEqual(before);
     expect(syncProps().built).toBe("0.1.10");
   });
@@ -420,35 +351,35 @@ describe("failures", () => {
     apply();
     const before = ours(home);
 
-    const result = apply(["--herdr-version", "0.1.11"], { FAKE_HERDR_WINDOW: "vjr-desk", FAKE_HERDR_STATUS_ERROR: "boom" });
+    const result = apply(["--herdr-version", "0.1.11"], { FAKE_HERDR_WINDOW: "nuoh", FAKE_HERDR_STATUS_ERROR: "boom" });
 
     expect(result.code).toBe(1);
     expect(result.stderr).toContain("boom");
-    expect(modMeta("vjr-tabs").cloned_from.version).toBe("0.1.10");
+    expect(modMeta("nuoh-tabs").cloned_from.version).toBe("0.1.10");
     expect(syncProps().built).toBe("0.1.10");
     expect(ours(home)).toEqual(before);
   });
 
   test("a copy the shown layout still uses goes only after the new layout", () => {
     const { home, apply, record, writeRecord } = setup();
-    apply(["--square", "on"]);
-    cpSync(join(home, "mods/vjr-tabs"), join(home, "mods/vjr-old"), { recursive: true });
-    writeRecord({ ...record(), mods: [...record().mods, "vjr-old"] });
-    const shown = join(home, "layouts/vjr-desk.json");
-    writeFileSync(shown, readFileSync(shown, "utf8").replace('"mod": "vjr-agents"', '"mod": "vjr-old"'));
-    writeFileSync(join(home, "mods/vjr-tabs/main.js"), "export default class Old {}\n");
+    apply();
+    cpSync(join(home, "mods/nuoh-tabs"), join(home, "mods/nuoh-old"), { recursive: true });
+    writeRecord({ ...record(), mods: [...record().mods, "nuoh-old"] });
+    const shown = join(home, "layouts/nuoh.json");
+    writeFileSync(shown, readFileSync(shown, "utf8").replace('"mod": "nuoh-agent-list"', '"mod": "nuoh-old"'));
+    writeFileSync(join(home, "mods/nuoh-tabs/main.js"), "export default class Old {}\n");
 
-    const result = apply([], { FAKE_HERDR_WINDOW: "vjr-desk" });
+    const result = apply([], { FAKE_HERDR_WINDOW: "nuoh" });
 
     expect(result.code).toBe(0);
-    expect(existsSync(join(home, "mods/vjr-old"))).toBe(false);
-    expect(record().mods).not.toContain("vjr-old");
+    expect(existsSync(join(home, "mods/nuoh-old"))).toBe(false);
+    expect(record().mods).not.toContain("nuoh-old");
   });
 
   test("errors that were already there do not block", () => {
     const { apply, syncProps } = setup();
 
-    expect(apply([], { FAKE_HERDR_WINDOW: "vjr-desk", FAKE_HERDR_STATUS_ERROR_ALWAYS: "old" }).code).toBe(0);
+    expect(apply([], { FAKE_HERDR_WINDOW: "nuoh", FAKE_HERDR_STATUS_ERROR_ALWAYS: "old" }).code).toBe(0);
 
     expect(syncProps().built).toBe("0.1.10");
   });
@@ -466,27 +397,25 @@ describe("failures", () => {
 
   test("a folder that is not ours is never overwritten", () => {
     const { home, apply } = setup();
-    mkdirSync(join(home, "mods/vjr-tabs"));
-    writeFileSync(join(home, "mods/vjr-tabs/mine.js"), "");
+    mkdirSync(join(home, "mods/nuoh-tabs"));
+    writeFileSync(join(home, "mods/nuoh-tabs/mine.js"), "");
 
     const result = apply();
 
     expect(result.code).toBe(1);
     expect(result.stderr).toContain("not created by this repo");
-    expect(existsSync(join(home, "mods/vjr-tabs/mine.js"))).toBe(true);
+    expect(existsSync(join(home, "mods/nuoh-tabs/mine.js"))).toBe(true);
     expect(existsSync(join(home, "mods/vjr-sync"))).toBe(false);
   });
 
   test("a layout that is not ours is never overwritten", () => {
-    for (const name of ["vjr-desk", "nuoh"]) {
-      const { home, apply } = setup();
-      writeFileSync(join(home, `layouts/${name}.json`), "mine");
+    const { home, apply } = setup();
+    writeFileSync(join(home, "layouts/nuoh.json"), "mine");
 
-      expect(apply().stderr).toContain("not created by this repo");
+    expect(apply().stderr).toContain("not created by this repo");
 
-      expect(readFileSync(join(home, `layouts/${name}.json`), "utf8")).toBe("mine");
-      expect(existsSync(join(home, "mods/vjr-sync"))).toBe(false);
-    }
+    expect(readFileSync(join(home, "layouts/nuoh.json"), "utf8")).toBe("mine");
+    expect(existsSync(join(home, "mods/vjr-sync"))).toBe(false);
   });
 
   test("files the app wrote into the repo's mods stay out of the install", () => {
@@ -502,7 +431,7 @@ describe("failures", () => {
   test("a status it cannot read does not block the update", () => {
     const { apply, syncProps } = setup();
 
-    const result = apply([], { FAKE_HERDR_WINDOW: "vjr-desk", FAKE_HERDR_STATUS_TEXT: "not json" });
+    const result = apply([], { FAKE_HERDR_WINDOW: "nuoh", FAKE_HERDR_STATUS_TEXT: "not json" });
 
     expect(result.code).toBe(0);
     expect(result.stderr).toContain("status");
@@ -512,7 +441,7 @@ describe("failures", () => {
   test("a status with unexpected errors does not block the update", () => {
     const { apply } = setup();
 
-    expect(apply([], { FAKE_HERDR_WINDOW: "vjr-desk", FAKE_HERDR_STATUS_TEXT: '{"errors":"none"}' }).code).toBe(0);
+    expect(apply([], { FAKE_HERDR_WINDOW: "nuoh", FAKE_HERDR_STATUS_TEXT: '{"errors":"none"}' }).code).toBe(0);
   });
 
   test(
@@ -520,7 +449,7 @@ describe("failures", () => {
     () => {
       const { apply } = setup();
 
-      expect(apply([], { FAKE_HERDR_WINDOW: "vjr-desk", FAKE_HERDR_STATUS_HANG: "1" }).code).toBe(0);
+      expect(apply([], { FAKE_HERDR_WINDOW: "nuoh", FAKE_HERDR_STATUS_HANG: "1" }).code).toBe(0);
     },
     { timeout: 12000 },
   );
@@ -528,11 +457,11 @@ describe("failures", () => {
   test("a run killed after the swap does not refuse its own mods", () => {
     const { home, apply, syncProps } = setup();
 
-    const killed = apply([], { FAKE_HERDR_WINDOW: "vjr-desk", FAKE_HERDR_STATUS_KILL: "1" });
+    const killed = apply([], { FAKE_HERDR_WINDOW: "nuoh", FAKE_HERDR_STATUS_KILL: "1" });
 
     expect(killed.code).not.toBe(0);
     expect(existsSync(join(home, "mods/vjr-sync"))).toBe(true);
-    expect(existsSync(join(home, "layouts/vjr-desk.json"))).toBe(false);
+    expect(existsSync(join(home, "layouts/nuoh.json"))).toBe(false);
 
     expect(apply().code).toBe(0);
     expect(syncProps().built).toBe("0.1.10");
@@ -542,20 +471,20 @@ describe("failures", () => {
     const { home, state, apply, modMeta } = setup();
     apply();
     mkdirSync(join(state, "previous-999"));
-    renameSync(join(home, "mods/vjr-tabs"), join(state, "previous-999/vjr-tabs"));
+    renameSync(join(home, "mods/nuoh-tabs"), join(state, "previous-999/nuoh-tabs"));
 
-    expect(apply(["--herdr-version", "0.1.11"], { FAKE_HERDR_CHECK_FAIL: "vjr-tabs" }).code).toBe(1);
+    expect(apply(["--herdr-version", "0.1.11"], { FAKE_HERDR_CHECK_FAIL: "nuoh-tabs" }).code).toBe(1);
 
-    expect(modMeta("vjr-tabs").cloned_from.version).toBe("0.1.10");
+    expect(modMeta("nuoh-tabs").cloned_from.version).toBe("0.1.10");
     expect(existsSync(join(state, "previous-999"))).toBe(false);
   });
 
   test("a failed first install leaves no mods and no record", () => {
     const { home, state, apply } = setup();
 
-    expect(apply([], { FAKE_HERDR_WINDOW: "vjr-desk", FAKE_HERDR_STATUS_ERROR: "boom" }).code).toBe(1);
+    expect(apply([], { FAKE_HERDR_WINDOW: "nuoh", FAKE_HERDR_STATUS_ERROR: "boom" }).code).toBe(1);
 
-    expect(readdirSync(join(home, "mods")).filter((name) => name.startsWith("vjr-"))).toEqual([]);
+    expect(readdirSync(join(home, "mods")).filter((name) => name.startsWith("nuoh-"))).toEqual([]);
     expect(existsSync(join(state, "layout.json"))).toBe(false);
   });
 
@@ -564,7 +493,7 @@ describe("failures", () => {
     apply();
     const before = record();
 
-    apply(["--herdr-version", "0.1.11"], { FAKE_HERDR_WINDOW: "vjr-desk", FAKE_HERDR_STATUS_ERROR: "boom" });
+    apply(["--herdr-version", "0.1.11"], { FAKE_HERDR_WINDOW: "nuoh", FAKE_HERDR_STATUS_ERROR: "boom" });
 
     expect(record()).toEqual(before);
   });
@@ -628,44 +557,6 @@ describe("failures", () => {
   });
 });
 
-describe("square corners", () => {
-  const ourMods = (home: string) => readdirSync(join(home, "mods")).filter((name) => name.startsWith("vjr-"));
-  const radius = (layout: Record<string, any>) => JSON.stringify(layout).match(/"radius":(\d+)/)?.[1];
-
-  test("--square on rebuilds the one layout square, and a plain apply keeps it", () => {
-    const { home, apply, record, layout, syncProps } = setup();
-    apply();
-
-    expect(apply(["--square", "on"]).stdout).toContain("applied");
-
-    expect(ourMods(home)).toHaveLength(22);
-    expect(radius(layout())).toBe("0");
-    expect(record().square).toBe(true);
-    expect(syncProps().square).toBe(true);
-    expect(apply().stdout).toContain("unchanged");
-    expect(apply(["--herdr-version", "0.1.11"]).stdout).toContain("applied");
-    expect(syncProps()).toMatchObject({ built: "0.1.11", square: true });
-  });
-
-  test("--square off goes back and takes the square copies with it", () => {
-    const { home, apply, record, keys } = setup();
-    apply(["--square", "on"]);
-
-    expect(apply(["--square", "off"]).stdout).toContain("applied");
-
-    expect(ourMods(home)).toHaveLength(13);
-    expect(existsSync(join(home, "mods/vjr-agents"))).toBe(false);
-    expect(record().square).toBe(false);
-    expect(keys()["layout:vjr-desk"]["cmd-/"]).toBeUndefined();
-  });
-
-  test("--square takes on or off", () => {
-    const result = setup().apply(["--square", "maybe"]);
-    expect(result.code).toBe(1);
-    expect(result.stderr).toContain("--square takes on or off");
-  });
-});
-
 describe("uninstall", () => {
   test("removes everything recorded and keeps the rest", () => {
     const { home, state, apply, uninstall, keys } = setup();
@@ -676,8 +567,7 @@ describe("uninstall", () => {
 
     expect(readdirSync(join(home, "mods")).filter((name) => name.startsWith("vjr-") || name.startsWith("nuoh-"))).toEqual([]);
     expect(existsSync(join(home, "mods/git-graph"))).toBe(false);
-    for (const file of ["vjr-desk.json", "vjr-desk.svg", "nuoh.json", "nuoh.svg"]) expect(existsSync(join(home, "layouts", file))).toBe(false);
-    expect(keys()["layout:vjr-desk"]).toBeUndefined();
+    for (const file of ["nuoh.json", "nuoh.svg"]) expect(existsSync(join(home, "layouts", file))).toBe(false);
     expect(keys()["layout:nuoh"]).toBeUndefined();
     expect(keys().global).toEqual(global);
     expect(existsSync(join(home, "themes/vjr.json"))).toBe(true);
@@ -696,14 +586,12 @@ describe("uninstall", () => {
   });
 
   test("leaves our layout first when the window shows it", () => {
-    for (const shown of ["vjr-desk", "nuoh"]) {
-      const { apply, uninstall, log } = setup();
-      apply();
+    const { apply, uninstall, log } = setup();
+    apply();
 
-      uninstall({ FAKE_HERDR_WINDOW: shown });
+    uninstall({ FAKE_HERDR_WINDOW: "nuoh" });
 
-      expect(log()).toContain('do layout.switch {"name":"main"}');
-    }
+    expect(log()).toContain('do layout.switch {"name":"main"}');
   });
 
   test("stays on another layout when the window shows one", () => {

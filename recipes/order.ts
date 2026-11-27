@@ -1,0 +1,24 @@
+import { nuohCards } from "./cards";
+import { comeback } from "./comeback";
+import { files } from "./files";
+import { nuohFrame } from "./frame";
+import { gitGraphPanel } from "./git-graph-panel";
+import { kit } from "./kit";
+import { look } from "./look";
+import { markdown } from "./markdown";
+import { moveTab } from "./move-tab";
+import { palette } from "./palette";
+import { rail, railKeys } from "./rail";
+import type { Recipe } from "./recipe";
+import { spacesTree } from "./spaces-tree";
+
+const OWN: Recipe[] = [palette, look, kit, gitGraphPanel, spacesTree, comeback, markdown, moveTab, files];
+
+export function recipesWith(extras: Recipe[]): Recipe[] {
+  const taken = [...OWN, rail, railKeys, nuohFrame, nuohCards].map((recipe) => recipe.name);
+  for (const recipe of extras) {
+    if (taken.includes(recipe.name)) throw new Error(`an extra recipe is named ${recipe.name}, which is taken`);
+    taken.push(recipe.name);
+  }
+  return [...OWN, rail, ...extras, railKeys, nuohFrame, nuohCards];
+}

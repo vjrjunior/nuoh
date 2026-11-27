@@ -1,20 +1,19 @@
 import { appendFileSync, closeSync, cpSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync, writeSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
-import type { Variant } from "../recipes/recipe";
-import { LEFT_ROUNDED, REPLACED, variantsWith } from "../recipes/variants";
+import { LAYOUT } from "../recipes/recipe";
 import { loadExtras, readLocalConfig } from "./config";
-import { type Generated, generateVariant } from "./generate-layout";
+import { type Generated, generate } from "./generate-layout";
 import { deriveSection, type KeyTable, keysText, readKeys, withoutSections, withSections } from "./layout-keys";
 import { herdrAppHome, stateDir } from "./paths";
 
 type ApplyResult = "applied" | "unchanged" | "busy";
-type LayoutRecord = { version: string; mods: string[]; kept: string[]; files: string[]; sections: string[]; square: boolean };
-type ApplyOptions = { herdrVersion?: string; square?: boolean };
+type LayoutRecord = { version: string; mods: string[]; kept: string[]; files: string[]; sections: string[] };
+type ApplyOptions = { herdrVersion?: string };
 
 const root = join(import.meta.dir, "..");
 const REPO_MODS = ["vjr-sync", "git-graph"];
 const APP_WRITTEN = ["gpui-kit.d.ts", "jsconfig.json"];
-const EMPTY_RECORD: LayoutRecord = { version: "", mods: [], kept: [], files: [], sections: [], square: false };
+const EMPTY_RECORD: LayoutRecord = { version: "", mods: [], kept: [], files: [], sections: [] };
 const RELOAD_MS = 1500;
 const STATUS_TIMEOUT_MS = 3000;
 const CHECK_TIMEOUT_MS = 60000;
@@ -116,8 +115,8 @@ function installedVersion(): string {
   return version;
 }
 
-function writeBuild(build: string, generated: Generated[]): void {
-  for (const [mod, files] of generated.flatMap((one) => Object.entries(one.mods))) {
+function writeBuild(build: string, generated: Generated): void {
+  for (const [mod, files] of Object.entries(generated.mods)) {
     mkdirSync(join(build, mod), { recursive: true });
     for (const [file, text] of Object.entries(files)) {
       mkdirSync(dirname(join(build, mod, file)), { recursive: true });
@@ -143,8 +142,8 @@ function refuseForeign(paths: string[], recorded: string[], home: string): void 
   }
 }
 
-function keySections(table: KeyTable, generated: Generated[]): KeyTable {
-  return Object.fromEntries(generated.map((one) => [`layout:${one.layout}`, { ...deriveSection(table.global ?? {}, one.replacements), ...one.keys }]));
+function keySections(table: KeyTable, generated: Generated): KeyTable {
+  return { [`layout:${LAYOUT}`]: { ...deriveSection(table.global ?? {}, generated.replacements), ...generated.keys } };
 }
 
 const CHECK_ONE = 'out=$(herdr-app check "$1/$2" 2>&1) || printf "%s\\t%s\\n" "$2" "$(printf "%s" "$out" | tr "\\n" " " | cut -c1-400)"';
@@ -192,17 +191,6 @@ function refuseNewErrors(before: string[] | null): void {
   if (added.length > 0) throw new Error(`herdr-app reported errors after the swap: ${added.join("; ")}`);
 }
 
-function warnUncovered(home: string, variant: Variant): void {
-  const path = join(home, "installed.json");
-  if (!existsSync(path)) return;
-  const covered = variant.recipes.flatMap((recipe) => recipe.mods.map((mod) => mod.name));
-  for (const name of Object.keys(JSON.parse(readFileSync(path, "utf8")))) {
-    if (name.startsWith("layout:") || covered.includes(name) || LEFT_ROUNDED.includes(name) || REPLACED.includes(name)) continue;
-    const main = join(home, "mods", name, "main.js");
-    if (existsSync(main) && readFileSync(main, "utf8").includes(".rounded")) console.warn(`mods/${name} has rounded corners that no recipe covers`);
-  }
-}
-
 function applyAll(options: ApplyOptions): ApplyResult {
   const home = herdrAppHome();
   const state = stateDir();
@@ -213,9 +201,7 @@ function applyAll(options: ApplyOptions): ApplyResult {
   const record = readRecord();
   const config = readLocalConfig();
   const extras = loadExtras(config.extras);
-  const square = options.square ?? record.square;
-  const variants = variantsWith(extras.recipes, square);
-  const generated = variants.map((variant) => generateVariant(variant, { home, version, repo: root, bun: process.execPath, editor: config.editor, icons: extras.icons }));
+  const generated = generate(extras.recipes, { home, version, repo: root, bun: process.execPath, editor: config.editor, icons: extras.icons });
   const build = join(state, `build-${process.pid}`);
   const previous = join(state, `previous-${process.pid}`);
   mkdirSync(build, { recursive: true });
@@ -224,12 +210,10 @@ function applyAll(options: ApplyOptions): ApplyResult {
     writeBuild(build, generated);
     const kept = adoptedGitGraph(home, record, build) ? ["git-graph"] : [];
     const mods = readdirSync(build).filter((mod) => !kept.includes(mod));
-    const files: Record<string, string> = Object.fromEntries(
-      generated.flatMap((one) => [
-        [`layouts/${one.layout}.json`, one.layoutText],
-        [`layouts/${one.layout}.svg`, readFileSync(join(root, "layouts", `${one.layout}.svg`), "utf8")],
-      ]),
-    );
+    const files: Record<string, string> = {
+      [`layouts/${LAYOUT}.json`]: generated.layoutText,
+      [`layouts/${LAYOUT}.svg`]: readFileSync(join(root, "layouts", `${LAYOUT}.svg`), "utf8"),
+    };
     refuseForeign(mods.map((mod) => `mods/${mod}`), record.mods.map((mod) => `mods/${mod}`), home);
     refuseForeign(Object.keys(files), record.files, home);
 
@@ -239,7 +223,7 @@ function applyAll(options: ApplyOptions): ApplyResult {
     const staleMods = record.mods.filter((mod) => !mods.includes(mod));
     const changedFiles = Object.keys(files).filter((path) => !existsSync(join(home, path)) || readFileSync(join(home, path), "utf8") !== files[path]);
     const keysChanged = !existsSync(keysPath) || readFileSync(keysPath, "utf8") !== keys;
-    if (changedMods.length + staleMods.length + changedFiles.length === 0 && !keysChanged && record.square === square && existsSync(recordPath())) return "unchanged";
+    if (changedMods.length + staleMods.length + changedFiles.length === 0 && !keysChanged && existsSync(recordPath())) return "unchanged";
 
     checkMods(build, changedMods);
 
@@ -251,7 +235,6 @@ function applyAll(options: ApplyOptions): ApplyResult {
       kept,
       files: union(record.files, Object.keys(files)),
       sections: union(record.sections, Object.keys(sections)),
-      square: record.square,
     });
     mkdirSync(previous, { recursive: true });
     const installed: string[] = [];
@@ -278,8 +261,7 @@ function applyAll(options: ApplyOptions): ApplyResult {
       if (before !== null) Bun.sleepSync(RELOAD_MS);
       for (const mod of staleMods) rmSync(join(home, "mods", mod), { recursive: true, force: true });
     }
-    writeRecord({ version, mods, kept, files: Object.keys(files), sections: Object.keys(sections), square });
-    if (square) warnUncovered(home, variants[0] as Variant);
+    writeRecord({ version, mods, kept, files: Object.keys(files), sections: Object.keys(sections) });
     return "applied";
   } finally {
     rmSync(build, { recursive: true, force: true });
@@ -332,18 +314,12 @@ function flag(args: string[], name: string): string | undefined {
   return index < 0 ? undefined : args[index + 1];
 }
 
-function squareFlag(value: string | undefined): boolean | undefined {
-  if (value === undefined) return undefined;
-  if (value !== "on" && value !== "off") throw new Error("--square takes on or off");
-  return value === "on";
-}
-
 if (import.meta.main) {
   try {
     const [command, ...args] = process.argv.slice(2);
-    if (command === "apply") console.log(apply({ herdrVersion: flag(args, "--herdr-version"), square: squareFlag(flag(args, "--square")) }));
+    if (command === "apply") console.log(apply({ herdrVersion: flag(args, "--herdr-version") }));
     else if (command === "uninstall") uninstall();
-    else throw new Error("usage: layout.ts apply [--herdr-version X] [--square on|off] | uninstall");
+    else throw new Error("usage: layout.ts apply [--herdr-version X] | uninstall");
   } catch (error) {
     console.error(`error: ${(error as Error).message}`);
     process.exit(1);

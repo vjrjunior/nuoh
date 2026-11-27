@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { variantWith } from "../recipes/variants";
+import { recipesWith } from "../recipes/order";
 import { loadExtras, readLocalConfig } from "../scripts/config";
-import { generateVariant } from "../scripts/generate-layout";
-import { bothLooks, copyRepo, makeHomes, removeTempDirs, repo, run, tempDir } from "./helpers";
+import { generate } from "../scripts/generate-layout";
+import { copyRepo, makeHomes, removeTempDirs, repo, run, tempDir } from "./helpers";
 import { makeHerdrHome } from "./herdr-home";
 
 afterEach(removeTempDirs);
@@ -15,7 +15,7 @@ function generateWith(options: Record<string, unknown> = {}) {
   const home = tempDir();
   makeHerdrHome(home);
   const extras = loadExtras([{ path: EXTRA, options }]);
-  return bothLooks(extras.recipes).map((variant) => generateVariant(variant, { home, version: "0.1.10", repo, bun: "/bin/bun", icons: extras.icons }));
+  return generate(extras.recipes, { home, version: "0.1.10", repo, bun: "/bin/bun", icons: extras.icons });
 }
 
 function configFile(text: string): string {
@@ -47,32 +47,25 @@ describe("the local config", () => {
 });
 
 describe("extras", () => {
-  test("an extra's recipe lands in both looks, with the layout's prefix and its options", () => {
-    for (const look of generateWith({ greeting: "hi" })) {
-      expect(Object.keys(look.mods)).toContain("vjr-hello");
-      expect(JSON.parse(look.layoutText).floating).toContainEqual({ id: "hello", content: { mod: "vjr-hello", props: { greeting: "hi" } }, edge: "left", align: "end" });
-    }
-  });
-
-  test("square corners square an extra's mod and frame its popup", () => {
-    const [round, square] = generateWith();
-    expect(round?.mods["vjr-hello"]?.["main.js"]).toContain(".bg(t.popover).rounded(6)");
-    expect(square?.mods["vjr-hello"]?.["main.js"]).toContain(".bg(t.popover).border_1().border_color(t.border).rounded(0)");
-    expect(JSON.parse(square?.mods["vjr-hello"]?.["mod.json"] ?? "{}").overlay).toEqual({ frame: "none" });
+  test("an extra's recipe lands in the layout, with the layout's prefix and its options", () => {
+    const generated = generateWith({ greeting: "hi" });
+    expect(Object.keys(generated.mods)).toContain("nuoh-hello");
+    expect(JSON.parse(generated.layoutText).floating).toContainEqual({ id: "hello", content: { mod: "nuoh-hello", props: { greeting: "hi" } }, edge: "left", align: "end" });
   });
 
   test("an extra's mod gets the kit, and its icons join the kit's", () => {
-    const [round] = generateWith();
-    expect(round?.mods["vjr-hello"]?.["main.js"]).toContain('from "./kit.js"');
-    expect(round?.mods["vjr-hello"]?.["kit.js"]).toContain('export const KIT = { name: "vjr-kit" };');
-    expect(Object.keys(round?.mods["vjr-kit"] ?? {})).toContain("icons/hello.svg");
-    expect(Object.keys(round?.mods["vjr-kit"] ?? {})).toContain("icons/plus.svg");
+    const { mods } = generateWith();
+    expect(mods["nuoh-hello"]?.["main.js"]).toContain('from "./kit.js"');
+    expect(mods["nuoh-hello"]?.["kit.js"]).toContain('export const KIT = { name: "nuoh-kit" };');
+    expect(Object.keys(mods["nuoh-kit"] ?? {})).toContain("icons/hello.svg");
+    expect(Object.keys(mods["nuoh-kit"] ?? {})).toContain("icons/plus.svg");
   });
 
   test("an extra can't take a recipe name that exists", () => {
     const [recipe] = loadExtras([{ path: EXTRA, options: {} }]).recipes;
-    expect(() => variantWith([{ ...recipe!, name: "markdown" }], false)).toThrow(/markdown, which is taken/);
-    expect(() => variantWith([recipe!, recipe!], false)).toThrow(/hello, which is taken/);
+    expect(() => recipesWith([{ ...recipe!, name: "markdown" }])).toThrow(/markdown, which is taken/);
+    expect(() => recipesWith([recipe!, recipe!])).toThrow(/hello, which is taken/);
+    for (const name of ["rail", "rail-keys", "nuoh-frame", "nuoh-cards"]) expect(() => recipesWith([{ ...recipe!, name }])).toThrow(`${name}, which is taken`);
   });
 
   test("a folder without recipes/index.ts, or one that exports no recipes, names the folder", () => {
@@ -92,25 +85,25 @@ describe("apply with a local config", () => {
     const env = { ...homes.env, PATH: `${join(repo, "tests/fixtures/fake-herdr-app")}:${homes.env.PATH}`, FAKE_HERDR_LOG: join(homes.base, "fake.log") };
     const config = join(homes.env.XDG_CONFIG_HOME as string, "vjr-herdr/config.json");
     mkdirSync(join(config, ".."), { recursive: true });
-    const mods = () => readdirSync(join(homes.herdrApp, "mods")).filter((name) => name.startsWith("vjr-"));
+    const mods = () => readdirSync(join(homes.herdrApp, "mods")).filter((name) => name.startsWith("nuoh-"));
     return { homes, config, mods, apply: () => run(root, "layout.ts", ["apply"], env) };
   }
 
   test("without a config nothing extra is installed", () => {
     const { apply, mods } = setup();
     expect(apply().code).toBe(0);
-    expect(mods()).not.toContain("vjr-hello");
+    expect(mods()).not.toContain("nuoh-hello");
   });
 
   test("an extra in the config is installed, and leaves when it leaves the config", () => {
     const { apply, mods, config } = setup();
     writeFileSync(config, JSON.stringify({ extras: [EXTRA] }));
     expect(apply().stdout).toContain("applied");
-    expect(mods()).toContain("vjr-hello");
+    expect(mods()).toContain("nuoh-hello");
     expect(apply().stdout).toContain("unchanged");
     writeFileSync(config, "{}");
     expect(apply().stdout).toContain("applied");
-    expect(mods()).not.toContain("vjr-hello");
+    expect(mods()).not.toContain("nuoh-hello");
   });
 
   test("an extra that doesn't load installs nothing and says which folder", () => {
@@ -119,13 +112,13 @@ describe("apply with a local config", () => {
     const result = apply();
     expect(result.code).toBe(1);
     expect(result.stderr).toContain("extra /nowhere/at/all: recipes/index.ts not found");
-    expect(existsSync(join(homes.herdrApp, "layouts/vjr-desk.json"))).toBe(false);
+    expect(existsSync(join(homes.herdrApp, "layouts/nuoh.json"))).toBe(false);
   });
 
   test("the configured editor names the Markdown viewer's button and runs its command", () => {
     const { apply, homes, config } = setup();
     expect(apply().code).toBe(0);
-    const viewer = () => readFileSync(join(homes.herdrApp, "mods/vjr-markdown/main.js"), "utf8");
+    const viewer = () => readFileSync(join(homes.herdrApp, "mods/nuoh-markdown/main.js"), "utf8");
     expect(viewer()).toContain('const EDITOR = { name: "Open", argv: ["open"] };');
     writeFileSync(config, JSON.stringify({ editor: { name: "Zed", argv: ["zed", "-n"] } }));
     expect(apply().code).toBe(0);

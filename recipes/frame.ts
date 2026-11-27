@@ -12,7 +12,6 @@ export const HIDDEN_LINE = "#00000000";
 export const RAIL_RADIUS = 16;
 export const PANE_RADIUS = 14;
 export const GONE = ["brand", "sidebar-footer", "status"];
-const UNUSED_COPIES = ["workspace-chrome", "workspace-status"];
 
 const BAR = ".px(10).pl(lightsPadding).gap(3).items_center().bg(t.chrome).border_b(1).border_color(t.border)";
 const TAB_SIZE = ".h(29).px(10).gap(7).rounded(7).items_center().flex_none().text_size(12.8)";
@@ -108,6 +107,5 @@ export const nuohFrame: Recipe = {
     frameWork(layout);
     framePanes(layout);
     frameTabs(copies.tabs as Copy);
-    for (const name of UNUSED_COPIES) delete copies[name];
   },
 };

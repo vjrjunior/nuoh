@@ -1,10 +1,10 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { type Copy, type Editor, type KeyCommand, type LayoutNode, type ModSource, RecipeError, type RecipeContext, type Variant } from "../recipes/recipe";
+import { recipesWith } from "../recipes/order";
+import { type Copy, type Editor, type KeyCommand, LAYOUT, type LayoutNode, type ModSource, PREFIX, type Recipe, RecipeError, type RecipeContext } from "../recipes/recipe";
 
 export type GenerateOptions = { home: string; version: string; repo: string; bun: string; editor?: Editor; icons?: string[] };
 export type Generated = {
-  layout: string;
   layoutText: string;
   mods: Record<string, Record<string, string>>;
   replacements: Record<string, string>;
@@ -112,8 +112,8 @@ function rewireLayout(node: unknown, copies: Record<string, Copy>, prefix: strin
   }
 }
 
-function applyRecipes(variant: Variant, context: Omit<RecipeContext, "options">): void {
-  for (const recipe of variant.recipes) {
+function applyRecipes(recipes: Recipe[], context: Omit<RecipeContext, "options">): void {
+  for (const recipe of recipes) {
     try {
       recipe.apply({ ...context, options: recipe.options ?? {} });
     } catch (error) {
@@ -127,41 +127,40 @@ function modFiles(copy: Copy, version: string): Record<string, string> {
   return { ...copy.files, "mod.json": `${JSON.stringify(meta, null, 2)}\n` };
 }
 
-function finishLayout(layout: LayoutNode, variant: Variant, options: GenerateOptions): LayoutNode {
-  const sync = {
-    id: "vjr-sync",
-    content: { mod: "vjr-sync", props: { built: options.version, repo: options.repo, bun: options.bun, square: variant.oneLook ? null : variant.square } },
-    edge: "right",
-    align: "end",
-  };
+function finishLayout(layout: LayoutNode, options: GenerateOptions): LayoutNode {
+  const sync = { id: "vjr-sync", content: { mod: "vjr-sync", props: { built: options.version, repo: options.repo, bun: options.bun } }, edge: "right", align: "end" };
   return {
     ...layout,
     cloned_from: { name: "main", version: options.version },
     theme: { light: "paper", dark: "vjr" },
-    preview: variant.preview,
+    preview: `layouts/${LAYOUT}.svg`,
     floating: [...((layout.floating as unknown[] | undefined) ?? []), sync],
   };
 }
 
-export function generateVariant(variant: Variant, options: GenerateOptions): Generated {
-  const layout: LayoutNode = JSON.parse(readFileSync(join(options.home, "layouts/main.json"), "utf8"));
+export function generateWith(recipes: Recipe[], options: GenerateOptions): Generated {
+  const main: LayoutNode = JSON.parse(readFileSync(join(options.home, "layouts/main.json"), "utf8"));
   const copies: Record<string, Copy> = {};
-  for (const source of variant.recipes.flatMap((recipe) => recipe.mods)) {
+  for (const source of recipes.flatMap((recipe) => recipe.mods)) {
     copies[source.name] ??= readCopy(source, options);
   }
   const replacements: Record<string, string> = {};
   const keys: Record<string, string | KeyCommand> = {};
-  applyRecipes(variant, { copies, layout, replacements, keys, variant, bun: options.bun, editor: options.editor });
+  applyRecipes(recipes, { copies, layout: main, replacements, keys, bun: options.bun, editor: options.editor });
   for (const copy of Object.values(copies)) {
-    if (copy.files["kit.js"] !== undefined && !Object.hasOwn(copies, "kit")) throw new RecipeError(`${copy.name} uses the kit, but ${variant.layout} has no kit`);
+    if (copy.files["kit.js"] !== undefined && !Object.hasOwn(copies, "kit")) throw new RecipeError(`${copy.name} uses the kit, but ${LAYOUT} has no kit`);
   }
-  rewireFiles(copies, variant.prefix);
-  rewireLayout(layout, copies, variant.prefix);
+  const layout = finishLayout(main, options);
+  rewireFiles(copies, PREFIX);
+  rewireLayout(layout, copies, PREFIX);
   return {
-    layout: variant.layout,
-    layoutText: `${JSON.stringify(finishLayout(layout, variant, options), null, 2)}\n`,
-    mods: Object.fromEntries(Object.values(copies).map((copy) => [`${variant.prefix}${copy.name}`, modFiles(copy, options.version)])),
-    replacements: Object.fromEntries(Object.entries(replacements).map(([action, mod]) => [action, `mod.open:${variant.prefix}${mod}`])),
-    keys: Object.fromEntries(Object.entries(keys).map(([key, action]) => [key, typeof action === "string" ? `mod.open:${variant.prefix}${action}` : action])),
+    layoutText: `${JSON.stringify(layout, null, 2)}\n`,
+    mods: Object.fromEntries(Object.values(copies).map((copy) => [`${PREFIX}${copy.name}`, modFiles(copy, options.version)])),
+    replacements: Object.fromEntries(Object.entries(replacements).map(([action, mod]) => [action, `mod.open:${PREFIX}${mod}`])),
+    keys: Object.fromEntries(Object.entries(keys).map(([key, action]) => [key, typeof action === "string" ? `mod.open:${PREFIX}${action}` : action])),
   };
+}
+
+export function generate(extras: Recipe[], options: GenerateOptions): Generated {
+  return generateWith(recipesWith(extras), options);
 }

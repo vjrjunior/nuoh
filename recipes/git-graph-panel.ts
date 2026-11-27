@@ -1,4 +1,7 @@
-import { type Copy, exact, findNode, type LayoutNode, type Recipe } from "./recipe";
+import { type Copy, exact, findNode, type LayoutNode, type ModSource, type Recipe } from "./recipe";
+
+export const GIT_GRAPH: ModSource = { name: "git-graph", from: "repo" };
+export const GRAPH_RADIUS = ".rounded(paneFrame(layout())?.radius ?? 0)";
 
 const CHANGES_BUTTON = '.when(enabled.includes("changes"), el => el.child(panelButton("changes", "Changes", "mods/changes/changes.svg")))';
 
