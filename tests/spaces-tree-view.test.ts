@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from "bun:test";
-import { herdr, type Node, texts, walk } from "./app-mocks";
+import { herdr, type Node, own, svgs, texts } from "./app-mocks";
 import { reset, app, click, common, cx, pathTo, setup, space, style } from "./spaces-tree-harness";
 
 beforeEach(reset);
@@ -145,8 +145,6 @@ describe("the card look", () => {
   const named = () => {
     herdr.theme = () => new Proxy({}, { get: (_x, p) => (typeof p === "string" ? `t.${p}` : undefined) });
   };
-  const own = (node: Node, name: string) => node.calls.filter(([called]) => called === name).map(([, args]) => args);
-  const svgs = (node: Node) => walk(node).flatMap((n) => n.calls.filter(([c]) => c === "svg").map(([, args]) => args[0]));
   const head = (root: Node) => root.kids[0] as Node;
 
   test("the card's own fill shows through, under the card header with the space count", () => {

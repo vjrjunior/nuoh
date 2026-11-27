@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from "bun:test";
-import { herdr, type Node, walk } from "./app-mocks";
+import { byKey, calls, click, herdr, type Node, svgs, walk } from "./app-mocks";
 
 const { default: Rail } = await import("../mods/rail/main.js");
 
@@ -36,11 +36,6 @@ beforeEach(() => {
   });
 });
 
-const find = (node: Node, key: string) => walk(node).find((n) => n.key === key) as Node;
-const calls = (node: Node, name: string) => node.calls.filter(([call]) => call === name).map(([, args]) => args[0]);
-const svgs = (node: Node) => walk(node).flatMap((n) => calls(n, "svg"));
-const click = (node: Node) => node.handlers.click?.[0]?.({}, {});
-
 function start() {
   const rail = new Rail();
   rail.init();
@@ -65,7 +60,7 @@ describe("tiles", () => {
   });
 
   test("are 40 px with 11 px corners", () => {
-    const tile = find(draw(start()), "rail-workspace");
+    const tile = byKey(draw(start()), "rail-workspace");
     expect(calls(tile, "size")).toEqual([40]);
     expect(calls(tile, "rounded")).toEqual([11]);
   });
@@ -73,39 +68,39 @@ describe("tiles", () => {
   test("the shown view is selected and the others are muted", () => {
     active = "board";
     const root = draw(start());
-    expect(calls(find(root, "rail-board"), "bg")).toEqual(["t.selected"]);
-    expect(calls(find(root, "rail-board"), "border_color")).toEqual(["t.input"]);
-    expect(calls(find(root, "rail-board"), "text_color")).toEqual(["t.foreground"]);
-    expect(calls(find(root, "rail-workspace"), "bg")).toEqual([]);
-    expect(calls(find(root, "rail-workspace"), "border_color")).toEqual([]);
-    expect(calls(find(root, "rail-workspace"), "text_color")).toEqual(["t.muted"]);
+    expect(calls(byKey(root, "rail-board"), "bg")).toEqual(["t.selected"]);
+    expect(calls(byKey(root, "rail-board"), "border_color")).toEqual(["t.input"]);
+    expect(calls(byKey(root, "rail-board"), "text_color")).toEqual(["t.foreground"]);
+    expect(calls(byKey(root, "rail-workspace"), "bg")).toEqual([]);
+    expect(calls(byKey(root, "rail-workspace"), "border_color")).toEqual([]);
+    expect(calls(byKey(root, "rail-workspace"), "text_color")).toEqual(["t.muted"]);
   });
 
   test("each tile names itself and its key", () => {
     const root = draw(start());
-    expect(calls(find(root, "rail-workspace"), "tooltip")).toEqual(["Workspace  ⌃⌘1"]);
-    expect(calls(find(root, "rail-board"), "tooltip")).toEqual(["Board  ⌃⌘2"]);
-    expect(calls(find(root, "rail-search"), "tooltip")).toEqual(["Search  ⌘⇧P"]);
-    expect(calls(find(root, "rail-settings"), "tooltip")).toEqual(["Settings  ⌘,"]);
+    expect(calls(byKey(root, "rail-workspace"), "tooltip")).toEqual(["Workspace  ⌃⌘1"]);
+    expect(calls(byKey(root, "rail-board"), "tooltip")).toEqual(["Board  ⌃⌘2"]);
+    expect(calls(byKey(root, "rail-search"), "tooltip")).toEqual(["Search  ⌘⇧P"]);
+    expect(calls(byKey(root, "rail-settings"), "tooltip")).toEqual(["Settings  ⌘,"]);
   });
 
   test("a press on a tile never drags the window", () => {
     let stopped = false;
-    find(draw(start()), "rail-board").handlers["down:left"]?.[0]?.({}, { stop_propagation: () => (stopped = true) });
+    byKey(draw(start()), "rail-board").handlers["down:left"]?.[0]?.({}, { stop_propagation: () => (stopped = true) });
     expect(stopped).toBe(true);
   });
 });
 
 describe("clicks", () => {
   test("a view tile selects its view", () => {
-    click(find(draw(start()), "rail-board"));
+    click(byKey(draw(start()), "rail-board"));
     expect(runs).toEqual([["layout.select", { stack: "views", child: "board" }]]);
   });
 
   test("search opens the palette and settings opens Settings", () => {
     const root = draw(start());
-    click(find(root, "rail-search"));
-    click(find(root, "rail-settings"));
+    click(byKey(root, "rail-search"));
+    click(byKey(root, "rail-settings"));
     expect(runs).toEqual([
       ["mod.open", { name: "palette" }],
       ["app.settings", undefined],
@@ -114,7 +109,7 @@ describe("clicks", () => {
 });
 
 describe("the Workspace badge", () => {
-  const badge = (root: Node) => walk(find(root, "rail-workspace")).find((node) => calls(node, "absolute").length > 0);
+  const badge = (root: Node) => walk(byKey(root, "rail-workspace")).find((node) => calls(node, "absolute").length > 0);
 
   test("shows the most urgent agent, ringed in the rail card's color", () => {
     agentList = [{ status: "working" }, { status: "blocked" }];
@@ -131,7 +126,7 @@ describe("the Workspace badge", () => {
   test("only the Workspace tile carries it", () => {
     agentList = [{ status: "done" }];
     const root = draw(start());
-    expect(walk(find(root, "rail-board")).some((node) => calls(node, "absolute").length > 0)).toBe(false);
+    expect(walk(byKey(root, "rail-board")).some((node) => calls(node, "absolute").length > 0)).toBe(false);
   });
 });
 
@@ -149,7 +144,7 @@ describe("back to the Workspace", () => {
     const rail = start();
     const before = draw(rail);
     focus = { space: "s1", tab: "t2", pane: "p2" };
-    click(find(before, "rail-board"));
+    click(byKey(before, "rail-board"));
     active = "board";
     draw(rail);
     expect(runs).toEqual([["layout.select", { stack: "views", child: "board" }]]);

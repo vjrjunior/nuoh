@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from "bun:test";
-import { herdr, type Node, texts, walk } from "./app-mocks";
+import { byKey, calls, click, herdr, makeCx, type Node, svgs, texts, walk } from "./app-mocks";
 
 const { default: PaneHeader } = await import("../mods/pane-header/main.js");
 
@@ -30,10 +30,6 @@ beforeEach(() => {
   });
 });
 
-const calls = (node: Node, name: string) => node.calls.filter(([call]) => call === name).map(([, args]) => args[0]);
-const byKey = (node: Node, key: string) => walk(node).find((n) => n.key === key);
-const cx = () => ({ notified: 0, stopped: false, notify() { this.notified += 1; }, stop_propagation() { this.stopped = true; } });
-
 function header() {
   const view = new PaneHeader();
   view.init();
@@ -42,14 +38,14 @@ function header() {
 
 function hover(view: InstanceType<typeof PaneHeader>) {
   const root = view.render() as Node;
-  root.handlers.hover?.[0]?.(true, cx());
+  root.handlers.hover?.[0]?.(true, makeCx());
   return view.render() as Node;
 }
 
 function resize(view: InstanceType<typeof PaneHeader>, width: number) {
   const root = view.render() as Node;
   const handler = calls(root, "on_size_change")[0] as (size: { width: number; height: number }, cx: unknown) => void;
-  handler({ width, height: 42 }, cx());
+  handler({ width, height: 42 }, makeCx());
   return view.render() as Node;
 }
 
@@ -113,7 +109,7 @@ describe("the header", () => {
 describe("the buttons", () => {
   test("show only while the pointer is over the header", () => {
     const view = header();
-    expect(byKey(view.render() as Node, "close-p1")).toBeUndefined();
+    expect(() => byKey(view.render() as Node, "close-p1")).toThrow("no element close-p1");
     const root = hover(view);
     const keys = walk(root).map((n) => n.key).filter((key) => key?.endsWith("-p1"));
     expect(keys).toEqual(["split-right-p1", "split-down-p1", "zoom-p1", "close-p1"]);
@@ -129,50 +125,50 @@ describe("the buttons", () => {
     ];
     for (const [key, command, args] of expected) {
       runs = [];
-      const button = byKey(root, key) as Node;
-      const event = cx();
-      button.handlers.click?.[0]?.({}, event);
-      expect(event.stopped).toBe(true);
+      const button = byKey(root, key);
+      const event = makeCx();
+      click(button, event);
+      expect(event.stopped).toBe(1);
       expect(runs).toEqual([[command, args]]);
-      const press = cx();
+      const press = makeCx();
       button.handlers["down:left"]?.[0]?.({}, press);
-      expect(press.stopped).toBe(true);
+      expect(press.stopped).toBe(1);
     }
   });
 
   test("are ghost buttons with their icons and tooltips", () => {
     const root = hover(header());
-    const icons = ["split-right-p1", "split-down-p1", "zoom-p1", "close-p1"].map((key) => walk(byKey(root, key) as Node).flatMap((n) => calls(n, "svg"))[0]);
+    const icons = ["split-right-p1", "split-down-p1", "zoom-p1", "close-p1"].map((key) => svgs(byKey(root, key))[0]);
     expect(icons).toEqual(["mods/kit/icons/columns-2.svg", "mods/kit/icons/rows-2.svg", "mods/kit/icons/maximize-2.svg", "mods/kit/icons/x.svg"]);
-    const tooltips = ["split-right-p1", "split-down-p1", "zoom-p1", "close-p1"].map((key) => calls(byKey(root, key) as Node, "tooltip")[0]);
+    const tooltips = ["split-right-p1", "split-down-p1", "zoom-p1", "close-p1"].map((key) => calls(byKey(root, key), "tooltip")[0]);
     expect(tooltips).toEqual(["Split right", "Split down", "Zoom", "Close pane"]);
-    expect(calls(byKey(root, "close-p1") as Node, "border_1")).toHaveLength(0);
+    expect(calls(byKey(root, "close-p1"), "border_1")).toHaveLength(0);
   });
 
   test("a pane alone in its tab has no zoom button", () => {
     paneList = [paneList[0] as Pane];
     const root = hover(header());
-    expect(byKey(root, "zoom-p1")).toBeUndefined();
+    expect(() => byKey(root, "zoom-p1")).toThrow("no element zoom-p1");
     expect(byKey(root, "close-p1")).toBeDefined();
   });
 
   test("a zoomed pane offers to undo the zoom", () => {
     paneList = [{ ...(paneList[0] as Pane), zoomed: true }];
-    const zoomButton = byKey(hover(header()), "zoom-p1") as Node;
+    const zoomButton = byKey(hover(header()), "zoom-p1");
     expect(calls(zoomButton, "tooltip")).toEqual(["Unzoom"]);
-    expect(walk(zoomButton).flatMap((n) => calls(n, "svg"))).toEqual(["mods/kit/icons/minimize-2.svg"]);
+    expect(svgs(zoomButton)).toEqual(["mods/kit/icons/minimize-2.svg"]);
   });
 
   test("leaving the header hides them again", () => {
     const view = header();
     const root = hover(view);
-    root.handlers.hover?.[0]?.(false, cx());
-    expect(byKey(view.render() as Node, "close-p1")).toBeUndefined();
+    root.handlers.hover?.[0]?.(false, makeCx());
+    expect(() => byKey(view.render() as Node, "close-p1")).toThrow("no element close-p1");
   });
 });
 
 test("a click on the header focuses its pane", () => {
   const root = header().render() as Node;
-  root.handlers.click?.[0]?.({}, cx());
+  click(root, makeCx());
   expect(runs).toEqual([["pane.focus", { pane: "p1" }]]);
 });

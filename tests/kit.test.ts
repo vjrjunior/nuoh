@@ -1,16 +1,14 @@
 import { expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { type Node, walk } from "./app-mocks";
+import { click, type Node, own, svgs, texts, walk } from "./app-mocks";
 
 const { ICONS, avatar, barPill, button, cardHeader, chip, iconButton, iconPath, popupRow, programIcon, statusChip, stepNode, toneColor, viewCard, viewTile } = await import("../kit/kit.js");
 
 const repo = join(import.meta.dir, "..");
 const t = new Proxy({}, { get: (_x, p) => (typeof p === "string" ? `t.${p}` : undefined) }) as any;
 
-const calls = (node: Node, name: string) => walk(node).flatMap((n) => n.calls.filter(([c]) => c === name).map(([, args]) => args));
-const svgs = (node: Node) => calls(node, "svg").map(([path]) => path);
-const own = (node: Node, name: string) => node.calls.filter(([c]) => c === name).map(([, args]) => args);
+const calls = (node: Node, name: string) => walk(node).flatMap((n) => own(n, name));
 
 test("every icon name has a file and every file is named", () => {
   const files = readdirSync(join(repo, "kit/icons")).filter((f) => f.endsWith(".svg")).map((f) => f.slice(0, -4)).sort();
@@ -72,7 +70,7 @@ test("a disabled button still reports its click", () => {
   let clicks = 0;
   const node = button("d", { label: "Next", disabled: true, onClick: () => clicks++ }, t);
   expect(own(node, "bg")).toContainEqual(["t.raised"]);
-  node.handlers.click[0]({}, {});
+  click(node);
   expect(clicks).toBe(1);
 });
 
@@ -192,9 +190,9 @@ test("a popup row has its icon, label and detail, and runs its click", () => {
   let clicks = 0;
   const node = popupRow("r", { icon: "plus", label: "New folder…", detail: "cmd-n", onClick: () => clicks++ }, t);
   expect(svgs(node)).toEqual(["mods/kit/icons/plus.svg"]);
-  expect(walk(node).flatMap((n) => n.texts)).toEqual(["New folder…", "cmd-n"]);
+  expect(texts(node)).toEqual(["New folder…", "cmd-n"]);
   expect(own(node, "bg")).toEqual([]);
-  node.handlers.click[0]({}, {});
+  click(node);
   expect(clicks).toBe(1);
 });
 
@@ -285,11 +283,11 @@ test("a bar pill is 34 px high on the surface, keeps its press from the window d
   expect(own(node, "bg")).toEqual([["t.surface"]]);
   expect(own(node, "border_color")).toEqual([["t.foreground12"]]);
   expect(own(node, "tooltip")).toEqual([["Read again"]]);
-  expect(walk(node).flatMap((n) => n.texts)).toEqual(["Read 2m ago"]);
+  expect(texts(node)).toEqual(["Read 2m ago"]);
   expect(own(node.kids[0] as Node, "size")).toEqual([[13]]);
   expect(own(node.kids[0] as Node, "text_color")).toEqual([["t.muted"]]);
   node.handlers["down:left"][0]({}, { stop_propagation: () => order.push("stop") });
-  node.handlers.click[0]({}, {});
+  click(node);
   expect(order).toEqual(["stop", "click"]);
 });
 

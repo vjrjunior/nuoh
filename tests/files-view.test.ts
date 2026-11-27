@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from "bun:test";
-import { find, herdr, type Node, texts, walk } from "./app-mocks";
+import { byKey, calls, flush, herdr, makeCx, type Node, texts, walk } from "./app-mocks";
 
 const { default: Files } = await import("../mods/files/main.js");
 
@@ -72,30 +72,6 @@ beforeEach(() => {
   });
 });
 
-function makeCx() {
-  const cx: Record<string, any> = {
-    notified: 0,
-    clipboard: [] as string[],
-    timer: { every() {} },
-    spawn(work: (cx: unknown) => unknown) {
-      Promise.resolve().then(() => work(cx));
-    },
-    notify() {
-      cx.notified += 1;
-    },
-    stop_propagation() {},
-    focus_handle: () => ({ focus() {} }),
-    write_to_clipboard(text: string) {
-      cx.clipboard.push(text);
-    },
-  };
-  return cx;
-}
-
-const flush = async () => {
-  for (let i = 0; i < 8; i++) await new Promise((resolve) => setTimeout(resolve, 0));
-};
-
 async function open() {
   const cx = makeCx();
   const view = new Files();
@@ -105,19 +81,15 @@ async function open() {
   return { view, cx, shown: () => texts(view.render(cx)) };
 }
 
-function node(view: { render(cx: unknown): Node }, cx: unknown, key: string) {
-  const found = find(view.render(cx), (item) => item.key === key);
-  if (!found) throw new Error(`no element ${key}`);
-  return found;
-}
+const node = (view: { render(cx: unknown): Node }, cx: unknown, key: string) => byKey(view.render(cx), key);
 
 function fire(view: { render(cx: unknown): Node }, cx: unknown, key: string, kind = "click") {
   for (const handler of node(view, cx, key).handlers[kind] ?? []) handler({}, cx);
 }
 
-const icons = (item: Node) => walk(item).flatMap((n) => n.calls.filter(([c]) => c === "image").map(([, args]) => args[0]));
+const icons = (item: Node) => walk(item).flatMap((n) => calls(n, "image"));
 const iconNode = (item: Node) => walk(item).find((n) => n.calls.some(([c]) => c === "image")) as Node;
-const colorOf = (item: Node) => walk(item).flatMap((n) => n.calls.filter(([c]) => c === "text_color").map(([, args]) => args[0]));
+const colorOf = (item: Node) => walk(item).flatMap((n) => calls(n, "text_color"));
 
 describe("the tree", () => {
   test("it shows the focused pane's repository, folders first", async () => {

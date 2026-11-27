@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { find, herdr, type Node, texts } from "./app-mocks";
+import { byKey, click, find, flush, herdr, makeCx, type Node, svgs, texts } from "./app-mocks";
 
 const { default: Markdown } = await import("../mods/markdown/main.js");
 
@@ -50,24 +50,6 @@ beforeEach(() => {
   });
 });
 
-function makeCx() {
-  const cx: Record<string, any> = {
-    notified: 0,
-    timer: { every() {} },
-    spawn(work: (cx: unknown) => unknown) {
-      Promise.resolve().then(() => work(cx));
-    },
-    notify() {
-      cx.notified += 1;
-    },
-  };
-  return cx;
-}
-
-const flush = async () => {
-  for (let i = 0; i < 4; i++) await new Promise((resolve) => setTimeout(resolve, 0));
-};
-
 async function open(props: Record<string, unknown> = given, full: Record<string, unknown> = props) {
   given = full;
   const cx = makeCx();
@@ -75,12 +57,6 @@ async function open(props: Record<string, unknown> = given, full: Record<string,
   view.init(props, cx);
   await flush();
   return { view, cx };
-}
-
-function click(view: { render(): Node }, key: string, cx: unknown) {
-  const node = find(view.render(), (item) => item.key === key);
-  if (!node) throw new Error(`no element ${key}`);
-  for (const handler of node.handlers.click ?? []) handler({}, cx);
 }
 
 function linkHandler(view: { render(): Node }) {
@@ -153,7 +129,7 @@ describe("watching", () => {
   test("only the newest read is shown", async () => {
     slow = [];
     const { view, cx } = await open();
-    click(view, "md-reload", cx);
+    click(byKey(view.render(), "md-reload"), cx);
     await flush();
     const [first, second] = slow;
     second?.("# Second");
@@ -176,7 +152,7 @@ describe("watching, after review", () => {
     }) as never;
     const { view, cx } = await open();
     expect(watches).toEqual([]);
-    click(view, "md-reload", cx);
+    click(byKey(view.render(), "md-reload"), cx);
     await flush();
     expect(watches.map((watch) => watch.dir)).toEqual([DIR]);
   });
@@ -186,7 +162,7 @@ describe("watching, after review", () => {
     const { view, cx } = await open();
     linkHandler(view)("../docs/plan.md", cx);
     await flush();
-    click(view, "md-back", cx);
+    click(byKey(view.render(), "md-back"), cx);
     await flush();
     const before = reads.length;
     files[FILE] = "# Changed";
@@ -226,7 +202,7 @@ describe("links and buttons", () => {
     expect(texts(view.render())).toContain("# The plan");
     expect(texts(view.render())).toContain("plan.md");
     expect(watches.at(-1)?.dir).toBe("/Users/me/w/app/docs");
-    click(view, "md-back", cx);
+    click(byKey(view.render(), "md-back"), cx);
     await flush();
     expect(texts(view.render())).toContain("# Draft autosave\n\nBody text");
     expect(find(view.render(), (item) => item.key === "md-back")).toBeNull();
@@ -255,7 +231,7 @@ describe("links and buttons", () => {
 
   test("Open opens the shown file in its own app", async () => {
     const { view, cx } = await open();
-    click(view, "md-editor", cx);
+    click(byKey(view.render(), "md-editor"), cx);
     expect(execs).toContainEqual(["open", [FILE]]);
   });
 
@@ -266,17 +242,15 @@ describe("links and buttons", () => {
     linkHandler(view)("../docs/plan.md", cx);
     await flush();
     const root = view.render();
-    const svgs = (node: Node): string[] => [...node.calls.filter(([n]) => n === "svg").map(([, a]) => a[0] as string), ...node.kids.flatMap(svgs)];
-    const at = (id: string) => find(root, (item) => item.key === id) as Node;
-    const zed = at("md-editor");
+    const zed = byKey(root, "md-editor");
     expect(texts(zed)).toContain("Open");
     expect(svgs(zed)).toEqual(["mods/kit/icons/external-link.svg"]);
     const zedIcon = find(zed, (item) => item.calls.some(([n, a]) => n === "svg" && a[0] === "mods/kit/icons/external-link.svg")) as Node;
     expect(zedIcon.calls).toContainEqual(["text_color", ["t.muted"]]);
-    const reload = at("md-reload");
+    const reload = byKey(root, "md-reload");
     expect(reload.calls).toContainEqual(["tooltip", ["Reload"]]);
     expect(svgs(reload)).toEqual(["mods/kit/icons/rotate-cw.svg"]);
-    const back = at("md-back");
+    const back = byKey(root, "md-back");
     expect(svgs(back)).toEqual(["mods/kit/icons/arrow-left.svg"]);
     expect(texts(back)).toEqual(["Back"]);
     for (const node of [zed, reload, back]) {
@@ -286,7 +260,7 @@ describe("links and buttons", () => {
 
   test("reload reads the file again", async () => {
     const { view, cx } = await open();
-    click(view, "md-reload", cx);
+    click(byKey(view.render(), "md-reload"), cx);
     await flush();
     expect(reads).toEqual([FILE, FILE]);
   });
@@ -317,7 +291,7 @@ describe("taking a file from another mod", () => {
     const { view, cx } = await open();
     await send(`${DIR}/PLAN.md`, "1");
     expect(texts(view.render())).toContain("# Plan");
-    click(view, "md-back", cx);
+    click(byKey(view.render(), "md-back"), cx);
     await flush();
     expect(texts(view.render())).toContain("# Draft autosave\n\nBody text");
   });

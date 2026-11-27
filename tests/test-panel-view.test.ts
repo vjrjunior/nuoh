@@ -1,5 +1,5 @@
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
-import { herdr, type Node, walk } from "./app-mocks";
+import { byKey, click, flush, herdr, makeCx, type Node } from "./app-mocks";
 
 const { default: plan } = await import("../tools/test-panel/run.js");
 const { default: TestPanel } = await import("../tools/test-panel/main.js");
@@ -12,12 +12,7 @@ let order: string[] = [];
 let pending: (() => void)[] = [];
 let instant = true;
 
-const cx: Record<string, any> = {
-  notify() {},
-  spawn(work: (cx: unknown) => unknown) {
-    Promise.resolve().then(() => work(cx));
-  },
-};
+const cx = makeCx();
 
 beforeEach(() => {
   Object.assign(plan, {
@@ -51,19 +46,17 @@ afterAll(() => {
   Object.assign(plan, original);
 });
 
-const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
-
 function passed() {
   const panel = new TestPanel();
   panel.init({}, cx);
-  const button = walk(panel.render(cx) as Node).find((node) => node.key === "test-pass") as Node;
-  return () => button.handlers.click[0]({}, cx);
+  const button = byKey(panel.render(cx) as Node, "test-pass");
+  return () => click(button, cx);
 }
 
 describe("answering a step", () => {
   test("saves the step's shot before the next step's commands run", async () => {
     passed()();
-    await settle();
+    await flush();
     expect(order).toEqual(["herdr-app shot /s/01-passed.png", "layout.switch nuoh"]);
     expect(store[KEY].step).toBe(1);
     expect(store[KEY].results).toMatchObject([{ step: 0, title: "Square", verdict: "passed", shot: "/s/01-passed.png" }]);
@@ -71,14 +64,14 @@ describe("answering a step", () => {
 
   test("the next step waits for the shot, and a second click meanwhile counts once", async () => {
     instant = false;
-    const click = passed();
-    click();
-    click();
-    await settle();
+    const pass = passed();
+    pass();
+    pass();
+    await flush();
     expect(order).toEqual(["herdr-app shot /s/01-passed.png"]);
     expect(store[KEY].step).toBe(0);
     pending.forEach((done) => done());
-    await settle();
+    await flush();
     expect(order).toEqual(["herdr-app shot /s/01-passed.png", "layout.switch nuoh"]);
     expect(store[KEY].step).toBe(1);
   });
@@ -86,7 +79,7 @@ describe("answering a step", () => {
   test("without a shots folder the next step starts with no shot", async () => {
     delete (plan as Record<string, unknown>).shots;
     passed()();
-    await settle();
+    await flush();
     expect(order).toEqual(["layout.switch nuoh"]);
     expect(store[KEY].results).toMatchObject([{ step: 0, verdict: "passed", shot: null }]);
   });

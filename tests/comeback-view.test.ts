@@ -2,14 +2,14 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { decodeNote, encodeNote } from "../mods/comeback/logic.js";
-import { herdr } from "./app-mocks";
+import { herdr, makeCx } from "./app-mocks";
 import { removeTempDirs, tempDir } from "./helpers";
 
 const { default: Comeback } = await import("../mods/comeback/main.js");
 
 const BOOT = "{ sec = 1793622627, usec = 216801 } Mon Nov  2 09:30:27 2026";
 const START = "Mon Nov  2 10:16:51 2026";
-const cx = { timer: { every() {}, after() {} }, spawn() {}, notify() {}, sleep: async () => {} };
+const cx = makeCx({ spawn() {} });
 
 let home = "";
 let agentsNow: Record<string, unknown>[] = [];

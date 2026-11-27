@@ -1,4 +1,4 @@
-import { herdr, type Node } from "./app-mocks";
+import { herdr, makeCx, type Node } from "./app-mocks";
 
 export const app = {
   spaces: [] as Record<string, unknown>[],
@@ -59,7 +59,7 @@ export const { default: SpacesTree } = await import("../mods/spaces-tree/main.js
 export const { DRAG_GRACE } = await import("../mods/spaces-tree/tree.js");
 
 export const common = "/r/app/.git";
-export const cx = { timer: { every() {}, after() {} }, spawn() {}, notify() {}, focus_handle: () => ({ focus() {} }) };
+export const cx = makeCx({ spawn() {} });
 export const space = (id: string, over = {}) => ({ id, index: 1, name: id, named: false, folder: "", machine: null, branch: null, active: false, status: null, tabs: [], ...over });
 
 export function setup(checkouts = [{ path: "/r/app", branch: "main", main: true }, { path: "/w/app/one", branch: "one", main: false }]) {

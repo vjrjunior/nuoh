@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from "bun:test";
-import { herdr, type Node, texts, walk } from "./app-mocks";
+import { byKey, calls, click, herdr, makeCx, type Node, svgs, texts, walk } from "./app-mocks";
 
 const { default: Topbar } = await import("../mods/topbar/main.js");
 
@@ -35,11 +35,7 @@ beforeEach(() => {
   });
 });
 
-const find = (node: Node, key: string) => walk(node).find((n) => n.key === key) as Node;
-const calls = (node: Node, name: string) => node.calls.filter(([call]) => call === name).map(([, args]) => args[0]);
-const svgs = (node: Node) => walk(node).flatMap((n) => calls(n, "svg"));
 const draw = () => new Topbar().render() as Node;
-const click = (node: Node) => node.handlers.click?.[0]?.({}, { stop_propagation() {} });
 const press = (node: Node) => {
   let stopped = false;
   node.handlers["down:left"]?.[0]?.({}, { stop_propagation: () => (stopped = true) });
@@ -65,7 +61,7 @@ describe("the title", () => {
   });
 
   test("the branch chip sits on raised with the branch icon in a quieter gray", () => {
-    const chip = find(draw(), "branch");
+    const chip = byKey(draw(), "branch");
     expect(calls(chip, "bg")).toEqual(["t.raised"]);
     expect(calls(chip, "h")).toEqual([22]);
     expect(calls(chip, "tooltip")).toEqual(["feat/nuoh-frame"]);
@@ -75,7 +71,7 @@ describe("the title", () => {
   test("a space outside git shows no chip", () => {
     spaceList = [{ id: "s1", name: "~", active: true, machine: null, branch: null, tabs: [{ id: "t1" }] }];
     paneList = [{ pane: "p1", tab: "t1", branch: null }];
-    expect(find(draw(), "branch")).toBeUndefined();
+    expect(() => byKey(draw(), "branch")).toThrow("no element branch");
     expect(texts(draw())).toEqual(["~", "~"]);
   });
 
@@ -85,7 +81,7 @@ describe("the title", () => {
     expect(svgs(root)).toEqual(["mods/kit/icons/panel-left.svg"]);
     expect(texts(root)).toEqual([]);
     expect(calls(root, "justify_center")).toHaveLength(1);
-    expect(calls(find(root, "sidebar-toggle"), "tooltip")).toEqual(["Expand sidebar"]);
+    expect(calls(byKey(root, "sidebar-toggle"), "tooltip")).toEqual(["Expand sidebar"]);
   });
 
   test("with no space yet, only the fold button shows", () => {
@@ -96,9 +92,9 @@ describe("the title", () => {
 
 describe("the fold button", () => {
   test("folds an open sidebar to 44 px and keeps its width", () => {
-    const toggle = find(draw(), "sidebar-toggle");
+    const toggle = byKey(draw(), "sidebar-toggle");
     expect(calls(toggle, "tooltip")).toEqual(["Collapse sidebar"]);
-    click(toggle);
+    click(toggle, makeCx());
     expect(store["sidebar.width"]).toBe(268);
     expect(store["sidebar.collapsed"]).toBe(true);
     expect(runs).toEqual([["layout.resize", { id: "sidebar", px: 44 }]]);
@@ -107,14 +103,14 @@ describe("the fold button", () => {
   test("opens a folded sidebar to the width it had", () => {
     sidebarPx = 44;
     store["sidebar.width"] = 320;
-    click(find(draw(), "sidebar-toggle"));
+    click(byKey(draw(), "sidebar-toggle"), makeCx());
     expect(store["sidebar.width"]).toBe(320);
     expect(store["sidebar.collapsed"]).toBe(false);
     expect(runs).toEqual([["layout.resize", { id: "sidebar", px: 320 }]]);
   });
 
   test("a press on it never drags the window", () => {
-    expect(press(find(draw(), "sidebar-toggle"))).toBe(true);
+    expect(press(byKey(draw(), "sidebar-toggle"))).toBe(true);
   });
 });
 
@@ -128,7 +124,7 @@ describe("the machine pill", () => {
     expect(calls(root, "justify_end")).toHaveLength(1);
     expect(texts(root)).toEqual(["This computer"]);
     expect(svgs(root)).toEqual(["mods/kit/icons/monitor.svg", "mods/kit/icons/chevron-down.svg"]);
-    const pill = find(root, "machine");
+    const pill = byKey(root, "machine");
     expect(calls(pill, "h")).toEqual([34]);
     expect(calls(pill, "bg")).toEqual(["t.surface"]);
     expect(calls(pill, "border_color")).toEqual(["t.border"]);
@@ -143,9 +139,9 @@ describe("the machine pill", () => {
   });
 
   test("a click opens Add machine, and a press never drags the window", () => {
-    const pill = find(draw(), "machine");
+    const pill = byKey(draw(), "machine");
     expect(press(pill)).toBe(true);
-    click(pill);
+    click(pill, makeCx());
     expect(runs).toEqual([["mod.open", { name: "machine-add" }]]);
   });
 });

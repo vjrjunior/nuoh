@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, setSystemTime, test } from "bun:test";
-import { find, herdr, type Node, texts } from "./app-mocks";
+import { byKey, click, find, flush, herdr, makeCx, type Node, own, texts } from "./app-mocks";
 
 const { default: MoveTab } = await import("../mods/move-tab/main.js");
 const { appIo } = await import("../mods/move-tab/io.js");
@@ -63,31 +63,6 @@ beforeEach(() => {
   });
 });
 
-function makeCx() {
-  const cx: Record<string, any> = {
-    spawned: 0,
-    focused: 0,
-    spawn(work: (cx: unknown) => unknown) {
-      cx.spawned += 1;
-      return Promise.resolve().then(() => work(cx));
-    },
-    notify() {},
-    sleep: async () => {},
-    focus_handle() {
-      return {
-        focus() {
-          cx.focused += 1;
-        },
-      };
-    },
-  };
-  return cx;
-}
-
-const flush = async () => {
-  for (let i = 0; i < 6; i++) await new Promise((resolve) => setTimeout(resolve, 0));
-};
-
 async function popup() {
   const cx = makeCx();
   const view = new MoveTab();
@@ -104,18 +79,9 @@ function worker() {
   return { view, cx };
 }
 
-const byKey = (root: Node, key: string) => find(root, (node) => node.key === key);
-const own = (node: Node | null, name: string) => (node?.calls ?? []).filter(([call]) => call === name).map(([, args]) => args);
-
 function press(view: { render(cx: unknown): Node }, cx: unknown, key: string) {
   const handler = own(view.render(cx), "on_key_down")[0]?.[0] as (event: unknown, cx: unknown) => void;
   handler({ key, keystroke: key, modifiers: {} }, cx);
-}
-
-function click(view: { render(cx: unknown): Node }, cx: unknown, key: string) {
-  const node = byKey(view.render(cx), key);
-  if (!node) throw new Error(`no element ${key}`);
-  for (const handler of node.handlers.click ?? []) handler({}, cx);
 }
 
 describe("move-tab popup", () => {
@@ -125,12 +91,12 @@ describe("move-tab popup", () => {
     expect(root.key).toBe("move-tab");
     expect(own(root, "bg")).toEqual([["t.popover"]]);
     expect(texts(root)[0]).toBe("MOVE TO");
-    expect([0, 1, 2].map((i) => texts(byKey(root, `target-${i}`) as Node)[0])).toEqual(["live", "alpha", "zeta"]);
-    expect(byKey(root, "target-3")).toBeNull();
+    expect([0, 1, 2].map((i) => texts(byKey(root, `target-${i}`))[0])).toEqual(["live", "alpha", "zeta"]);
+    expect(() => byKey(root, "target-3")).toThrow("no element target-3");
     expect(app.execs).toEqual([{ command: "git", args: ["worktree", "list", "--porcelain"], cwd: "/r/main/src" }]);
     expect(cx.focused).toBe(1);
 
-    const first = byKey(root, "target-0") as Node;
+    const first = byKey(root, "target-0");
     expect(own(first, "bg")).toEqual([["t.selected"]]);
     expect(own(byKey(root, "target-1"), "bg")).toEqual([]);
     expect(find(first, (node) => own(node, "svg").some(([path]) => path === "mods/kit/icons/git-branch.svg"))).not.toBeNull();
@@ -156,30 +122,30 @@ describe("move-tab popup", () => {
     herdr.panes = () => [...localPanes(), { pane: "p3", tab: "tb3", terminal: "vps/t3", cwd: "/r/wt/alpha" }];
     const { view, cx } = await popup();
     const root = view.render(cx);
-    expect([0, 1, 2].map((i) => texts(byKey(root, `target-${i}`) as Node))).toEqual([["live", "feat/live · open"], ["alpha"], ["zeta"]]);
-    expect(byKey(root, "target-3")).toBeNull();
-    click(view, cx, "target-1");
+    expect([0, 1, 2].map((i) => texts(byKey(root, `target-${i}`)))).toEqual([["live", "feat/live · open"], ["alpha"], ["zeta"]]);
+    expect(() => byKey(root, "target-3")).toThrow("no element target-3");
+    click(byKey(view.render(cx), "target-1"), cx);
     expect(app.shared[KEY]).toMatchObject({ to: "/r/wt/alpha", toSpace: null });
   });
 
   test("a closed worktree whose label is its branch shows it once", async () => {
     const { view, cx } = await popup();
     const root = view.render(cx);
-    expect(texts(byKey(root, "target-0") as Node)).toEqual(["live", "feat/live · open"]);
-    expect(texts(byKey(root, "target-1") as Node)).toEqual(["alpha"]);
-    expect(texts(byKey(root, "target-2") as Node)).toEqual(["zeta"]);
+    expect(texts(byKey(root, "target-0"))).toEqual(["live", "feat/live · open"]);
+    expect(texts(byKey(root, "target-1"))).toEqual(["alpha"]);
+    expect(texts(byKey(root, "target-2"))).toEqual(["zeta"]);
   });
 
   test("picking a row asks the worker and closes the popup", async () => {
     const { view, cx } = await popup();
-    click(view, cx, "target-0");
+    click(byKey(view.render(cx), "target-0"), cx);
     const request = app.shared[KEY] as Record<string, unknown>;
     expect(request).toMatchObject({ tab: "tb1", space: "s1", to: "/r/wt/live", toSpace: "s2" });
     expect(typeof request.id).toBe("string");
     expect(Math.abs(Date.now() - (request.at as number))).toBeLessThan(1000);
     expect(app.closed).toEqual(["o7"]);
 
-    click(view, cx, "target-1");
+    click(byKey(view.render(cx), "target-1"), cx);
     expect(app.sets).toBe(1);
     expect(app.closed).toEqual(["o7"]);
   });
@@ -235,10 +201,10 @@ describe("move-tab popup", () => {
     herdr.focused = () => ({ space: "s1", tab: "tb1", pane: "p1", terminal: "t1", shown: "p1", agent: null, cwd: "/r/main/src" });
     const { view, cx } = await popup();
     const root = view.render(cx);
-    expect(texts(byKey(root, "target-0") as Node)[0]).toBe("live");
+    expect(texts(byKey(root, "target-0"))[0]).toBe("live");
     expect(app.execs).toEqual([{ command: "git", args: ["worktree", "list", "--porcelain"], cwd: "/r/main/src" }]);
     expect(cx.focused).toBe(1);
-    click(view, cx, "target-0");
+    click(byKey(view.render(cx), "target-0"), cx);
     expect(app.shared[KEY]).toMatchObject({ tab: "tb1", space: "s1", to: "/r/wt/live", toSpace: "s2" });
     expect(app.closed).toEqual(["o9"]);
   });
@@ -246,7 +212,7 @@ describe("move-tab popup", () => {
   test("a tab in its props wins over the focused one", async () => {
     herdr.focused = () => ({ space: "s2", tab: "tb2", pane: "p2", terminal: "t2", shown: "p2", agent: null, cwd: "/r/wt/live" });
     const { view, cx } = await popup();
-    click(view, cx, "target-0");
+    click(byKey(view.render(cx), "target-0"), cx);
     expect(app.shared[KEY]).toMatchObject({ tab: "tb1", space: "s1", to: "/r/wt/live" });
   });
 

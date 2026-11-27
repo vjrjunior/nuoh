@@ -64,6 +64,74 @@ export function find(node: Node, match: (node: Node) => boolean): Node | null {
   return null;
 }
 
+export function byKey(root: Node, key: string): Node {
+  const node = find(root, (item) => item.key === key);
+  if (!node) throw new Error(`no element ${key}`);
+  return node;
+}
+
+export function own(node: Node | null | undefined, name: string): unknown[][] {
+  return (node?.calls ?? []).filter(([call]) => call === name).map(([, args]) => args);
+}
+
+export function calls(node: Node | null | undefined, name: string): unknown[] {
+  return own(node, name).map(([first]) => first);
+}
+
+export function svgs(node: Node): string[] {
+  return walk(node).flatMap((item) => calls(item, "svg") as string[]);
+}
+
+export function click(node: Node, cx: unknown = {}) {
+  for (const handler of node.handlers.click ?? []) handler({}, cx);
+}
+
+export async function flush(rounds = 8) {
+  for (let i = 0; i < rounds; i++) await new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+export function makeCx(extra: Record<string, unknown> = {}) {
+  const cx: Record<string, any> = {
+    notified: 0,
+    spawned: 0,
+    focused: 0,
+    stopped: 0,
+    clipboard: [] as string[],
+    ticks: [] as Handler[],
+    afters: [] as Handler[],
+    timer: {
+      every(_ms: number, work: Handler) {
+        cx.ticks.push(work);
+      },
+      after(_ms: number, work: Handler) {
+        cx.afters.push(work);
+      },
+    },
+    spawn(work: (cx: unknown) => unknown) {
+      cx.spawned += 1;
+      return Promise.resolve().then(() => work(cx));
+    },
+    notify() {
+      cx.notified += 1;
+    },
+    stop_propagation() {
+      cx.stopped += 1;
+    },
+    focus_handle() {
+      return {
+        focus() {
+          cx.focused += 1;
+        },
+      };
+    },
+    write_to_clipboard(text: string) {
+      cx.clipboard.push(text);
+    },
+    sleep: async () => {},
+  };
+  return Object.assign(cx, extra);
+}
+
 export function make(): Node {
   return new Proxy(new Node(), {
     get(target, prop, receiver) {
