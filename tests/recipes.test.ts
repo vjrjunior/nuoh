@@ -97,15 +97,6 @@ describe("kit", () => {
   });
 });
 
-describe("look", () => {
-  test("Settings opens as Herdr's dialog, from the palette and from the key", () => {
-    const generated = generate();
-    expect(meta(generated, "settings").overlay).toEqual({ kind: "dialog", width: 880, height: 620 });
-    expect(generated.mods["nuoh-palette"]?.["main.js"]).toContain('["mod.open", { name: "nuoh-settings" }, "App", "Settings"');
-    expect(generated.replacements["app.settings"]).toBe("mod.open:nuoh-settings");
-  });
-});
-
 describe("nuoh", () => {
   const nuohLayout = () => JSON.parse(generate().layoutText);
   const nuohTabs = () => generate().mods["nuoh-tabs"]?.["main.js"] ?? "";
@@ -125,7 +116,6 @@ describe("nuoh", () => {
       "nuoh-palette",
       "nuoh-pane-header",
       "nuoh-rail",
-      "nuoh-settings",
       "nuoh-spaces-tree",
       "nuoh-sync",
       "nuoh-tabs",
@@ -384,11 +374,10 @@ describe("nuoh", () => {
     expect(tabs).toContain('.child(h_flex().id("toggle").when(on, el => el.bg(t.selected)))');
   });
 
-  test("the rail and the top bar open nuoh's own palette and Settings, and Herdr's Add machine", () => {
+  test("the rail opens nuoh's own palette, and the top bar Herdr's Add machine", () => {
     const generated = generate();
     const rail = generated.mods["nuoh-rail"]?.["main.js"] ?? "";
     expect(rail).toContain('const PALETTE = { name: "nuoh-palette" };');
-    expect(rail).toContain('const SETTINGS = { name: "nuoh-settings" };');
     expect(generated.mods["nuoh-rail"]?.["kit.js"]).toContain('{ name: "nuoh-kit" }');
     expect(generated.mods["nuoh-topbar"]?.["main.js"]).toContain('const MACHINE_ADD = { name: "machine-add" };');
   });

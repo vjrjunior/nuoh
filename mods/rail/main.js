@@ -5,7 +5,6 @@ import { icon, statusDot } from "../../kit/kit.js";
 import { VIEWS, WORKSPACE, badgeOf, focusOf, followFocus, hint, keyFor, shownView, viewsOf } from "./logic.js";
 
 const PALETTE = { name: "palette" };
-const SETTINGS = { name: "settings" };
 const INSET = 7;
 const TILE = 40;
 const TILE_RADIUS = 11;
@@ -83,7 +82,7 @@ export default class Rail extends View {
       )
       .child(div().flex_1())
       .child(
-        this.tile("settings", { glyph: "settings", label: hint("Settings", keyFor(bindings, [`mod.open:${SETTINGS.name}`, "app.settings"]), platform), onClick: () => run("mod.open", SETTINGS) }, t),
+        this.tile("settings", { glyph: "settings", label: hint("Settings", keyFor(bindings, ["app.settings"]), platform), onClick: () => run("app.settings") }, t),
       );
   }
 }

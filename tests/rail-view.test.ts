@@ -108,7 +108,7 @@ describe("clicks", () => {
     click(find(root, "rail-settings"));
     expect(runs).toEqual([
       ["mod.open", { name: "palette" }],
-      ["mod.open", { name: "settings" }],
+      ["app.settings", undefined],
     ]);
   });
 });

@@ -74,7 +74,6 @@ describe("apply", () => {
       "nuoh-palette",
       "nuoh-pane-header",
       "nuoh-rail",
-      "nuoh-settings",
       "nuoh-spaces-tree",
       "nuoh-sync",
       "nuoh-tabs",
@@ -91,7 +90,6 @@ describe("apply", () => {
 
     expect(keys()["layout:nuoh"]).toEqual({
       "cmd-shift-p": "mod.open:nuoh-palette",
-      "cmd-,": "mod.open:nuoh-settings",
       "cmd-shift-o": "mod.open:nuoh-markdown",
       "cmd-shift-m": "mod.open:nuoh-move-tab",
       "ctrl-cmd-1": { command: "layout.select", args: { stack: "views", child: "workspace" } },
@@ -179,7 +177,7 @@ describe("apply", () => {
 
     apply();
 
-    expect(log().filter((line) => line.startsWith("check "))).toHaveLength(16);
+    expect(log().filter((line) => line.startsWith("check "))).toHaveLength(15);
   });
 
   test("checks the mods side by side", () => {
@@ -188,7 +186,7 @@ describe("apply", () => {
 
     apply([], { FAKE_HERDR_CHECK_SLEEP: "0.5" });
 
-    expect(log().filter((line) => line.startsWith("check "))).toHaveLength(16);
+    expect(log().filter((line) => line.startsWith("check "))).toHaveLength(15);
     expect(Date.now() - started).toBeLessThan(8000);
   });
 
@@ -198,7 +196,7 @@ describe("apply", () => {
     apply();
 
     expect(record().version).toBe("0.1.10");
-    expect(record().mods).toHaveLength(16);
+    expect(record().mods).toHaveLength(15);
     expect(record().files.sort()).toEqual(["layouts/nuoh.json", "layouts/nuoh.svg"]);
     expect(record().sections).toEqual(["layout:nuoh"]);
   });
