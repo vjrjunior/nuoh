@@ -14,7 +14,7 @@ const space = (id: string, name: string, tabs: [string, string, number?][]) => (
 });
 
 describe("events", () => {
-  const before = snapshot([space("s1", "app", [["t1", "Claude", 2], ["t2", "2"]]), space("s2", "feat-x", [["t3", "1"]])], "vjr-desk", { "move-tab.drag": null });
+  const before = snapshot([space("s1", "app", [["t1", "Claude", 2], ["t2", "2"]]), space("s2", "feat-x", [["t3", "1"]])], "nuoh", { "move-tab.drag": null });
 
   test("nothing changed gives no lines", () => {
     expect(changes(before, before)).toEqual([]);
@@ -36,8 +36,8 @@ describe("events", () => {
   });
 
   test("a reorder, a split, a closed tab, a closed space and a cleared key", () => {
-    const set = snapshot([space("s1", "app", [["t1", "Claude", 2], ["t2", "2"]]), space("s2", "feat-x", [["t3", "1"]])], "vjr-desk", { "move-tab.drag": { tab: "t2" } });
-    const after = snapshot([space("s1", "app", [["t2", "1", 2], ["t1", "Claude", 2]])], "vjr-desk", { "move-tab.drag": null });
+    const set = snapshot([space("s1", "app", [["t1", "Claude", 2], ["t2", "2"]]), space("s2", "feat-x", [["t3", "1"]])], "nuoh", { "move-tab.drag": { tab: "t2" } });
+    const after = snapshot([space("s1", "app", [["t2", "1", 2], ["t1", "Claude", 2]])], "nuoh", { "move-tab.drag": null });
     expect(changes(set, after)).toEqual([
       'space "feat-x" closed',
       'tab "1" in "app" has 2 panes',
@@ -66,8 +66,9 @@ describe("install", () => {
     expect(Object.keys(files).sort()).toEqual(["events.js", "kit.js", "main.js", "mod.json", "run.js"]);
     expect(files["main.js"]).toContain('from "./kit.js"');
     expect(files["main.js"]).not.toContain("../../kit/kit.js");
+    expect(PANEL).toBe("nuoh-test-panel");
     expect(files["main.js"]).toContain(`{ name: "${PANEL}" }`);
-    expect(files["kit.js"]).toContain(`{ name: "${PANEL_KIT}" }`);
+    expect(files["kit.js"]).toContain('{ name: "nuoh-kit" }');
     expect(files["run.js"]).toBe(`export default ${JSON.stringify(run, null, 2)};\n`);
   });
 

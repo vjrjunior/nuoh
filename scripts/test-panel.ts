@@ -1,9 +1,10 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join, resolve } from "node:path";
+import { PREFIX } from "../recipes/recipe";
 import { herdrAppHome, stateDir } from "./paths";
 
-export const PANEL = "vjr-test-panel";
-export const PANEL_KIT = "vjr-kit";
+export const PANEL = `${PREFIX}test-panel`;
+export const PANEL_KIT = `${PREFIX}kit`;
 
 type Step = { title: string; do?: string[]; expect?: string; run?: { command: string; args?: Record<string, unknown> }[] };
 export type Run = {
