@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { repo } from "./helpers";
 
-const { RANK, agentTitle, ago, arrange, crowdedTabs, kidStatus, machineOf, mostUrgent, needsYou, readChanged, sortOf, subTree, track } = await import(
+const { RANK, ago, arrange, crowdedTabs, kidStatus, machineOf, mostUrgent, needsYou, readChanged, sortOf, subTree, track } = await import(
   "../mods/agent-list/logic.js"
 );
 
@@ -14,26 +14,7 @@ const kid = (address: string, parent: string, status = "working", over: Record<s
 const never = () => 0;
 const addresses = (rows: Agent[]) => rows.map((row) => row.address);
 
-describe("the title", () => {
-  const claude = { name: "Claude Code", key: "claude" };
-
-  test("is the pane's name, then the tab's name when someone named it, then the agent's own title, then the program", () => {
-    const base = { address: "t1", title: "✳ Fix login", program: claude };
-    expect(agentTitle({ ...base, pane_name: "reviewer" }, { name: "auth", named: true })).toBe("reviewer");
-    expect(agentTitle(base, { name: "auth", named: true })).toBe("auth");
-    expect(agentTitle(base, { name: "2", named: false })).toBe("Fix login");
-    expect(agentTitle({ ...base, title: "✳ Claude Code" }, { name: "2", named: false })).toBe("Claude Code");
-  });
-
-  test("a tab with several agents gives each its own title", () => {
-    expect(agentTitle({ address: "t1", title: "✳ Fix login", program: claude }, { name: "auth", named: true }, true)).toBe("Fix login");
-  });
-
-  test("a title that only names the program, a folder, a host or the terminal says nothing", () => {
-    const quiet = ["claude", "Claude Code", "~/code/app", "vjr@mac: ~", "t1"];
-    for (const title of quiet) expect(agentTitle({ address: "t1", title, program: claude }, null)).toBe("Claude Code");
-  });
-
+describe("tabs", () => {
   test("tabs with more than one agent are crowded", () => {
     expect([...crowdedTabs([agent("a", "idle", { tab: "x" }), agent("b", "idle", { tab: "x" }), agent("c", "idle", { tab: "y" })])]).toEqual(["x"]);
   });
@@ -153,5 +134,5 @@ describe("counts", () => {
 
 test("logic.js imports nothing from the app", () => {
   const imports = [...readFileSync(join(repo, "mods/agent-list/logic.js"), "utf8").matchAll(/from "([^"]+)"/g)].map((match) => match[1]);
-  expect(imports).toEqual(["../../lib/agent-title.js"]);
+  expect(imports).toEqual([]);
 });

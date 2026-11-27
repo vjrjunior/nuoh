@@ -4,7 +4,8 @@ import { agents, closeOverlay, layout, openOverlay, props, run, setAgentOrder, s
 import { CONTROL, ICON_SIZE, TEXT, avatar, cardHeader, icon, iconButton, popupRow, programIcon, statusChip, statusDot } from "../../kit/kit.js";
 import { avatarLook } from "../../lib/space-colors.js";
 import { isNarrow } from "../../lib/layout-tree.js";
-import { SORTS, SORT_KEY, agentTitle, ago, arrange, crowdedTabs, kidStatus, machineOf, mostUrgent, needsYou, readChanged, sortOf, track } from "./logic.js";
+import { agentTitle } from "../../lib/agent-title.js";
+import { SORTS, SORT_KEY, ago, arrange, crowdedTabs, kidStatus, machineOf, mostUrgent, needsYou, readChanged, sortOf, track } from "./logic.js";
 
 const ROW = 54;
 const SUB_ROW = 26;

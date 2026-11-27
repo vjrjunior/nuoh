@@ -1,5 +1,3 @@
-import { cleanTitle, tellingTitle } from "../../lib/agent-title.js";
-
 export const RANK = { blocked: 4, done: 3, working: 2, idle: 1 };
 export const SORTS = [
   { id: "priority", label: "Priority", icon: "list" },
@@ -11,22 +9,6 @@ const DAY = 86400000;
 
 export function sortOf(value) {
   return SORTS.find((sort) => sort.id === value) ?? SORTS[0];
-}
-
-const same = (a, b) => Boolean(a) && Boolean(b) && a.toLowerCase() === b.toLowerCase();
-
-function telling(text, agent) {
-  if (!tellingTitle(text)) return false;
-  if (text === agent.address || same(text, agent.program?.name) || same(text, agent.program?.key)) return false;
-  return true;
-}
-
-export function agentTitle(agent, tab, crowded = false) {
-  if (agent.pane_name) return agent.pane_name;
-  if (!crowded && tab?.named && tab.name) return tab.name;
-  const live = cleanTitle(agent.title);
-  if (telling(live, agent)) return live;
-  return agent.program?.name || tab?.name || agent.address;
 }
 
 export function machineOf(address) {

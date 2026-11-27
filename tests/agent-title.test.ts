@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { cleanTitle, tellingTitle } from "../lib/agent-title.js";
+import { agentTitle, cleanTitle, tellingTitle } from "../lib/agent-title.js";
 
 describe("cleanTitle", () => {
   test("drops the status glyph and the separator an agent puts before its title", () => {
@@ -31,5 +31,31 @@ describe("tellingTitle", () => {
     expect(tellingTitle("C:\\Users\\me")).toBe(false);
     expect(tellingTitle("me@laptop:~/code/app")).toBe(false);
     expect(tellingTitle("")).toBe(false);
+  });
+});
+
+describe("agentTitle", () => {
+  const claude = { name: "Claude Code", key: "claude" };
+
+  test("is the pane's name, then the tab's name when someone named it, then the agent's own title, then the program", () => {
+    const base = { address: "t1", title: "✳ Fix login", program: claude };
+    expect(agentTitle({ ...base, pane_name: "reviewer" }, { name: "auth", named: true })).toBe("reviewer");
+    expect(agentTitle(base, { name: "auth", named: true })).toBe("auth");
+    expect(agentTitle(base, { name: "2", named: false })).toBe("Fix login");
+    expect(agentTitle({ ...base, title: "✳ Claude Code" }, { name: "2", named: false })).toBe("Claude Code");
+  });
+
+  test("a tab with several agents gives each its own title", () => {
+    expect(agentTitle({ address: "t1", title: "✳ Fix login", program: claude }, { name: "auth", named: true }, true)).toBe("Fix login");
+  });
+
+  test("a title that only names the program, a folder, a host or the terminal says nothing", () => {
+    const quiet = ["claude", "Claude Code", "~/code/app", "me@mac: ~", "t1", "T1"];
+    for (const title of quiet) expect(agentTitle({ address: "t1", title, program: claude }, null)).toBe("Claude Code");
+  });
+
+  test("without a tab or a program it falls back to the agent's tab name, then its address", () => {
+    expect(agentTitle({ address: "t1", title: "~/code", tab_name: "auth" })).toBe("auth");
+    expect(agentTitle({ address: "t1", title: "" })).toBe("t1");
   });
 });

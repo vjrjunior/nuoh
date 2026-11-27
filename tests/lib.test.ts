@@ -8,6 +8,10 @@ const SESSION_ID = "152ba1e2-45b7-4fc9-83c9-33b8dfdadf6e";
 const space = (id: string, over = {}) => ({ id, tabs: [], folder: "", ...over });
 
 describe("parseWorktrees", () => {
+  test("no output gives no checkouts", () => {
+    expect(parseWorktrees(undefined)).toEqual([]);
+  });
+
   const list = [
     "worktree /r/app",
     "HEAD 111",
