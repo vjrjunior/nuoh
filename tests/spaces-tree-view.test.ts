@@ -149,19 +149,8 @@ describe("the card look", () => {
   const svgs = (node: Node) => walk(node).flatMap((n) => n.calls.filter(([c]) => c === "svg").map(([, args]) => args[0]));
   const head = (root: Node) => root.kids[0] as Node;
 
-  test("without card, the tree keeps its chrome fill and its plain header", () => {
+  test("the card's own fill shows through, under the card header with the space count", () => {
     named();
-    const root = setup().render();
-    expect(own(root, "bg")).toEqual([["t.chrome"]]);
-    expect(texts(head(root))).toEqual(["Spaces"]);
-    expect(own(head(root), "h")).toEqual([[31]]);
-    expect(svgs(head(root))).toEqual(["mods/kit/icons/layers.svg", "mods/kit/icons/folder.svg", "mods/kit/icons/plus.svg"]);
-    expect(own(root.kids[1] as Node, "pb")).toEqual([[14]]);
-  });
-
-  test("with card, the card's own fill shows through, under the card header with the space count", () => {
-    named();
-    app.props = { card: true };
     const root = setup().render();
     expect(own(root, "bg")).toEqual([]);
     expect(head(root).key).toBe("spaces-head");
@@ -172,7 +161,6 @@ describe("the card look", () => {
   });
 
   test("the card header's buttons are 28 px ghosts that still switch the style, make a folder and a space", () => {
-    app.props = { card: true };
     const view = setup();
     const button = pathTo(view.render(), "space-new")?.at(-1) as Node;
     expect(own(button, "size")).toEqual([[28]]);
@@ -186,7 +174,6 @@ describe("the card look", () => {
   });
 
   test("folded to a rail, the card keeps only the new space button", () => {
-    app.props = { card: true };
     app.sidebar = 44;
     const root = setup().render();
     expect(head(root).kids.map((kid) => kid.key)).toEqual(["space-new"]);

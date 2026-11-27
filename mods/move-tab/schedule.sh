@@ -40,10 +40,7 @@ fi
 case $prompt in -*) fail "The prompt can't start with -." ;; esac
 
 layout=$(herdr-app status 2>/dev/null | jq -r '.layout // empty' 2>/dev/null)
-case $layout in
-  vjr-desk|nuoh) ;;
-  *) fail "herdr-app shows ${layout:-no layout}, not vjr-desk or nuoh, so nothing would move this session." ;;
-esac
+[ "$layout" = nuoh ] || fail "herdr-app shows ${layout:-no layout}, not nuoh, so nothing would move this session."
 
 info=$(hc get "$terminal" --json 2>/dev/null) || fail "Couldn't read terminal $terminal."
 field() { printf '%s' "$info" | jq -r "$1 // empty"; }

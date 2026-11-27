@@ -65,7 +65,7 @@ beforeEach(() => {
   rmSync(join(fake, "labels"), { force: true });
   writeFileSync(join(home, ".claude/sessions/11.json"), JSON.stringify({ sessionId: "sess-1", cwd: main }));
   info();
-  layout("vjr-desk");
+  layout("nuoh");
 });
 
 describe("move-tab schedule.sh", () => {
@@ -108,7 +108,7 @@ describe("move-tab schedule.sh", () => {
 
   test("refuses, without a label, whatever would leave the session where it is", () => {
     const refusals: [() => void, string[], Record<string, string>, string][] = [
-      [() => layout("main"), ["--to", worktree], {}, "herdr-app shows main, not vjr-desk or nuoh, so nothing would move this session."],
+      [() => layout("main"), ["--to", worktree], {}, "herdr-app shows main, not nuoh, so nothing would move this session."],
       [() => {}, ["--to", worktree], { HC_TERMINAL_ID: "" }, "Not in a herdr-app terminal, so nothing would move this session."],
       [() => info({ foreground: { pid: 11, argv: ["-zsh"], cwd: main } }), ["--to", worktree], {}, "Claude Code is not in front in this terminal."],
       [() => info({ parent: "t0" }), ["--to", worktree], {}, "This terminal is another agent's sub-agent, so it has no tab to move."],
@@ -120,7 +120,7 @@ describe("move-tab schedule.sh", () => {
     ];
     for (const [arrange, args, env, message] of refusals) {
       info();
-      layout("vjr-desk");
+      layout("nuoh");
       arrange();
       const { code, out, labels } = schedule(args, env);
       expect([code, out, labels]).toEqual([1, message, []]);

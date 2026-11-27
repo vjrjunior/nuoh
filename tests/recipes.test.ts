@@ -192,10 +192,10 @@ describe("nuoh", () => {
     expect(ids(lists)).toEqual(["spaces", "agents"]);
   });
 
-  test("Spaces and Agents are cards like the rail, with the tree in its card look and our own Agents list", () => {
+  test("Spaces and Agents are cards like the rail, with the tree and our own Agents list", () => {
     const lists = findNode(nuohLayout(), "sidebar-lists");
     const card = { background: "surface", border: { width: 1, color: "#FFFFFF12" }, radius: 14, shadow: "md" };
-    expect(findNode(lists, "spaces")).toEqual({ id: "spaces", type: "block", ...card, content: { mod: "nuoh-spaces-tree", props: { card: true } } });
+    expect(findNode(lists, "spaces")).toEqual({ id: "spaces", type: "block", ...card, content: { mod: "nuoh-spaces-tree" } });
     expect(findNode(lists, "agents")).toEqual({ id: "agents", type: "block", ...card, content: { mod: "nuoh-agent-list" } });
     expect(modsIn(nuohLayout())).not.toContain("agents");
   });

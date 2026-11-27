@@ -292,38 +292,14 @@ export default class SpacesTree extends withRail(withRows(withActions(View))) {
     );
   }
 
-  header(t, narrow, card) {
-    if (card && !narrow) return this.cardHead(t);
-    if (narrow) {
-      return h_flex()
-        .h(31)
-        .flex_none()
-        .items_center()
-        .justify_center()
-        .child(this.iconButton("space-new", "plus", "New space", () => run("space.new"), t));
-    }
+  header(t, narrow) {
+    if (!narrow) return this.cardHead(t);
     return h_flex()
       .h(31)
       .flex_none()
-      .pl(16)
-      .pr(12)
       .items_center()
-      .justify_between()
-      .text_size(11.5)
-      .text_color(t.dim)
-      .child("Spaces")
-      .child(
-        h_flex()
-          .gap(4)
-          .items_center()
-          .child(
-            this.style() === "blocks"
-              ? this.iconButton("space-style", "git-branch", "Show as a graph", () => this.toggleStyle(), t)
-              : this.iconButton("space-style", "layers", "Show as blocks", () => this.toggleStyle(), t),
-          )
-          .child(this.iconButton("space-folder", "folder", "New folder", () => openNameDialog({}), t))
-          .child(this.iconButton("space-new", "plus", "New space", () => run("space.new"), t)),
-      );
+      .justify_center()
+      .child(this.iconButton("space-new", "plus", "New space", () => run("space.new"), t));
   }
 
   render(cx) {
@@ -332,7 +308,6 @@ export default class SpacesTree extends withRail(withRows(withActions(View))) {
     const { colors, changed } = assignColors(spaces(), shared("space.colors") ?? {});
     if (changed) setShared("space.colors", colors);
     const narrow = this.narrow();
-    const card = props()?.card === true;
     const groups = arrange(this.entries(), readState(), readPinned());
     const blocks = this.style() === "blocks";
     this.bringActive(groups, narrow);
@@ -340,17 +315,16 @@ export default class SpacesTree extends withRail(withRows(withActions(View))) {
     return v_flex()
       .size_full()
       .min_h(0)
-      .when(!card, (el) => el.bg(t.chrome))
       .text_size(13)
       .when(shared(DRAG)?.moving === true, (el) => el.cursor_grabbing())
       .on_mouse_down("left", () => this.endDrag())
-      .child(this.header(t, narrow, card).on_mouse_down_out(() => this.forgetOldDrag()))
+      .child(this.header(t, narrow).on_mouse_down_out(() => this.forgetOldDrag()))
       .child(
         v_flex()
           .flex_1()
           .min_h(0)
           .px(narrow ? 0 : 8)
-          .pb(card ? 8 : 14)
+          .pb(8)
           .overflow_y_scrollbar()
           .mode("always")
           .track_scroll(this.scroll)

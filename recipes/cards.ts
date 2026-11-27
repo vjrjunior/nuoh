@@ -19,9 +19,7 @@ function cardSidebar(layout: LayoutNode): void {
   const lists = findNode(layout, "sidebar-lists");
   delete lists.background;
   Object.assign(lists, { gap: GAP, divider: { width: 1, color: HIDDEN_LINE, hover: "accent" } });
-  const spaces = findNode(lists, "spaces");
-  const content = spaces.content as LayoutNode;
-  Object.assign(spaces, CARD, { content: { ...content, props: { ...(content.props as LayoutNode | undefined), card: true } } });
+  Object.assign(findNode(lists, "spaces"), CARD);
   Object.assign(findNode(lists, "agents"), CARD, { content: { mod: "agent-list" } });
 }
 
