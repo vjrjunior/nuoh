@@ -6,7 +6,7 @@ import { makeHerdrHome } from "./herdr-home";
 
 afterEach(removeTempDirs);
 
-const OURS = /^(mods\/vjr-sync|mods\/nuoh-|mods\/git-graph|layouts\/nuoh|keys\.json)/;
+const OURS = /^(mods\/vjr-sync|mods\/nuoh-|layouts\/nuoh|keys\.json)/;
 
 function allFiles(folder: string): string[] {
   return readdirSync(folder, { withFileTypes: true }).flatMap((entry) => {
@@ -42,21 +42,16 @@ function setup(root = copyRepo(), homes = makeHomes()) {
     syncProps: () => JSON.parse(readFileSync(join(home, "layouts/nuoh.json"), "utf8")).floating.at(-1).content.props,
     modMeta: (name: string) => JSON.parse(readFileSync(join(home, "mods", name, "mod.json"), "utf8")),
     simulateAppFiles() {
-      for (const name of readdirSync(join(home, "mods")).filter((entry) => /^(vjr-|nuoh-|git-graph)/.test(entry))) {
+      for (const name of readdirSync(join(home, "mods")).filter((entry) => /^(vjr-|nuoh-)/.test(entry))) {
         writeFileSync(join(home, "mods", name, "gpui-kit.d.ts"), "declare const kit: unknown;\n");
         writeFileSync(join(home, "mods", name, "jsconfig.json"), "{}\n");
       }
-    },
-    installGitGraph(overrides: Record<string, string> = {}) {
-      cpSync(join(root, "mods/git-graph"), join(home, "mods/git-graph"), { recursive: true });
-      rmSync(join(home, "mods/git-graph/LICENSE"));
-      for (const [file, text] of Object.entries(overrides)) writeFileSync(join(home, "mods/git-graph", file), text);
     },
   };
 }
 
 describe("apply", () => {
-  test("installs the copies, the sync mod, Git Graph, the layout and its preview", () => {
+  test("installs the copies, the sync mod, the layout and its preview", () => {
     const { home, apply, layout } = setup();
 
     const result = apply();
@@ -64,7 +59,8 @@ describe("apply", () => {
     expect(result.code).toBe(0);
     expect(result.stdout).toContain("applied");
     expect(existsSync(join(home, "mods/vjr-sync/main.js"))).toBe(true);
-    expect(existsSync(join(home, "mods/git-graph/LICENSE"))).toBe(true);
+    expect(existsSync(join(home, "mods/nuoh-git-graph/LICENSE"))).toBe(true);
+    expect(existsSync(join(home, "mods/git-graph"))).toBe(false);
 
     expect(readdirSync(join(home, "mods")).filter((name) => name.startsWith("nuoh-")).sort()).toEqual([
       "nuoh-agent-list",
@@ -182,7 +178,7 @@ describe("apply", () => {
 
     apply();
 
-    expect(log().filter((line) => line.startsWith("check "))).toHaveLength(17);
+    expect(log().filter((line) => line.startsWith("check "))).toHaveLength(16);
   });
 
   test("checks the mods side by side", () => {
@@ -191,7 +187,7 @@ describe("apply", () => {
 
     apply([], { FAKE_HERDR_CHECK_SLEEP: "0.5" });
 
-    expect(log().filter((line) => line.startsWith("check "))).toHaveLength(17);
+    expect(log().filter((line) => line.startsWith("check "))).toHaveLength(16);
     expect(Date.now() - started).toBeLessThan(8000);
   });
 
@@ -201,8 +197,7 @@ describe("apply", () => {
     apply();
 
     expect(record().version).toBe("0.1.10");
-    expect(record().mods).toHaveLength(17);
-    expect(record().kept).toEqual([]);
+    expect(record().mods).toHaveLength(16);
     expect(record().files.sort()).toEqual(["layouts/nuoh.json", "layouts/nuoh.svg"]);
     expect(record().sections).toEqual(["layout:nuoh"]);
   });
@@ -295,30 +290,6 @@ describe("apply", () => {
 
     expect(existsSync(join(home, "layouts/vjr-desk.json"))).toBe(false);
     expect(log().filter((line) => line.startsWith("do "))).toEqual([]);
-  });
-
-  test("adopts an identical git-graph without writing to it", () => {
-    const { home, apply, record, installGitGraph } = setup();
-    installGitGraph();
-    const before = mtimes(join(home, "mods/git-graph"));
-
-    expect(apply().code).toBe(0);
-
-    expect(mtimes(join(home, "mods/git-graph"))).toEqual(before);
-    expect(record().kept).toEqual(["git-graph"]);
-    expect(record().mods).not.toContain("git-graph");
-  });
-
-  test("stops on a different git-graph that is not ours", () => {
-    const { home, apply, installGitGraph } = setup();
-    installGitGraph({ "main.js": "changed" });
-
-    const result = apply();
-
-    expect(result.code).toBe(1);
-    expect(result.stderr).toContain("not created by this repo");
-    expect(readFileSync(join(home, "mods/git-graph/main.js"), "utf8")).toBe("changed");
-    expect(existsSync(join(home, "mods/vjr-sync"))).toBe(false);
   });
 
   test("works when the home and the repo have spaces in their paths", () => {
@@ -598,23 +569,12 @@ describe("uninstall", () => {
     expect(uninstall().code).toBe(0);
 
     expect(readdirSync(join(home, "mods")).filter((name) => name.startsWith("vjr-") || name.startsWith("nuoh-"))).toEqual([]);
-    expect(existsSync(join(home, "mods/git-graph"))).toBe(false);
     for (const file of ["nuoh.json", "nuoh.svg"]) expect(existsSync(join(home, "layouts", file))).toBe(false);
     expect(keys()["layout:nuoh"]).toBeUndefined();
     expect(keys().global).toEqual(global);
     expect(existsSync(join(home, "themes/vjr.json"))).toBe(true);
     expect(existsSync(join(home, "mods/tabs/main.js"))).toBe(true);
     expect(existsSync(join(state, "layout.json"))).toBe(false);
-  });
-
-  test("keeps an adopted git-graph", () => {
-    const { home, apply, uninstall, installGitGraph } = setup();
-    installGitGraph();
-    apply();
-
-    uninstall();
-
-    expect(existsSync(join(home, "mods/git-graph/main.js"))).toBe(true);
   });
 
   test("leaves our layout first when the window shows it", () => {

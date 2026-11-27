@@ -61,8 +61,19 @@ describe("git-graph-panel", () => {
   test("shows a Graph button", () => {
     const tabs = "nuoh-tabs";
     const generated = generate();
-    expect(generated.mods[tabs]?.["main.js"]).toContain('panelButton("graph", "Graph", "mods/git-graph/icons/graph.svg")');
+    expect(generated.mods[tabs]?.["main.js"]).toContain('panelButton("graph", "Graph", "mods/nuoh-git-graph/icons/graph.svg")');
     expect(generated.mods[tabs]?.["main.js"]).toContain('[...(shared("workspace.panels") ?? ["files", "changes"]), "graph"]');
+  });
+
+  test("the Graph draws its icons from its own copy, which carries the license", () => {
+    const graph = generate().mods["nuoh-git-graph"] ?? {};
+    expect(graph["menu.js"]).toContain("`mods/nuoh-git-graph/icons/${name}.svg`");
+    expect(graph["icons/graph.svg"]).toContain("<svg");
+    expect(graph.LICENSE).toBe(readFileSync(join(repo, "mods/git-graph/LICENSE"), "utf8"));
+  });
+
+  test("git-graph never asks GitHub for a new release", () => {
+    expect(readFileSync(join(repo, "mods/git-graph/update.js"), "utf8")).toContain("const CHECK = false;");
   });
 
   test("the Graph button comes right after Changes", () => {

@@ -77,6 +77,7 @@ function readCopy(source: ModSource, options: GenerateOptions): Copy {
     if (name.endsWith(".js") || name.endsWith(".sh")) files[name] = readFileSync(join(folder, name), "utf8");
   }
   if (source.from === "repo") {
+    if (existsSync(join(folder, "LICENSE"))) files.LICENSE = readFileSync(join(folder, "LICENSE"), "utf8");
     const icons = join(folder, "icons");
     if (existsSync(icons)) {
       for (const icon of readdirSync(icons).filter((name) => name.endsWith(".svg"))) files[`icons/${icon}`] = readFileSync(join(icons, icon), "utf8");

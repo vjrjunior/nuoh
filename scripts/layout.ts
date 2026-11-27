@@ -7,13 +7,13 @@ import { deriveSection, type KeyTable, keysText, readKeys, withoutSections, with
 import { herdrAppHome, stateDir } from "./paths";
 
 type ApplyResult = "applied" | "unchanged" | "busy";
-type LayoutRecord = { version: string; mods: string[]; kept: string[]; files: string[]; sections: string[] };
+type LayoutRecord = { version: string; mods: string[]; files: string[]; sections: string[] };
 type ApplyOptions = { herdrVersion?: string };
 
 const root = join(import.meta.dir, "..");
-const REPO_MODS = ["vjr-sync", "git-graph"];
+const REPO_MODS = ["vjr-sync"];
 const APP_WRITTEN = ["gpui-kit.d.ts", "jsconfig.json"];
-const EMPTY_RECORD: LayoutRecord = { version: "", mods: [], kept: [], files: [], sections: [] };
+const EMPTY_RECORD: LayoutRecord = { version: "", mods: [], files: [], sections: [] };
 const RELOAD_MS = 1500;
 const STATUS_TIMEOUT_MS = 3000;
 const CHECK_TIMEOUT_MS = 60000;
@@ -127,15 +127,6 @@ function writeBuild(build: string, generated: Generated): void {
   for (const mod of REPO_MODS) cpSync(join(root, "mods", mod), join(build, mod), { recursive: true, filter: notAppWritten });
 }
 
-function adoptedGitGraph(home: string, record: LayoutRecord, build: string): boolean {
-  const installed = join(home, "mods/git-graph");
-  if (!existsSync(installed) || record.mods.includes("git-graph")) return false;
-  if (sameFolder(installed, join(build, "git-graph"), [...APP_WRITTEN, "LICENSE"])) return true;
-  if (!record.kept.includes("git-graph")) return false;
-  console.warn(`${installed} differs from this repo; leaving it as it is`);
-  return true;
-}
-
 function refuseForeign(paths: string[], recorded: string[], home: string): void {
   for (const path of paths) {
     if (existsSync(join(home, path)) && !recorded.includes(path)) throw new Error(`${join(home, path)} already exists and was not created by this repo`);
@@ -208,8 +199,7 @@ function applyAll(options: ApplyOptions): ApplyResult {
 
   try {
     writeBuild(build, generated);
-    const kept = adoptedGitGraph(home, record, build) ? ["git-graph"] : [];
-    const mods = readdirSync(build).filter((mod) => !kept.includes(mod));
+    const mods = readdirSync(build);
     const files: Record<string, string> = {
       [`layouts/${LAYOUT}.json`]: generated.layoutText,
       [`layouts/${LAYOUT}.svg`]: readFileSync(join(root, "layouts", `${LAYOUT}.svg`), "utf8"),
@@ -234,7 +224,6 @@ function applyAll(options: ApplyOptions): ApplyResult {
     writeRecord({
       version: record.version,
       mods: union(record.mods, mods),
-      kept,
       files: union(record.files, Object.keys(files)),
       sections: union(record.sections, Object.keys(sections)),
     });
@@ -265,7 +254,7 @@ function applyAll(options: ApplyOptions): ApplyResult {
       for (const mod of staleMods) rmSync(join(home, "mods", mod), { recursive: true, force: true });
       for (const path of staleFiles) rmSync(join(home, path), { force: true });
     }
-    writeRecord({ version, mods, kept, files: Object.keys(files), sections: Object.keys(sections) });
+    writeRecord({ version, mods, files: Object.keys(files), sections: Object.keys(sections) });
     return "applied";
   } finally {
     rmSync(build, { recursive: true, force: true });

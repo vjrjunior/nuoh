@@ -85,6 +85,13 @@ describe("copies", () => {
     expect(Object.keys(files).filter((name) => name.startsWith("icons/"))).toEqual(["icons/lane.svg"]);
   });
 
+  test("a repo mod's license goes with it", () => {
+    const { repo, generate } = setup();
+    writeFileSync(join(repo, "mods/git-graph/LICENSE"), "MIT\n");
+    expect(generate().mods["nuoh-git-graph"]?.LICENSE).toBe("MIT\n");
+    expect(generate().mods["nuoh-tabs"]?.LICENSE).toBeUndefined();
+  });
+
   test("records where each copy came from", () => {
     const generated = setup().generate();
     expect(JSON.parse(generated.mods["nuoh-tabs"]?.["mod.json"] ?? "{}").cloned_from).toEqual({ name: "tabs", version: "0.1.10" });
