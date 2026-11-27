@@ -262,17 +262,17 @@ describe("apply", () => {
   test("a layout apply no longer builds goes with its files, mods and keys, after the window leaves it", () => {
     const { home, apply, record, writeRecord, keys, log } = setup();
     apply();
-    writeFileSync(join(home, "layouts/vjr-desk.json"), "{}\n");
-    writeFileSync(join(home, "layouts/vjr-desk.svg"), "<svg/>\n");
-    mkdirSync(join(home, "mods/vjr-tabs"));
-    writeFileSync(join(home, "keys.json"), JSON.stringify({ ...keys(), "layout:vjr-desk": { "cmd-,": "mod.open:vjr-settings" } }));
+    writeFileSync(join(home, "layouts/retired.json"), "{}\n");
+    writeFileSync(join(home, "layouts/retired.svg"), "<svg/>\n");
+    mkdirSync(join(home, "mods/retired-tabs"));
+    writeFileSync(join(home, "keys.json"), JSON.stringify({ ...keys(), "layout:retired": { "cmd-,": "mod.open:retired-settings" } }));
     const old = record();
-    writeRecord({ ...old, mods: [...old.mods, "vjr-tabs"], files: [...old.files, "layouts/vjr-desk.json", "layouts/vjr-desk.svg"], sections: [...old.sections, "layout:vjr-desk"] });
+    writeRecord({ ...old, mods: [...old.mods, "retired-tabs"], files: [...old.files, "layouts/retired.json", "layouts/retired.svg"], sections: [...old.sections, "layout:retired"] });
 
-    expect(apply([], { FAKE_HERDR_WINDOW: "vjr-desk" }).stdout).toContain("applied");
+    expect(apply([], { FAKE_HERDR_WINDOW: "retired" }).stdout).toContain("applied");
 
-    for (const path of ["layouts/vjr-desk.json", "layouts/vjr-desk.svg", "mods/vjr-tabs"]) expect(existsSync(join(home, path))).toBe(false);
-    expect(Object.keys(keys())).not.toContain("layout:vjr-desk");
+    for (const path of ["layouts/retired.json", "layouts/retired.svg", "mods/retired-tabs"]) expect(existsSync(join(home, path))).toBe(false);
+    expect(Object.keys(keys())).not.toContain("layout:retired");
     expect(keys()["layout:nuoh"]).toBeDefined();
     expect(record().files.sort()).toEqual(["layouts/nuoh.json", "layouts/nuoh.svg"]);
     expect(record().sections).toEqual(["layout:nuoh"]);
@@ -282,12 +282,12 @@ describe("apply", () => {
   test("a layout no longer built that the window doesn't show goes without a switch", () => {
     const { home, apply, record, writeRecord, log } = setup();
     apply();
-    writeFileSync(join(home, "layouts/vjr-desk.json"), "{}\n");
-    writeRecord({ ...record(), files: [...record().files, "layouts/vjr-desk.json"] });
+    writeFileSync(join(home, "layouts/retired.json"), "{}\n");
+    writeRecord({ ...record(), files: [...record().files, "layouts/retired.json"] });
 
     expect(apply([], { FAKE_HERDR_WINDOW: "nuoh" }).stdout).toContain("applied");
 
-    expect(existsSync(join(home, "layouts/vjr-desk.json"))).toBe(false);
+    expect(existsSync(join(home, "layouts/retired.json"))).toBe(false);
     expect(log().filter((line) => line.startsWith("do "))).toEqual([]);
   });
 

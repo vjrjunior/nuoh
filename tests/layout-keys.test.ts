@@ -8,37 +8,37 @@ afterEach(removeTempDirs);
 
 describe("deriveSection", () => {
   test("derives every global key bound to a replaced action", () => {
-    expect(deriveSection({ "cmd-/": "app.help", "cmd-shift-/": "app.help", "cmd-t": "tab.new" }, { "app.help": "mod.open:vjr-help" })).toEqual({
-      "cmd-/": "mod.open:vjr-help",
-      "cmd-shift-/": "mod.open:vjr-help",
+    expect(deriveSection({ "cmd-/": "app.help", "cmd-shift-/": "app.help", "cmd-t": "tab.new" }, { "app.help": "mod.open:nuoh-help" })).toEqual({
+      "cmd-/": "mod.open:nuoh-help",
+      "cmd-shift-/": "mod.open:nuoh-help",
     });
   });
 
   test("follows a custom shortcut", () => {
-    expect(deriveSection({ "ctrl-k": "app.palette" }, { "app.palette": "mod.open:vjr-palette" })).toEqual({ "ctrl-k": "mod.open:vjr-palette" });
+    expect(deriveSection({ "ctrl-k": "app.palette" }, { "app.palette": "mod.open:nuoh-palette" })).toEqual({ "ctrl-k": "mod.open:nuoh-palette" });
   });
 
   test("a command bound in global is left to global", () => {
-    expect(deriveSection({ "ctrl-1": { command: "layout.select", args: { stack: "views", child: "a" } } }, { "app.help": "mod.open:vjr-help" })).toEqual({});
+    expect(deriveSection({ "ctrl-1": { command: "layout.select", args: { stack: "views", child: "a" } } }, { "app.help": "mod.open:nuoh-help" })).toEqual({});
   });
 
   test("an action with no key adds nothing", () => {
-    expect(deriveSection({ "cmd-t": "tab.new" }, { "app.help": "mod.open:vjr-help" })).toEqual({});
+    expect(deriveSection({ "cmd-t": "tab.new" }, { "app.help": "mod.open:nuoh-help" })).toEqual({});
   });
 });
 
 describe("sections", () => {
   test("keeps other sections and keys", () => {
     const table = { global: { "cmd-t": "tab.new" }, "layout:other": { a: "b" } };
-    expect(withSections(table, { "layout:vjr-desk": { c: "d" } })).toEqual({ ...table, "layout:vjr-desk": { c: "d" } });
+    expect(withSections(table, { "layout:retired": { c: "d" } })).toEqual({ ...table, "layout:retired": { c: "d" } });
   });
 
   test("replaces a section it wrote before", () => {
-    expect(withSections({ "layout:vjr-desk": { old: "x" } }, { "layout:vjr-desk": { c: "d" } })).toEqual({ "layout:vjr-desk": { c: "d" } });
+    expect(withSections({ "layout:retired": { old: "x" } }, { "layout:retired": { c: "d" } })).toEqual({ "layout:retired": { c: "d" } });
   });
 
   test("removes only the named sections", () => {
-    expect(withoutSections({ global: {}, "layout:vjr-desk": {} }, ["layout:vjr-desk"])).toEqual({ global: {} });
+    expect(withoutSections({ global: {}, "layout:retired": {} }, ["layout:retired"])).toEqual({ global: {} });
   });
 });
 
