@@ -265,6 +265,38 @@ describe("apply", () => {
     expect(record().mods).not.toContain("nuoh-old");
   });
 
+  test("a layout apply no longer builds goes with its files, mods and keys, after the window leaves it", () => {
+    const { home, apply, record, writeRecord, keys, log } = setup();
+    apply();
+    writeFileSync(join(home, "layouts/vjr-desk.json"), "{}\n");
+    writeFileSync(join(home, "layouts/vjr-desk.svg"), "<svg/>\n");
+    mkdirSync(join(home, "mods/vjr-tabs"));
+    writeFileSync(join(home, "keys.json"), JSON.stringify({ ...keys(), "layout:vjr-desk": { "cmd-,": "mod.open:vjr-settings" } }));
+    const old = record();
+    writeRecord({ ...old, mods: [...old.mods, "vjr-tabs"], files: [...old.files, "layouts/vjr-desk.json", "layouts/vjr-desk.svg"], sections: [...old.sections, "layout:vjr-desk"] });
+
+    expect(apply([], { FAKE_HERDR_WINDOW: "vjr-desk" }).stdout).toContain("applied");
+
+    for (const path of ["layouts/vjr-desk.json", "layouts/vjr-desk.svg", "mods/vjr-tabs"]) expect(existsSync(join(home, path))).toBe(false);
+    expect(Object.keys(keys())).not.toContain("layout:vjr-desk");
+    expect(keys()["layout:nuoh"]).toBeDefined();
+    expect(record().files.sort()).toEqual(["layouts/nuoh.json", "layouts/nuoh.svg"]);
+    expect(record().sections).toEqual(["layout:nuoh"]);
+    expect(log()).toContain('do layout.switch {"name":"nuoh"}');
+  });
+
+  test("a layout no longer built that the window doesn't show goes without a switch", () => {
+    const { home, apply, record, writeRecord, log } = setup();
+    apply();
+    writeFileSync(join(home, "layouts/vjr-desk.json"), "{}\n");
+    writeRecord({ ...record(), files: [...record().files, "layouts/vjr-desk.json"] });
+
+    expect(apply([], { FAKE_HERDR_WINDOW: "nuoh" }).stdout).toContain("applied");
+
+    expect(existsSync(join(home, "layouts/vjr-desk.json"))).toBe(false);
+    expect(log().filter((line) => line.startsWith("do "))).toEqual([]);
+  });
+
   test("adopts an identical git-graph without writing to it", () => {
     const { home, apply, record, installGitGraph } = setup();
     installGitGraph();

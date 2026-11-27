@@ -218,12 +218,14 @@ function applyAll(options: ApplyOptions): ApplyResult {
     refuseForeign(Object.keys(files), record.files, home);
 
     const sections = keySections(table, generated);
-    const keys = keysText(withSections(table, sections));
+    const staleSections = record.sections.filter((name) => !Object.hasOwn(sections, name));
+    const keys = keysText(withoutSections(withSections(table, sections), staleSections));
     const changedMods = mods.filter((mod) => !sameFolder(join(build, mod), join(home, "mods", mod), APP_WRITTEN));
     const staleMods = record.mods.filter((mod) => !mods.includes(mod));
     const changedFiles = Object.keys(files).filter((path) => !existsSync(join(home, path)) || readFileSync(join(home, path), "utf8") !== files[path]);
+    const staleFiles = record.files.filter((path) => !Object.hasOwn(files, path));
     const keysChanged = !existsSync(keysPath) || readFileSync(keysPath, "utf8") !== keys;
-    if (changedMods.length + staleMods.length + changedFiles.length === 0 && !keysChanged && existsSync(recordPath())) return "unchanged";
+    if (changedMods.length + staleMods.length + changedFiles.length + staleFiles.length === 0 && !keysChanged && existsSync(recordPath())) return "unchanged";
 
     checkMods(build, changedMods);
 
@@ -257,9 +259,11 @@ function applyAll(options: ApplyOptions): ApplyResult {
     if (keysChanged) writeThrough(join(state, "keys.tmp"), keysPath, keys);
     const ordered = [...changedFiles].sort((a, b) => Number(a.endsWith(".json")) - Number(b.endsWith(".json")));
     for (const path of ordered) writeThrough(join(state, "file.tmp"), join(home, path), files[path] as string);
-    if (staleMods.length > 0) {
+    if (staleMods.length + staleFiles.length > 0) {
       if (before !== null) Bun.sleepSync(RELOAD_MS);
+      if (before !== null && leaveLayouts(staleFiles, LAYOUT)) Bun.sleepSync(RELOAD_MS);
       for (const mod of staleMods) rmSync(join(home, "mods", mod), { recursive: true, force: true });
+      for (const path of staleFiles) rmSync(join(home, path), { force: true });
     }
     writeRecord({ version, mods, kept, files: Object.keys(files), sections: Object.keys(sections) });
     return "applied";
@@ -290,10 +294,12 @@ function apply(options: ApplyOptions = {}): ApplyResult {
   }
 }
 
-function leaveOurLayout(record: LayoutRecord): void {
-  if (!Bun.which("herdr-app")) return;
+function leaveLayouts(files: string[], to: string): boolean {
+  if (!files.some((path) => path.endsWith(".json"))) return false;
   const shown = windowStatus()?.layout;
-  if (record.files.includes(`layouts/${shown}.json`)) Bun.spawnSync(["herdr-app", "do", "layout.switch", JSON.stringify({ name: "main" })]);
+  if (!files.includes(`layouts/${shown}.json`)) return false;
+  Bun.spawnSync(["herdr-app", "do", "layout.switch", JSON.stringify({ name: to })], { timeout: STATUS_TIMEOUT_MS });
+  return true;
 }
 
 function uninstall(): void {
@@ -302,7 +308,7 @@ function uninstall(): void {
   const keysPath = join(home, "keys.json");
   const record = readRecord();
   const table = withoutSections(readKeys(keysPath), record.sections);
-  leaveOurLayout(record);
+  if (Bun.which("herdr-app")) leaveLayouts(record.files, "main");
   for (const mod of record.mods) rmSync(join(home, "mods", mod), { recursive: true, force: true });
   for (const file of record.files) rmSync(join(home, file), { force: true });
   writeFileSync(keysPath, keysText(table));
