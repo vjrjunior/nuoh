@@ -309,6 +309,40 @@ describe("shared modules", () => {
     expect(Object.keys(generate(testVariant(withKit, userRecipe)).mods["test-user"] ?? {}).sort()).toEqual(["kit.js", "main.js", "mod.json"]);
   });
 
+  function withExtra(main: string) {
+    const made = withLib("");
+    const extra = tempDir();
+    mkdirSync(join(extra, "mods/work"), { recursive: true });
+    mkdirSync(join(extra, "lib"), { recursive: true });
+    writeFileSync(join(extra, "mods/work/main.js"), `${main}export default class Work {}\n`);
+    writeFileSync(join(extra, "mods/work/mod.json"), '{ "place": "none" }\n');
+    writeFileSync(join(extra, "lib/paths.js"), 'export const base = "extra";\n');
+    writeFileSync(join(extra, "lib/tasks.js"), 'import { claude } from "./claude.js";\nexport const tasks = claude;\n');
+    const work: Recipe = { name: "work", mods: [{ name: "work", from: "repo", root: extra }], apply() {} };
+    return { ...made, extra, work };
+  }
+
+  test("an extra's mod takes a lib module from the extra before the layout's", () => {
+    const { generate, work } = withExtra('import { tasks } from "../../lib/tasks.js";\nimport { base } from "../../lib/paths.js";\n');
+    const mod = generate(testVariant(work)).mods["test-work"];
+    expect(mod?.["tasks.js"]).toContain("export const tasks");
+    expect(mod?.["paths.js"]).toContain('"extra"');
+    expect(mod?.["claude.js"]).toContain("export const claude");
+  });
+
+  test("the layout's own mods never see an extra's lib", () => {
+    const { repo, generate, work } = withExtra('import { base } from "../../lib/paths.js";\n');
+    writeFileSync(join(repo, "mods/user/main.js"), 'import { KIT } from "../../kit/kit.js";\nimport { base } from "../../lib/paths.js";\nexport default class Mod {}\n');
+    const { mods } = generate(testVariant(withKit, userRecipe, work));
+    expect(mods["test-user"]?.["paths.js"]).toContain('"base"');
+    expect(mods["test-work"]?.["paths.js"]).toContain('"extra"');
+  });
+
+  test("a lib module found nowhere names where it looked", () => {
+    const { generate, work, extra } = withExtra('import { gone } from "../../lib/gone.js";\n');
+    expect(() => generate(testVariant(work))).toThrow(`work: lib/gone.js not found in ${join(extra, "lib")}`);
+  });
+
   test("a mod with a file named like a lib module refuses", () => {
     const { repo, generate } = withLib('import { claude } from "../../lib/claude.js";\n');
     writeFileSync(join(repo, "mods/user/paths.js"), "export const mine = 1;\n");

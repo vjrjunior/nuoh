@@ -55,11 +55,14 @@ function installLib(source: ModSource, options: GenerateOptions, files: Record<s
   }
   const own = new Set(Object.keys(files));
   const added = new Set<string>();
+  const folders = [...(source.root ? [join(source.root, "lib")] : []), join(options.repo, "lib")];
   while (wanted.length > 0) {
     const name = wanted.pop() as string;
     if (added.has(name)) continue;
     if (own.has(name)) throw new RecipeError(`${source.name}/${name} has the name of a module in lib/`);
-    const text = readFileSync(join(options.repo, "lib", name), "utf8");
+    const folder = folders.find((path) => existsSync(join(path, name)));
+    if (!folder) throw new RecipeError(`${source.name}: lib/${name} not found in ${folders.join(" or ")}`);
+    const text = readFileSync(join(folder, name), "utf8");
     added.add(name);
     files[name] = text;
     for (const match of text.matchAll(LIB_SIBLING)) wanted.push(match[2] as string);
