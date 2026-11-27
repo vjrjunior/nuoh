@@ -1,6 +1,6 @@
 # Comeback
 
-When the machine restarts, Herdr brings every terminal back as a bare shell in its last folder, and the Claude Code conversations that ran there are gone. Comeback brings them back by itself: as soon as the window opens, each terminal that lost its Claude gets it again, on the same conversation and with the same safe options, and a toast says what came back. It needs no hooks and edits no files outside Herdr's: it runs `hc`, `ps`, `sysctl` and `test`, reads `~/.claude/sessions/*.json` and lists `~/.claude/projects/`, writes nothing but a `comeback` label on terminals, and types into a terminal only to resume a lost conversation.
+When the machine restarts, Herdr brings every terminal back as a bare shell in its last folder, and the Claude Code conversations that ran there are gone. Comeback brings them back by itself: as soon as the window opens, each terminal that lost its Claude gets it again, on the same conversation and with the same safe options, and a toast says what came back. It needs no hooks and edits no files outside Herdr's: it runs `hc`, `ps` (once through `env`), `sysctl` and `test`, reads `~/.claude/sessions/*.json` (and `/proc/sys/kernel/random/boot_id` on Linux) and lists `~/.claude/projects/`, writes nothing but a `comeback` label on terminals, and types into a terminal only to resume a lost conversation.
 
 ![Comeback](preview.png)
 
