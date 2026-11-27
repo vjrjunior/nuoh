@@ -29,7 +29,7 @@ The guide speaks to someone editing the app's folder by hand. Here that folder i
 3. For each candidate that fits, read its `RECIPE.md` and its code, not only the README: what it does well, what doesn't fit here (a frozen copy of Herdr's mods, hooks, a single OS, network calls) and its license. Then adopt it whole at a commit, as Git Graph is; build ours from its ideas; or skip it.
 4. Write the plan in the main checkout's `docs/`. It is ready when it has a **Prior art** section (the searches run, each candidate with its link, verdict and what we take from it; "nothing fits" counts when the searches are listed), names the sections of Herdr's guide it relies on, and says how the feature looks in `nuoh`.
 
-No file in the repo names or credits another repository, not even as the source of an idea. Other repos appear only in the Prior art section of a plan in `docs/`. Nothing is copied: ideas are written from scratch. Code adopted whole, as Git Graph is, keeps its own `LICENSE` in its folder, and that is all. Before adopting a mod, tell the user if it reaches the network, runs programs (`exec`, `hc`) or reads files outside its folder.
+No file in the repo names or credits another repository, not even as the source of an idea. Other repos appear only in the Prior art section of a plan in `docs/`. Nothing is copied: ideas are written from scratch. Code adopted whole, as Git Graph is, keeps its own `LICENSE` in its folder, and that is all. Naming a package the repo uses, such as the icon sets the kit and Files install, is fine: the rule is about other people's layouts and mods. Before adopting a mod, tell the user if it reaches the network, runs programs (`exec`, `hc`) or reads files outside its folder.
 
 ## Worktrees
 

@@ -404,6 +404,20 @@
 **Priority:** P2
 **Depends on:** Nothing
 
+## Previews
+
+### A preview template, then a preview.png for each mod
+
+**What:** Design one preview frame in the OpenPencil sketch, with the app's name and a fixed size, and take each mod's `preview.png` in it.
+
+**Why:** Every `mods/<mod>/RECIPE.md` opens with `![Name](preview.png)`, as Herdr's format asks, but no mod has the image yet, so the link is broken in all nine.
+
+**Context:** The sketch is `docs/sketches/herdr-ui.fig` in the main checkout, with a "Design system" page. A `herdr-app shot` captures the whole window, so each preview needs a crop or a window that shows only that mod, without private data. `.gitignore` already lets `preview.png` in.
+
+**Effort:** M
+**Priority:** P2
+**Depends on:** Nothing
+
 ## Publish
 
 ### Publish comeback on herdr.dev
