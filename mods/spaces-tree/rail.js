@@ -1,7 +1,7 @@
 import { div } from "gpui-kit";
 import { h_flex } from "gpui-base";
 import { spaces, agents } from "herdr";
-import { paint } from "../../lib/space-colors.js";
+import { LETTER, paint } from "../../lib/space-colors.js";
 import { rowsOf } from "./tree.js";
 import { folderTail } from "./folders.js";
 import { icon, statusDot } from "../../kit/kit.js";
@@ -18,7 +18,7 @@ export const withRail = (Base) =>
         .bg(color)
         .items_center()
         .justify_center()
-        .child(icon("folder", { size: glyph, color: "#ffffff" }));
+        .child(icon("folder", { size: glyph, color: LETTER }));
     }
 
     compactFolder(folder, entries, t) {
