@@ -22,7 +22,7 @@ beforeEach(() => {
   });
 });
 
-const { default: VjrSync } = await import("../mods/vjr-sync/main.js");
+const { default: Sync } = await import("../mods/sync/main.js");
 
 async function start(settings: Partial<typeof app>) {
   Object.assign(app, { result: { code: 0, stderr: "" }, rejects: "", checking: false }, settings);
@@ -32,7 +32,7 @@ async function start(settings: Partial<typeof app>) {
       task = run(cx);
     },
   };
-  new VjrSync().init({}, cx);
+  new Sync().init({}, cx);
   await task;
 }
 
@@ -41,7 +41,7 @@ beforeEach(() => {
   notifications.length = 0;
 });
 
-describe("vjr-sync", () => {
+describe("sync", () => {
   test("does nothing when the version matches", async () => {
     await start({ version: "0.1.10", built: "0.1.10" });
 
@@ -91,7 +91,7 @@ describe("vjr-sync", () => {
   });
 
   test("renders nothing", () => {
-    const node = new VjrSync().render() as Node;
+    const node = new Sync().render() as Node;
     expect(node.kids).toEqual([]);
     expect(node.texts).toEqual([]);
   });

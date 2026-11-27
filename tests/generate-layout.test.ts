@@ -44,6 +44,9 @@ function setup(overrides: Record<string, string> = {}) {
   writeFileSync(join(repo, "mods/git-graph/main.js"), "export default class Graph {}\n");
   writeFileSync(join(repo, "mods/git-graph/graph.js"), "export const graph = 1;\n");
   writeFileSync(join(repo, "mods/git-graph/mod.json"), '{ "place": "none" }\n');
+  mkdirSync(join(repo, "mods/sync"), { recursive: true });
+  writeFileSync(join(repo, "mods/sync/main.js"), "export default class Sync {}\n");
+  writeFileSync(join(repo, "mods/sync/mod.json"), '{ "place": "none" }\n');
   const kitImport = 'import { KIT } from "../../kit/kit.js";\n';
   mkdirSync(join(repo, "kit/icons"), { recursive: true });
   writeFileSync(join(repo, "kit/kit.js"), 'export const KIT = { name: "kit" };\n');
@@ -239,8 +242,8 @@ describe("layout", () => {
     expect(layout.cloned_from).toEqual({ name: "main", version: "0.1.10" });
     expect(layout.floating).toEqual([
       {
-        id: "vjr-sync",
-        content: { mod: "vjr-sync", props: { built: "0.1.10", repo, bun: "/bin/bun" } },
+        id: "sync",
+        content: { mod: "nuoh-sync", props: { built: "0.1.10", repo, bun: "/bin/bun" } },
         edge: "right",
         align: "end",
       },

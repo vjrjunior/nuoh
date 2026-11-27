@@ -11,7 +11,6 @@ type LayoutRecord = { version: string; mods: string[]; files: string[]; sections
 type ApplyOptions = { herdrVersion?: string };
 
 const root = join(import.meta.dir, "..");
-const REPO_MODS = ["vjr-sync"];
 const APP_WRITTEN = ["gpui-kit.d.ts", "jsconfig.json"];
 const EMPTY_RECORD: LayoutRecord = { version: "", mods: [], files: [], sections: [] };
 const RELOAD_MS = 1500;
@@ -123,8 +122,6 @@ function writeBuild(build: string, generated: Generated): void {
       writeFileSync(join(build, mod, file), text);
     }
   }
-  const notAppWritten = (source: string) => !APP_WRITTEN.includes(basename(source));
-  for (const mod of REPO_MODS) cpSync(join(root, "mods", mod), join(build, mod), { recursive: true, filter: notAppWritten });
 }
 
 function refuseForeign(paths: string[], recorded: string[], home: string): void {

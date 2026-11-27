@@ -128,8 +128,10 @@ function modFiles(copy: Copy, version: string): Record<string, string> {
   return { ...copy.files, "mod.json": `${JSON.stringify(meta, null, 2)}\n` };
 }
 
+const SYNC: ModSource = { name: "sync", from: "repo" };
+
 function finishLayout(layout: LayoutNode, options: GenerateOptions): LayoutNode {
-  const sync = { id: "vjr-sync", content: { mod: "vjr-sync", props: { built: options.version, repo: options.repo, bun: options.bun } }, edge: "right", align: "end" };
+  const sync = { id: "sync", content: { mod: SYNC.name, props: { built: options.version, repo: options.repo, bun: options.bun } }, edge: "right", align: "end" };
   return {
     ...layout,
     cloned_from: { name: "main", version: options.version },
@@ -142,7 +144,7 @@ function finishLayout(layout: LayoutNode, options: GenerateOptions): LayoutNode 
 export function generateWith(recipes: Recipe[], options: GenerateOptions): Generated {
   const main: LayoutNode = JSON.parse(readFileSync(join(options.home, "layouts/main.json"), "utf8"));
   const copies: Record<string, Copy> = {};
-  for (const source of recipes.flatMap((recipe) => recipe.mods)) {
+  for (const source of [...recipes.flatMap((recipe) => recipe.mods), SYNC]) {
     copies[source.name] ??= readCopy(source, options);
   }
   const replacements: Record<string, string> = {};

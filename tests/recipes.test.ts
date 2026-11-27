@@ -127,10 +127,11 @@ describe("nuoh", () => {
       "nuoh-rail",
       "nuoh-settings",
       "nuoh-spaces-tree",
+      "nuoh-sync",
       "nuoh-tabs",
       "nuoh-topbar",
     ]);
-    expect(modsIn(nuohLayout()).filter((mod) => mod.startsWith("vjr-"))).toEqual(["vjr-sync"]);
+    expect(modsIn(nuohLayout()).filter((mod) => mod.startsWith("vjr-"))).toEqual([]);
   });
 
   test("the window sits on a gradient, its blocks 8 px apart and 8 px from the edges, with no lines between them", () => {
@@ -174,7 +175,7 @@ describe("nuoh", () => {
     expect(root.terminal_menu).toBe("nuoh-menu");
     expect(root.theme).toEqual({ light: "paper", dark: "vjr" });
     expect(root.preview).toBe("layouts/nuoh.svg");
-    expect(root.floating.map((block: { id: string }) => block.id)).toEqual(["comeback", "move-tab", "vjr-sync"]);
+    expect(root.floating.map((block: { id: string }) => block.id)).toEqual(["comeback", "move-tab", "sync"]);
   });
 
   test("the Workspace puts the sidebar and the work 8 px apart, with a line between them only on hover", () => {
@@ -525,7 +526,7 @@ describe("comeback", () => {
     const generated = generate();
     const floating = JSON.parse(generated.layoutText).floating;
     expect(floating).toContainEqual({ id: "comeback", content: { mod: copy }, edge: "left", align: "end" });
-    expect(floating.at(-1).id).toBe("vjr-sync");
+    expect(floating.at(-1).id).toBe("sync");
     expect(generated.mods[copy]?.["logic.js"]).toContain("export function planPass");
   });
 });

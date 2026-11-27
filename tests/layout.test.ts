@@ -6,7 +6,7 @@ import { makeHerdrHome } from "./herdr-home";
 
 afterEach(removeTempDirs);
 
-const OURS = /^(mods\/vjr-sync|mods\/nuoh-|layouts\/nuoh|keys\.json)/;
+const OURS = /^(mods\/nuoh-|layouts\/nuoh|keys\.json)/;
 
 function allFiles(folder: string): string[] {
   return readdirSync(folder, { withFileTypes: true }).flatMap((entry) => {
@@ -42,7 +42,7 @@ function setup(root = copyRepo(), homes = makeHomes()) {
     syncProps: () => JSON.parse(readFileSync(join(home, "layouts/nuoh.json"), "utf8")).floating.at(-1).content.props,
     modMeta: (name: string) => JSON.parse(readFileSync(join(home, "mods", name, "mod.json"), "utf8")),
     simulateAppFiles() {
-      for (const name of readdirSync(join(home, "mods")).filter((entry) => /^(vjr-|nuoh-)/.test(entry))) {
+      for (const name of readdirSync(join(home, "mods")).filter((entry) => /^nuoh-/.test(entry))) {
         writeFileSync(join(home, "mods", name, "gpui-kit.d.ts"), "declare const kit: unknown;\n");
         writeFileSync(join(home, "mods", name, "jsconfig.json"), "{}\n");
       }
@@ -58,7 +58,7 @@ describe("apply", () => {
 
     expect(result.code).toBe(0);
     expect(result.stdout).toContain("applied");
-    expect(existsSync(join(home, "mods/vjr-sync/main.js"))).toBe(true);
+    expect(existsSync(join(home, "mods/nuoh-sync/main.js"))).toBe(true);
     expect(existsSync(join(home, "mods/nuoh-git-graph/LICENSE"))).toBe(true);
     expect(existsSync(join(home, "mods/git-graph"))).toBe(false);
 
@@ -76,11 +76,12 @@ describe("apply", () => {
       "nuoh-rail",
       "nuoh-settings",
       "nuoh-spaces-tree",
+      "nuoh-sync",
       "nuoh-tabs",
       "nuoh-topbar",
     ]);
     expect(readdirSync(join(home, "layouts")).filter((name) => name.startsWith("nuoh")).sort()).toEqual(["nuoh.json", "nuoh.svg"]);
-    expect(layout().floating.map((block: { content: { mod: string } }) => block.content.mod)).toEqual(["nuoh-comeback", "nuoh-move-tab", "vjr-sync"]);
+    expect(layout().floating.map((block: { content: { mod: string } }) => block.content.mod)).toEqual(["nuoh-comeback", "nuoh-move-tab", "nuoh-sync"]);
   });
 
   test("nuoh's keys take the rail's views in order", () => {
@@ -395,7 +396,7 @@ describe("failures", () => {
 
     expect(result.code).toBe(1);
     expect(result.stderr).toContain("keys.json");
-    expect(existsSync(join(home, "mods/vjr-sync"))).toBe(false);
+    expect(existsSync(join(home, "mods/nuoh-sync"))).toBe(false);
   });
 
   test("a folder that is not ours is never overwritten", () => {
@@ -408,7 +409,7 @@ describe("failures", () => {
     expect(result.code).toBe(1);
     expect(result.stderr).toContain("not created by this repo");
     expect(existsSync(join(home, "mods/nuoh-tabs/mine.js"))).toBe(true);
-    expect(existsSync(join(home, "mods/vjr-sync"))).toBe(false);
+    expect(existsSync(join(home, "mods/nuoh-sync"))).toBe(false);
   });
 
   test("a layout that is not ours is never overwritten", () => {
@@ -418,17 +419,17 @@ describe("failures", () => {
     expect(apply().stderr).toContain("not created by this repo");
 
     expect(readFileSync(join(home, "layouts/nuoh.json"), "utf8")).toBe("mine");
-    expect(existsSync(join(home, "mods/vjr-sync"))).toBe(false);
+    expect(existsSync(join(home, "mods/nuoh-sync"))).toBe(false);
   });
 
   test("files the app wrote into the repo's mods stay out of the install", () => {
     const { root, home, apply } = setup();
-    writeFileSync(join(root, "mods/vjr-sync/gpui-kit.d.ts"), "declare const kit: unknown;\n");
-    writeFileSync(join(root, "mods/vjr-sync/jsconfig.json"), "{}\n");
+    writeFileSync(join(root, "mods/sync/gpui-kit.d.ts"), "declare const kit: unknown;\n");
+    writeFileSync(join(root, "mods/sync/jsconfig.json"), "{}\n");
 
     apply();
 
-    expect(readdirSync(join(home, "mods/vjr-sync")).sort()).toEqual(["main.js", "mod.json"]);
+    expect(readdirSync(join(home, "mods/nuoh-sync")).sort()).toEqual(["main.js", "mod.json"]);
   });
 
   test("a status it cannot read does not block the update", () => {
@@ -463,7 +464,7 @@ describe("failures", () => {
     const killed = apply([], { FAKE_HERDR_WINDOW: "nuoh", FAKE_HERDR_STATUS_KILL: "1" });
 
     expect(killed.code).not.toBe(0);
-    expect(existsSync(join(home, "mods/vjr-sync"))).toBe(true);
+    expect(existsSync(join(home, "mods/nuoh-sync"))).toBe(true);
     expect(existsSync(join(home, "layouts/nuoh.json"))).toBe(false);
 
     expect(apply().code).toBe(0);
@@ -518,7 +519,7 @@ describe("failures", () => {
 
     expect(result.code).toBe(0);
     expect(result.stdout).toContain("busy");
-    expect(existsSync(join(home, "mods/vjr-sync"))).toBe(false);
+    expect(existsSync(join(home, "mods/nuoh-sync"))).toBe(false);
     expect(existsSync(join(state, "layout.lock"))).toBe(true);
   });
 
@@ -529,14 +530,14 @@ describe("failures", () => {
 
     expect(apply().code).toBe(0);
 
-    expect(existsSync(join(home, "mods/vjr-sync"))).toBe(true);
+    expect(existsSync(join(home, "mods/nuoh-sync"))).toBe(true);
     expect(existsSync(join(state, "layout.lock"))).toBe(false);
   });
 
   test("the lock goes away after a failure", () => {
     const { state, apply } = setup();
 
-    apply([], { FAKE_HERDR_CHECK_FAIL: "vjr-sync" });
+    apply([], { FAKE_HERDR_CHECK_FAIL: "nuoh-sync" });
 
     expect(existsSync(join(state, "layout.lock"))).toBe(false);
   });
@@ -554,7 +555,7 @@ describe("failures", () => {
   test("failures are logged", () => {
     const { state, apply } = setup();
 
-    apply([], { FAKE_HERDR_CHECK_FAIL: "vjr-sync" });
+    apply([], { FAKE_HERDR_CHECK_FAIL: "nuoh-sync" });
 
     expect(readFileSync(join(state, "layout.log"), "utf8")).toContain("failed");
   });
@@ -568,7 +569,7 @@ describe("uninstall", () => {
 
     expect(uninstall().code).toBe(0);
 
-    expect(readdirSync(join(home, "mods")).filter((name) => name.startsWith("vjr-") || name.startsWith("nuoh-"))).toEqual([]);
+    expect(readdirSync(join(home, "mods")).filter((name) => name.startsWith("nuoh-"))).toEqual([]);
     for (const file of ["nuoh.json", "nuoh.svg"]) expect(existsSync(join(home, "layouts", file))).toBe(false);
     expect(keys()["layout:nuoh"]).toBeUndefined();
     expect(keys().global).toEqual(global);
