@@ -1,8 +1,8 @@
-# Install VJR Desk
+# Install nuoh
 
-For an agent asked to install this layout on someone's machine. It adds two layouts to herdr-app, `vjr-desk` and `nuoh` (the same window behind a rail of views), and the `vjr` theme. The person's own layouts, keys and settings stay as they are.
+For an agent asked to install this layout on someone's machine. It adds one layout to herdr-app, `nuoh`, and the `vjr` theme. The person's own layouts, keys and settings stay as they are.
 
-This repo is not installed by copying `layouts/` and `mods/`, as Herdr's guide describes for shared layouts. Its mods are built on the machine from the Herdr that is installed there, by `bun run apply-layout`. Follow the steps below instead.
+This repo is not installed by copying `layouts/` and `mods/`, as Herdr's guide describes for shared layouts: its mods are built on the machine, from the Herdr installed there, by `bun run apply-layout`. Follow these steps instead.
 
 ## 1. Check
 
@@ -12,27 +12,34 @@ bun --version          # https://bun.sh
 git --version
 ```
 
-If one is missing, say which and stop: installing Herdr or Bun is the person's call. Built and tested on macOS with herdr-app 0.1.16.
+If one is missing, say which and stop: installing Herdr or Bun is the person's call. Built and tested on macOS with herdr-app 0.1.18.
 
 ## 2. Tell the person what it runs
 
-Before installing, tell them this, as Herdr's guide asks. Mods are trusted code that runs with their permissions.
+Before installing, tell them this, as Herdr's guide asks. Mods are trusted code that runs with their permissions. None reaches the network, except Git Graph through git.
 
-| Part | Runs | Reads outside its folder | Network |
-|---|---|---|---|
-| Spaces tree | `git` in each repository | each repository's git folder | no |
-| Git Graph (third party, MIT, pinned to a commit) | `git` in the focused repository, also on other machines; `find` under a folder that is not a repository | the folders open in other panes | only through git: Fetch, Push, deleting a remote branch |
-| Comeback | `hc`, `ps`, `sysctl`, `test` | `~/.claude/sessions/`, and which conversations `~/.claude/projects/` holds | no |
-| Move tab | `git`, `ps`, `kill`, `test`, `hc`, `herdr-app do`, `sh`, `jq` | `~/.claude/sessions/`, and which conversations `~/.claude/projects/` holds | no |
-| Markdown viewer | `open`, or the editor the person configures | the file it shows and the files it links to | no |
-| `vjr-sync` | `bun scripts/layout.ts apply` in the clone, after each Herdr update | the clone | no |
+| Part | Runs | Reads outside its folder |
+|---|---|---|
+| Spaces | `git` in each repository a space is in | each repository's git folder, which it watches |
+| Files | `sh`, `git`, `find` (in a folder outside git), `open`, or the configured editor | the files of the focused pane's repository, which it watches |
+| Markdown viewer | `open` for links, or the configured editor | the file it shows, its folder (watched), and the files it links to |
+| Markdown picker | `hc read` on the terminal, `sh`, `git`, `ls` | which of the paths on the terminal's screen exist |
+| Move tab | `hc get`, `hc read`, `hc label`, `hc connect` (only to read Herdr's document with `doc.get`), `herdr-app do`, `git`, `ps`, `kill -TERM`, `test`, `sh` | `~/.claude/sessions/<pid>.json`, and which conversations `~/.claude/projects/` holds |
+| Move tab's `schedule.sh` | `hc get`, `hc label`, `jq`, `git`, `herdr-app status` | `~/.claude/sessions/<pid>.json` |
+| Comeback | `hc get`, `hc read`, `hc label`, `hc send`, `ps`, `env`, `sysctl`, `test` | `~/.claude/sessions/`, which conversations `~/.claude/projects/` holds, and `/proc/sys/kernel/random/boot_id` on Linux |
+| Git Graph (adopted whole, its license in its folder) | `git` in the focused repository and in the folders open in other panes, also on other machines; `find` for the repositories up to 5 folders below a folder that isn't one, never from the home folder or above | those folders |
+| Copies of Herdr's `menu`, `tabs` and `palette` | what Herdr's own run: the menu runs `git rev-parse` | nothing more |
+| `nuoh-sync` | `bun scripts/layout.ts apply` in the clone after a Herdr update, for at most 120 s | the clone and the local config |
 
-Comeback and Move tab resume Claude Code conversations. Without Claude Code they do nothing.
+The rail, the top bar, the Agents list, the pane header and the kit's gallery run nothing and read no files: they use Herdr's live data and commands.
+
+Git Graph reaches the network only through git, when the person asks for Fetch, Pull or Push or deletes a remote branch. Its check for a new release is turned off (`CHECK = false` in `mods/git-graph/update.js`). Comeback types `claude --resume` into each terminal that lost its Claude in a restart, and Move tab ends a Claude with SIGTERM and resumes it in the other checkout; without Claude Code both do nothing.
 
 The install writes only:
-- `~/.config/herdr-app/themes/vjr.json`, `layouts/vjr-desk.json` and `.svg`, `layouts/nuoh.json` and `.svg`, `mods/vjr-*`, `mods/nuoh-*` and `mods/git-graph`;
-- the `layout:vjr-desk` and `layout:nuoh` sections of `~/.config/herdr-app/keys.json`;
-- its own records and backups in `~/.local/state/vjr-herdr/`.
+- `~/.config/herdr-app/themes/vjr.json`, and `~/.config/ghostty/themes/VJR` when Ghostty's config folder exists;
+- `~/.config/herdr-app/layouts/nuoh.json` and `nuoh.svg`, and 15 mods named `mods/nuoh-*`;
+- the `layout:nuoh` section of `~/.config/herdr-app/keys.json`;
+- its own records, backups and log in `~/.local/state/vjr-herdr/`.
 
 It refuses to overwrite a file it did not create.
 
@@ -45,47 +52,36 @@ git clone https://github.com/vjrjunior/nuoh ~/.local/share/nuoh
 cd ~/.local/share/nuoh
 bun run install-theme
 bun run apply-layout
-herdr-app do layout.switch '{"name":"vjr-desk"}'
+herdr-app do layout.switch '{"name":"nuoh"}'
 ```
 
-There is nothing to `bun install`. `install-theme` also installs the Ghostty theme when Ghostty's config folder exists, and skips it with a warning otherwise. `apply-layout` runs `herdr-app check` on every mod and installs nothing if one fails.
-
-Work in the clone's folder only to run these commands. `AGENTS.md` and `.claude/` there are rules for changing the repo, not for installing it.
+There is nothing to `bun install`. `apply-layout` needs the theme installed first, runs `herdr-app check` on every mod and installs nothing if one fails. Work in the clone's folder only to run these commands: `AGENTS.md` and `.claude/` there are rules for changing the repo, not for installing it.
 
 ## 4. Verify
 
 - `bun run apply-layout` printed `applied`; a second run prints `unchanged`.
-- `herdr-app status` lists no errors and shows `vjr-desk` as the layout.
-- `herdr-app shot` shows the window: near-black surfaces, a peach accent, the Spaces tree on the left and Files, Changes and Graph buttons in the tab bar.
-- `ls ~/.config/herdr-app/layouts/` lists `nuoh.json` beside `vjr-desk.json`.
+- `herdr-app status` lists no errors and shows `nuoh` as the layout.
+- `herdr-app shot` shows the window: a dark gradient, the rail on the left, Spaces and Agents as cards, and the Files, Changes and Graph buttons at the right of the tab bar.
 
-Then tell the person: `cmd-shift-l` (`ctrl-shift-l` on Linux and Windows) cycles through layouts, `nuoh` among them, with a rail on the left whose tiles (or `ctrl-cmd-1`, `ctrl-cmd-2`...) swap the whole window between views; **Settings › Look › Square corners** squares `vjr-desk`'s corners; and `ctrl-alt-shift-escape` always goes back to Herdr's own layout.
+Then tell the person: `cmd-shift-l` (`ctrl-shift-l` on Linux and Windows) cycles through layouts; the rail's tiles, or `ctrl-cmd-1`, `ctrl-cmd-2`..., swap the window between views; and `ctrl-alt-shift-escape` always goes back to Herdr's own layout.
 
 ## 5. Optional: their editor
 
-The Markdown viewer's first button opens a file in its own app. To make it open an editor, write `~/.config/vjr-herdr/config.json` and run `bun run apply-layout` again:
-
-```json
-{ "editor": { "name": "Zed", "argv": ["zed"] } }
-```
-
-`README.md` › Local config describes the file, including `extras` for a person's own recipes.
+The Markdown viewer's first button and the Files menu open a file in its own app. To make them open an editor, write `{ "editor": { "name": "Zed", "argv": ["zed"] } }` to `~/.config/vjr-herdr/config.json` and run `bun run apply-layout` again. `README.md` › Local config describes the file.
 
 ## Update
-
-Run it in the clone's folder: `~/.local/share/nuoh`, or `~/.local/share/vjrjunior-herdr` for a clone made before the repository was renamed (`git pull` follows GitHub's redirect).
 
 ```sh
 cd ~/.local/share/nuoh && git pull && bun run install-theme && bun run apply-layout
 ```
 
-Herdr updates need nothing: the layout rebuilds itself.
+Herdr updates need nothing: the layout rebuilds itself. `apply-layout` also removes the layouts, mods and key sections an earlier version installed and this one no longer builds, switching to `nuoh` first when one of those layouts is on screen.
 
 ## Uninstall
 
 ```sh
 cd ~/.local/share/nuoh
-bun run uninstall-layout    # removes both layouts, their mods and key sections; goes back to main if needed
+bun run uninstall-layout    # removes the layout, its mods and its key section; goes back to main if needed
 bun run uninstall-theme     # restores what was there before
 ```
 
