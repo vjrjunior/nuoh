@@ -1,7 +1,7 @@
 import { View } from "gpui-kit";
 import { h_flex, InputState, v_flex } from "gpui-base";
 import { theme } from "herdr";
-import { CONTROL, ICONS, ICON_SIZE, TEXT, avatar, barPill, button, card, cardHeader, chip, heading, icon, iconButton, input, line, link, pill, popupRow, stepNode, statusChip, statusDot, viewCard, viewTile } from "../../kit/kit.js";
+import { CONTROL, ICONS, ICON_SIZE, TEXT, avatar, barPill, button, card, cardHeader, chip, heading, icon, iconButton, iconPath, input, line, link, pill, popupRow, programIcon, stepNode, statusChip, statusDot, viewCard, viewTile } from "../../kit/kit.js";
 
 const STATUSES = ["working", "blocked", "done", "idle", "unknown"];
 const STEPS = ["done", "current", "bad", "todo"];
@@ -136,6 +136,13 @@ export default class Kit extends View {
       .child(section("chips", "Chips", t).child(chips))
       .child(section("status-chips", "Status chips", t).child(statusChips))
       .child(section("pill", "Pill", t).child(row().child(pill("Pill", t))))
+      .child(
+        section("program-icons", "Program icons", t).child(
+          row()
+            .child(programIcon({ icon: iconPath("terminal"), tint: true, tile: t.accent }, {}, t))
+            .child(programIcon(null, { fallback: "terminal" }, t)),
+        ),
+      )
       .child(section("avatars", "Avatars", t).child(row().child(avatar("nuoh", { fill: t.accent, letter: t.accent_foreground })).child(avatar("work", { fill: t.done, letter: t.accent_foreground }, { size: 28, radius: 8 }))))
       .child(section("inputs", "Inputs", t).child(inputs))
       .child(section("card-headers", "Card headers", t).child(cardHeaders))

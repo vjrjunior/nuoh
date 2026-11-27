@@ -3,7 +3,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { type Node, walk } from "./app-mocks";
 
-const { ICONS, avatar, barPill, button, cardHeader, chip, iconButton, iconPath, popupRow, statusChip, stepNode, toneColor, viewCard, viewTile } = await import("../kit/kit.js");
+const { ICONS, avatar, barPill, button, cardHeader, chip, iconButton, iconPath, popupRow, programIcon, statusChip, stepNode, toneColor, viewCard, viewTile } = await import("../kit/kit.js");
 
 const repo = join(import.meta.dir, "..");
 const t = new Proxy({}, { get: (_x, p) => (typeof p === "string" ? `t.${p}` : undefined) }) as any;
@@ -316,4 +316,20 @@ test("a view card is a surface card with 14 px corners, a light line and a mediu
   expect(own(node, "rounded")).toEqual([[14]]);
   expect(own(node, "border_color")).toEqual([["t.foreground12"]]);
   expect(own(node, "shadow_md")).toEqual([[]]);
+});
+
+test("a program's icon is its picture, or its glyph tinted in its tile color, or the color given", () => {
+  const picture = programIcon({ icon: "icons/zed.png" }, { size: 12 }, t) as Node;
+  expect(picture.calls.some(([call, args]) => call === "image" && args[0] === "icons/zed.png")).toBe(true);
+  const tinted = programIcon({ icon: "icons/claude.svg", tint: true, tile: "#d97757" }, {}, t) as Node;
+  expect(svgs(tinted)).toEqual(["icons/claude.svg"]);
+  expect(tinted.calls).toContainEqual(["text_color", ["#d97757"]]);
+  expect((programIcon({ icon: "icons/claude.svg", tint: true }, { color: t.muted }, t) as Node).calls).toContainEqual(["text_color", ["t.muted"]]);
+});
+
+test("a program without an icon draws nothing, or the fallback glyph in muted", () => {
+  expect(programIcon({ name: "zsh" }, {}, t)).toBeNull();
+  const fallback = programIcon(null, { fallback: "terminal" }, t) as Node;
+  expect(svgs(fallback)).toEqual(["mods/kit/icons/terminal.svg"]);
+  expect(fallback.calls).toContainEqual(["text_color", ["t.muted"]]);
 });

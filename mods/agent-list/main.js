@@ -1,7 +1,7 @@
-import { View, div, image, svg } from "gpui-kit";
+import { View, div } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 import { agents, closeOverlay, layout, openOverlay, props, run, setAgentOrder, setShared, shared, spaces, terminals, theme } from "herdr";
-import { CONTROL, ICON_SIZE, TEXT, avatar, cardHeader, icon, iconButton, popupRow, statusChip, statusDot } from "../../kit/kit.js";
+import { CONTROL, ICON_SIZE, TEXT, avatar, cardHeader, icon, iconButton, popupRow, programIcon, statusChip, statusDot } from "../../kit/kit.js";
 import { avatarLook } from "../../lib/space-colors.js";
 import { isNarrow } from "../../lib/layout-tree.js";
 import { SORTS, SORT_KEY, agentTitle, ago, arrange, crowdedTabs, kidStatus, machineOf, mostUrgent, needsYou, readChanged, sortOf, track } from "./logic.js";
@@ -20,12 +20,6 @@ const REDRAW = 30000;
 const SORT_POPUP = { width: 200, height: 102 };
 const STORE = "changed";
 const EMPTY = "No agent status yet. Agents show up here when they report their status.";
-
-function programIcon(program, size, t) {
-  if (!program?.icon) return null;
-  if (program.tint) return svg(program.icon).size(size).flex_none().text_color(program.tile ?? t.foreground);
-  return image(program.icon).w(size).h(size).flex_none();
-}
 
 function load() {
   try {
@@ -91,7 +85,7 @@ export default class AgentList extends View {
   }
 
   face(agent, colors, t) {
-    const badge = programIcon(agent.program, BADGE_ICON, t);
+    const badge = programIcon(agent.program, { size: BADGE_ICON }, t);
     return div()
       .relative()
       .size(AVATAR)
@@ -196,7 +190,7 @@ export default class AgentList extends View {
   subRow({ terminal, lines }, t) {
     const status = kidStatus(terminal, this.listed);
     const kept = this.listed.has(terminal.address);
-    const pic = programIcon(terminal.program, SUB_ICON, t);
+    const pic = programIcon(terminal.program, { size: SUB_ICON }, t);
     return h_flex()
       .id(`sub-${terminal.address}`)
       .h(SUB_ROW)

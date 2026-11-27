@@ -1,18 +1,12 @@
-import { View, div, image, svg } from "gpui-kit";
+import { View, div } from "gpui-kit";
 import { h_flex } from "gpui-base";
 import { home, panes, props, run, settings, theme } from "herdr";
-import { CONTROL, ICON_SIZE, TEXT, icon, iconButton, statusChip } from "../../kit/kit.js";
+import { CONTROL, ICON_SIZE, TEXT, iconButton, programIcon, statusChip } from "../../kit/kit.js";
 import { folderLabel, isNarrow, paneTitle, showsZoom } from "./logic.js";
 
 const TILE = 24;
 const TILE_RADIUS = 7;
 const PROGRAM_ICON = 14;
-
-function programIcon(program, t) {
-  if (!program?.icon) return icon("terminal", { size: PROGRAM_ICON, color: t.muted });
-  if (program.tint) return svg(program.icon).size(PROGRAM_ICON).flex_none().text_color(t.muted);
-  return image(program.icon).w(PROGRAM_ICON).h(PROGRAM_ICON).flex_none();
-}
 
 export default class PaneHeader extends View {
   init() {
@@ -71,7 +65,7 @@ export default class PaneHeader extends View {
           .justify_center()
           .rounded(TILE_RADIUS)
           .bg(t.foreground + "0D")
-          .child(programIcon(me.program, t)),
+          .child(programIcon(me.program, { size: PROGRAM_ICON, color: t.muted, fallback: "terminal" }, t)),
       )
       .child(div().min_w(0).truncate().text_size(TEXT.xl).font_medium().text_color(me.focused ? t.foreground : t.muted).child(paneTitle(me)))
       .when(chip != null, (el) => el.child(chip))

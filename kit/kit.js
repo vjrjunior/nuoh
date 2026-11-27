@@ -1,4 +1,4 @@
-import { div, svg } from "gpui-kit";
+import { div, image, svg } from "gpui-kit";
 import { h_flex, Input, v_flex } from "gpui-base";
 
 export const KIT = { name: "kit" };
@@ -72,6 +72,12 @@ export function icon(name, { size = ICON_SIZE.md, color } = {}) {
     .size(size)
     .flex_none()
     .when(color != null, (el) => el.text_color(color));
+}
+
+export function programIcon(program, { size = ICON_SIZE.lg, color, fallback = null } = {}, t) {
+  if (!program?.icon) return fallback ? icon(fallback, { size, color: color ?? t.muted }) : null;
+  if (program.tint) return svg(program.icon).size(size).flex_none().text_color(color ?? program.tile ?? t.foreground);
+  return image(program.icon).w(size).h(size).flex_none();
 }
 
 export function statusDot(color, { size = 7, hollow = false } = {}) {
