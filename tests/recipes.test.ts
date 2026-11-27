@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { findNode } from "../lib/layout-tree.js";
 import type { Recipe } from "../recipes/recipe";
-import { generate as generateLayout } from "../scripts/generate-layout";
+import { type Generated, generate as generateLayout } from "../scripts/generate-layout";
 import { editFile, modsIn, removeTempDirs, repo, tempDir } from "./helpers";
 import { makeHerdrHome } from "./herdr-home";
 
@@ -12,26 +13,20 @@ function generateIn(home: string, extras: Recipe[] = []) {
   return generateLayout(extras, { home, version: "0.1.10", repo, bun: "/bin/bun" });
 }
 
-function generate(overrides: Record<string, string> = {}) {
+let plain: Generated | undefined;
+
+function generate(overrides: Record<string, string> = {}): Generated {
+  if (Object.keys(overrides).length === 0 && plain) return plain;
   const home = tempDir();
   makeHerdrHome(home, overrides);
-  return generateIn(home);
+  const generated = generateIn(home);
+  if (Object.keys(overrides).length === 0) plain = generated;
+  return generated;
 }
 
-const meta = (generated: ReturnType<typeof generate>, mod: string) => JSON.parse(generated.mods[`nuoh-${mod}`]?.["mod.json"] ?? "{}");
+const meta = (generated: Generated, mod: string) => JSON.parse(generated.mods[`nuoh-${mod}`]?.["mod.json"] ?? "{}");
 
-function findNode(node: unknown, id: string): Record<string, any> | null {
-  if (node === null || typeof node !== "object") return null;
-  const fields = node as Record<string, any>;
-  if (fields.id === id) return fields;
-  for (const child of fields.children ?? []) {
-    const found = findNode(child, id);
-    if (found) return found;
-  }
-  return null;
-}
-
-const graphChild = (generated: ReturnType<typeof generate>) => findNode(JSON.parse(generated.layoutText), "panel-body")?.children.at(-1);
+const graphChild = (generated: Generated) => findNode(JSON.parse(generated.layoutText), "panel-body")?.children.at(-1);
 
 describe("palette", () => {
   test("the palette shows keys from its own layout section", () => {
