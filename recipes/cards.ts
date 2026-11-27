@@ -3,10 +3,10 @@ import { GIT_GRAPH, GRAPH_RADIUS } from "./git-graph-panel";
 import { type Copy, exact, findNode, type LayoutNode, type Recipe, RecipeError } from "./recipe";
 
 const CARD = { background: "surface", border: { width: 1, color: CARD_LINE }, radius: PANE_RADIUS, shadow: "md" };
-export const PANEL_INSET = 6;
-export const WELL_RADIUS = 10;
-export const VEIL = 0.4;
-export const HEADER = { content: { mod: "pane-header" }, height: 42, position: "top", reveal: "always" };
+const PANEL_INSET = 6;
+const WELL_RADIUS = 10;
+const VEIL = 0.4;
+const HEADER = { content: { mod: "pane-header" }, height: 42, position: "top", reveal: "always" };
 
 const TAB_SCROLL = 'h_flex().id("tab-scroll").flex_1()';
 const TAB_SCROLLBAR = ".overflow_x_scrollbar().track_scroll(this.scroll)";

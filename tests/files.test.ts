@@ -21,7 +21,6 @@ import {
   parseGitState,
   PER_FOLDER,
   previewText,
-  relativeTo,
   rollUp,
   statusOf,
   TOTAL,
@@ -234,10 +233,7 @@ describe("what a file is", () => {
     expect(previewText("x".repeat(400001))).toEndWith("\n… (file truncated)");
   });
 
-  test("paths are read against the root", () => {
-    expect(relativeTo("/r/a/b.ts", "/r")).toBe("a/b.ts");
-    expect(relativeTo("/r", "/r")).toBe("");
-    expect(relativeTo("/rx/a", "/r")).toBeNull();
+  test("a relative path's folder is what comes before its name", () => {
     expect(folderOf("a/b.ts")).toBe("a");
     expect(folderOf("b.ts")).toBe("");
   });

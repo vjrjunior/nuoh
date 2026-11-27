@@ -7,7 +7,7 @@ export const TEXT = { xs: 10.5, sm: 11, md: 11.5, base: 12, lg: 12.5, xl: 13, ti
 export const RADIUS = { chip: 3, pill: 4, control: 5, card: 6, round: 9, panel: 10 };
 export const ICON_SIZE = { sm: 11, md: 12, lg: 14 };
 export const CARD_HEADER = 40;
-export const STATUS_LABEL = { blocked: "Needs you", working: "Working", done: "Done" };
+const STATUS_LABEL = { blocked: "Needs you", working: "Working", done: "Done" };
 const STATUS_FILL = { blocked: "1F", working: "1F", done: "1A" };
 export const ICONS = [
   "activity",
@@ -39,7 +39,6 @@ export const ICONS = [
   "folder-plus",
   "git-branch",
   "git-compare",
-  "git-merge",
   "git-pull-request",
   "github",
   "image",

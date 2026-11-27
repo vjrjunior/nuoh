@@ -1,14 +1,14 @@
 import { findNode, type LayoutNode, type Recipe, RecipeError } from "./recipe";
 
-export const RAIL_PX = 54;
+const RAIL_PX = 54;
 export const VIEWS = "views";
 export const WORKSPACE = "workspace";
 const MOVED_TO_WORKSPACE = ["children", "divider", "gap", "padding", "resizable"];
 const MAX_VIEW_KEYS = 9;
 
-export type RailView = { id: string; label: string; icon: string; key?: string };
+type RailView = { id: string; label: string; icon: string; key?: string };
 
-export function railViews(layout: LayoutNode): RailView[] {
+function railViews(layout: LayoutNode): RailView[] {
   const content = findNode(layout, "rail").content as LayoutNode;
   return (content.props as { views: RailView[] }).views;
 }

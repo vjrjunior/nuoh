@@ -45,11 +45,6 @@ export function join(root, relative) {
   return relative ? `${root.replace(/\/+$/, "")}/${relative}` : root;
 }
 
-export function relativeTo(path, root) {
-  if (path === root) return "";
-  return path.startsWith(`${root}/`) ? path.slice(root.length + 1) : null;
-}
-
 export function shortFolder(path, home) {
   if (home && path === home) return "~";
   if (home && path.startsWith(`${home}/`)) return `~${path.slice(home.length)}`;

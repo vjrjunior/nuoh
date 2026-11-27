@@ -3,15 +3,15 @@ import { type Copy, exact, findNode, type LayoutNode, pattern, type Recipe, Reci
 
 export const GAP = 8;
 export const BAND_PX = 46;
-export const MACHINE_PX = 160;
-export const TRAFFIC_LIGHTS = [18, 24];
-export const GRADIENT = { gradient: ["#181818", "#0D0D0D"], angle: 180 };
+const MACHINE_PX = 160;
+const TRAFFIC_LIGHTS = [18, 24];
+const GRADIENT = { gradient: ["#181818", "#0D0D0D"], angle: 180 };
 export const CARD_LINE = "#FFFFFF12";
-export const FOCUS_LINE = "#FFC799B3";
+const FOCUS_LINE = "#FFC799B3";
 export const HIDDEN_LINE = "#00000000";
-export const RAIL_RADIUS = 16;
+const RAIL_RADIUS = 16;
 export const PANE_RADIUS = 14;
-export const GONE = ["brand", "sidebar-footer", "status"];
+const GONE = ["brand", "sidebar-footer", "status"];
 
 const BAR = ".px(10).pl(lightsPadding).gap(3).items_center().bg(t.chrome).border_b(1).border_color(t.border)";
 const TAB_SIZE = ".h(29).px(10).gap(7).rounded(7).items_center().flex_none().text_size(12.8)";
