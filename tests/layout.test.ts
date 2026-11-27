@@ -27,7 +27,7 @@ function setup(root = copyRepo(), homes = makeHomes()) {
   const home = homes.herdrApp;
   makeHerdrHome(home);
   const fakeLog = join(homes.base, "fake-herdr-app.log");
-  const env = { ...homes.env, PATH: `${join(repo, "tests/fixtures/fake-herdr-app")}:${homes.env.PATH}`, FAKE_HERDR_LOG: fakeLog };
+  const env = { ...homes.env, PATH: `${join(repo, "tests/fixtures/fake-herdr-app")}:${homes.env.PATH}`, FAKE_HERDR_LOG: fakeLog, NUOH_RELOAD_MS: "0" };
   return {
     root,
     home,

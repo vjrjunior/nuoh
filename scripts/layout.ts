@@ -13,7 +13,7 @@ type ApplyOptions = { herdrVersion?: string };
 const root = join(import.meta.dir, "..");
 const APP_WRITTEN = ["gpui-kit.d.ts", "jsconfig.json"];
 const EMPTY_RECORD: LayoutRecord = { version: "", mods: [], files: [], sections: [] };
-const RELOAD_MS = 1500;
+const RELOAD_MS = Number(process.env.NUOH_RELOAD_MS ?? 1500);
 const STATUS_TIMEOUT_MS = 3000;
 const CHECK_TIMEOUT_MS = 60000;
 
