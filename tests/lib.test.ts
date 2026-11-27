@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { checkoutOf, parseWorktrees, placeOf } from "../lib/checkouts.js";
 import { isShell, parseSession, quote, resumeCommand } from "../lib/claude.js";
 import { findNode, isNarrow, sidebarPx } from "../lib/layout-tree.js";
+import { folderOf, MARKDOWN_FILE, nameOf, shortFolder } from "../lib/paths.js";
 
 const SESSION_ID = "152ba1e2-45b7-4fc9-83c9-33b8dfdadf6e";
 const space = (id: string, over = {}) => ({ id, tabs: [], folder: "", ...over });
@@ -133,5 +134,27 @@ describe("the layout tree", () => {
     expect(isNarrow(withSidebar(160))).toBe(false);
     expect(isNarrow(withSidebar())).toBe(false);
     expect(isNarrow({ id: "root" })).toBe(false);
+  });
+});
+
+describe("paths", () => {
+  test("a path's name and folder, with or without a trailing slash", () => {
+    expect(nameOf("/w/app/NOTES.md")).toBe("NOTES.md");
+    expect(nameOf("/w/app/")).toBe("app");
+    expect(folderOf("/w/app/NOTES.md")).toBe("/w/app");
+    expect(folderOf("/NOTES.md")).toBe("/");
+    expect(folderOf("a/b.ts")).toBe("a");
+    expect(folderOf("b.ts")).toBe("");
+  });
+
+  test("a folder under home starts with ~", () => {
+    expect(shortFolder("/Users/me/work/app", "/Users/me")).toBe("~/work/app");
+    expect(shortFolder("/Users/me", "/Users/me")).toBe("~");
+    expect(shortFolder("/Users/meg/app", "/Users/me")).toBe("/Users/meg/app");
+  });
+
+  test("Markdown files end in .md, .markdown or .mdx, in any case", () => {
+    for (const name of ["a.md", "b.MARKDOWN", "c.mdx"]) expect(MARKDOWN_FILE.test(name)).toBe(true);
+    for (const name of ["a.mdown", "b.md.txt", "md"]) expect(MARKDOWN_FILE.test(name)).toBe(false);
   });
 });

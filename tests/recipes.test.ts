@@ -524,7 +524,7 @@ describe("markdown viewer", () => {
   test("installs the viewer without placing it", () => {
     const copy = "nuoh-markdown";
     const generated = generate();
-    expect(Object.keys(generated.mods[copy] ?? {}).sort()).toEqual(["kit.js", "logic.js", "main.js", "mod.json", "open-markdown.js", "picker.js"]);
+    expect(Object.keys(generated.mods[copy] ?? {}).sort()).toEqual(["kit.js", "logic.js", "main.js", "mod.json", "open-markdown.js", "paths.js", "picker.js"]);
     expect(modsIn(JSON.parse(generated.layoutText))).not.toContain(copy);
   });
 });
@@ -584,7 +584,7 @@ describe("files", () => {
     const generated = generate();
     expect(findNode(JSON.parse(generated.layoutText), "files")?.content).toEqual({ mod: "nuoh-files" });
     const names = Object.keys(generated.mods["nuoh-files"] ?? {}).filter((name) => !name.startsWith("icons/"));
-    expect(names.sort()).toEqual(["actions.js", "file-icons.js", "icon-rules.js", "kit.js", "logic.js", "main.js", "menu.js", "mod.json", "open-markdown.js"]);
+    expect(names.sort()).toEqual(["actions.js", "file-icons.js", "icon-rules.js", "kit.js", "logic.js", "main.js", "menu.js", "mod.json", "open-markdown.js", "paths.js"]);
   });
 
   test("installs the type icons unchanged, where the panel reads them", () => {

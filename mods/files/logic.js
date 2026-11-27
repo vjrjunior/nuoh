@@ -1,3 +1,4 @@
+import { folderOf, MARKDOWN_FILE, nameOf } from "../../lib/paths.js";
 import ICONS from "./file-icons.js";
 import { iconFor } from "./icon-rules.js";
 
@@ -8,7 +9,6 @@ export const MATCHES = 200;
 export const PREVIEW_CHARS = 400000;
 
 const IGNORED_MARK = ":ignored:";
-const MARKDOWN = /\.(md|markdown|mdx)$/i;
 const IMAGE = /\.(png|jpe?g|gif|webp|svg|bmp|ico|heic|tiff?)$/i;
 const DOCUMENT = /\.(pdf|docx?|xlsx?|pptx?|key|numbers|pages|zip|tar|gz|tgz|dmg|mp3|mp4|mov|wav)$/i;
 const LANGUAGES = { ts: "js", tsx: "js", mts: "js", cts: "js", jsx: "js", mjs: "js", cjs: "js", jsonc: "json", toml: "yaml", yml: "yaml", svelte: "html", vue: "html", htm: "html", sh: "bash", zsh: "bash" };
@@ -31,24 +31,8 @@ export const ALL_FILES =
   "git --no-optional-locks ls-files --cached --others --exclude-standard; " +
   'else pwd; find . -maxdepth 6 -type f -not -path "*/.git/*" -not -path "*/node_modules/*" 2>/dev/null | sed "s#^\\./##" | head -n 20000; fi';
 
-export function nameOf(path) {
-  return String(path).replace(/\/+$/, "").split("/").pop() || String(path);
-}
-
-export function folderOf(path) {
-  const trimmed = String(path).replace(/\/+$/, "");
-  const cut = trimmed.lastIndexOf("/");
-  return cut > 0 ? trimmed.slice(0, cut) : cut === 0 ? "/" : "";
-}
-
 export function join(root, relative) {
   return relative ? `${root.replace(/\/+$/, "")}/${relative}` : root;
-}
-
-export function shortFolder(path, home) {
-  if (home && path === home) return "~";
-  if (home && path.startsWith(`${home}/`)) return `~${path.slice(home.length)}`;
-  return path;
 }
 
 const byName = (a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });
@@ -121,7 +105,7 @@ export function isIgnored(relative, git) {
 }
 
 export function kindOfFile(name) {
-  if (MARKDOWN.test(name)) return "markdown";
+  if (MARKDOWN_FILE.test(name)) return "markdown";
   if (IMAGE.test(name)) return "image";
   if (DOCUMENT.test(name)) return "document";
   return "text";

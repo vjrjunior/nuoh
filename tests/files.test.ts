@@ -7,7 +7,6 @@ import {
   changedRows,
   clampEntries,
   fileIcon,
-  folderOf,
   GIT_STATE,
   isIgnored,
   kindOfFile,
@@ -233,10 +232,6 @@ describe("what a file is", () => {
     expect(previewText("x".repeat(400001))).toEndWith("\n… (file truncated)");
   });
 
-  test("a relative path's folder is what comes before its name", () => {
-    expect(folderOf("a/b.ts")).toBe("a");
-    expect(folderOf("b.ts")).toBe("");
-  });
 });
 
 describe("the row menu", () => {

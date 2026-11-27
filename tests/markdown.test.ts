@@ -4,19 +4,16 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   EXISTING,
-  folderOf,
   LOOKUP,
   linkTarget,
   mentions,
   missingNames,
-  nameOf,
   onScreen,
   parseExisting,
   parseLookup,
   parseRepoMarkdown,
   pickerRows,
   REPO_MARKDOWN,
-  shortFolder,
   stripFrontMatter,
   where,
 } from "../mods/markdown/logic.js";
@@ -76,16 +73,6 @@ describe("links", () => {
 
   test("a path cannot climb above the root", () => {
     expect(linkTarget("/a.md", "../../b.md")).toEqual({ kind: "markdown", path: "/b.md" });
-  });
-});
-
-describe("names", () => {
-  test("the header shows the file name and its folder from home", () => {
-    expect(nameOf(FILE)).toBe("NOTES.md");
-    expect(folderOf(FILE)).toBe("/w/app/abc-1234");
-    expect(shortFolder("/Users/me/work/app", "/Users/me")).toBe("~/work/app");
-    expect(shortFolder("/Users/me", "/Users/me")).toBe("~");
-    expect(shortFolder("/Users/meg/app", "/Users/me")).toBe("/Users/meg/app");
   });
 });
 

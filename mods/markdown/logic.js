@@ -1,6 +1,7 @@
+import { folderOf, MARKDOWN_FILE, nameOf, shortFolder } from "../../lib/paths.js";
+
 const WEB = /^(https?:|mailto:)/i;
 const MARKDOWN = /\.(md|markdown)$/i;
-const ANY_MARKDOWN = /\.(md|markdown|mdx)$/i;
 const FENCE = /^(---|\.\.\.)\s*$/;
 
 export function stripFrontMatter(text) {
@@ -9,22 +10,6 @@ export function stripFrontMatter(text) {
   const end = lines.findIndex((line, index) => index > 0 && FENCE.test(line.replace(/\r$/, "")));
   if (end < 0) return text;
   return lines.slice(end + 1).join("\n");
-}
-
-export function nameOf(path) {
-  return String(path).replace(/\/+$/, "").split("/").pop() || path;
-}
-
-export function folderOf(path) {
-  const trimmed = String(path).replace(/\/+$/, "");
-  const cut = trimmed.lastIndexOf("/");
-  return cut > 0 ? trimmed.slice(0, cut) : "/";
-}
-
-export function shortFolder(path, home) {
-  if (home && path === home) return "~";
-  if (home && path.startsWith(`${home}/`)) return `~${path.slice(home.length)}`;
-  return path;
 }
 
 function normalize(path) {
@@ -144,7 +129,7 @@ export const REPO_MARKDOWN =
 export function parseRepoMarkdown(stdout) {
   const [top, ...rest] = String(stdout ?? "").split("\n");
   if (!top) return { top: null, files: [] };
-  return { top, files: rest.filter((relative) => ANY_MARKDOWN.test(relative)).map((relative) => `${top}/${relative}`) };
+  return { top, files: rest.filter((relative) => MARKDOWN_FILE.test(relative)).map((relative) => `${top}/${relative}`) };
 }
 
 export function where(path, top, home) {

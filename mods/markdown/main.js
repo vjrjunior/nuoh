@@ -3,7 +3,8 @@ import { h_flex, TextView, v_flex } from "gpui-base";
 import { exec, home, nextCommand, props, readTextFile, shared, theme, watchFolder } from "herdr";
 import { button, iconButton } from "../../kit/kit.js";
 import { REQUEST } from "../../lib/open-markdown.js";
-import { folderOf, linkTarget, nameOf, shortFolder, stripFrontMatter } from "./logic.js";
+import { folderOf, nameOf, shortFolder } from "../../lib/paths.js";
+import { linkTarget, stripFrontMatter } from "./logic.js";
 import { Picker } from "./picker.js";
 
 const EDITOR = { name: "Open", argv: ["open"] };

@@ -4,7 +4,8 @@ import { closeOverlay, settings, theme } from "herdr";
 import { ICON_SIZE, TEXT, popupRow } from "../../kit/kit.js";
 import { openMarkdown } from "../../lib/open-markdown.js";
 import { editorName, newTerminal, openInEditor, reveal } from "./actions.js";
-import { fileIcon, kindOfFile, menuItems, nameOf } from "./logic.js";
+import { nameOf } from "../../lib/paths.js";
+import { fileIcon, kindOfFile, menuItems } from "./logic.js";
 
 export const MENU_WIDTH = 240;
 const PAD = 5;

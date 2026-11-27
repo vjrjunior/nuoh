@@ -3,6 +3,7 @@ import { Editor, EditorState, h_flex, InputState, ScrollHandle, v_flex } from "g
 import { checking, exec, focused, home, openOverlay, panes, props, readTextFile, settings, spaces, theme, watchFolder } from "herdr";
 import { CONTROL, ICON_SIZE, RADIUS, TEXT, button, icon, iconButton, input } from "../../kit/kit.js";
 import { openMarkdown } from "../../lib/open-markdown.js";
+import { folderOf, nameOf, shortFolder } from "../../lib/paths.js";
 import { editorName, openInEditor, openWithApp } from "./actions.js";
 import {
   ALL_FILES,
@@ -12,19 +13,16 @@ import {
   changedRows,
   clampEntries,
   fileIcon,
-  folderOf,
   isIgnored,
   join,
   kindOfFile,
   languageOf,
   letterOf,
   matches,
-  nameOf,
   parseAllFiles,
   parseEntries,
   parseGitState,
   previewText,
-  shortFolder,
   statusOf,
   treeRows,
 } from "./logic.js";
