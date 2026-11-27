@@ -41,7 +41,7 @@ The install writes only:
 - the `layout:nuoh` section of `~/.config/herdr-app/keys.json`;
 - its own records, backups and log in `~/.local/state/vjr-herdr/`.
 
-It refuses to overwrite a file it did not create.
+`apply-layout` refuses to overwrite a layout or mod it did not create, and `install-theme` backs up a theme file it did not create before replacing it.
 
 ## 3. Install
 

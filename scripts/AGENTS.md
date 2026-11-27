@@ -11,7 +11,7 @@ The `package.json` commands run these files with Bun; there are no dependencies.
 3. `herdr-app check` runs on each changed mod, 8 at a time, 60 s for all; one failure installs nothing.
 4. The old copies move to `previous-<pid>` and the new ones in. A new error in `herdr-app status` after `NUOH_RELOAD_MS` (1500 by default) puts the old copies and the record back. `herdr-app status` is only a safety check: when it fails or its output can't be read, apply goes on.
 5. `keys.json` and the layout files are written, the `.json` last.
-6. What the record lists and this build no longer makes (mods, layout files, key sections) goes last: with a window open, apply waits `NUOH_RELOAD_MS` for Herdr to reload, switches to `nuoh` if the window shows a layout being removed and waits again; then it deletes them.
+6. What the record lists and this build no longer makes goes too: its key sections leave `keys.json` in step 5, and its mods and layout files go last: with a window open, apply waits `NUOH_RELOAD_MS` for Herdr to reload, switches to `nuoh` if the window shows a layout being removed and waits again; then it deletes them.
 
 `bun run uninstall-layout` switches the window to `main` when it shows a recorded layout, then removes the recorded mods, files and key sections, and the record. It leaves the theme.
 

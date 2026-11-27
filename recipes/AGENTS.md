@@ -17,14 +17,14 @@ A recipe is `{ name, mods, apply }` (`recipe.ts`). `mods` names what it copies: 
 
 - Every copy is installed as `nuoh-<name>` (`PREFIX` and `LAYOUT` in `recipe.ts`). In the copies' code the generator rewrites `mod: "<name>"` and `{ name: "<name>" }`, in double quotes, when `<name>` has a copy; in the layout, every `mod` and `terminal_menu`. It refuses a copied mod's name that an `openOverlay` `mod:` or a `mod.open` `name:` writes in single quotes or backticks.
 - Code that names a mod keeps the name in such a constant, so commands get the prefix too: `MARKDOWN = { name: "markdown" }` and `` run(`${MARKDOWN.name}.show`) `` in `lib/open-markdown.js` become `nuoh-markdown.show`.
-- The prefix stays: without it the copies would take the names of Herdr's own `files`, `menu` and `tabs` in `mods/`, and `palette` and `settings` in `frame/`.
+- The prefix stays: without it the copies would take the names of Herdr's own `files`, `menu` and `tabs` in `mods/`, and `palette` in `frame/`.
 - `sync` is added by the generator, not a recipe, with its floating block (`finishLayout`). `scripts/test-panel.ts` installs `tools/test-panel` as `nuoh-test-panel` outside apply. `mods/git-graph` is adopted code, copied as `nuoh-git-graph` with its `LICENSE` (the generator copies a repo mod's `LICENSE`); change it only through recipes, as `git-graph-panel` and `nuoh-cards` do.
 
 ## Patching a copy of Herdr's mods
 
 - `exact(copy, from, to, expected = 1)` fails unless `from` appears exactly `expected` times across the copy's files; `pattern(copies, regex, to, minimum)` fails under `minimum` matches. A failure names the recipe and installs nothing, so an anchor that a Herdr update changes keeps the old build running.
 - Recipes share copies: `tabs` goes through `git-graph-panel`, `move-tab`, the extras, `nuoh-frame` and `nuoh-cards`; `menu` through `spaces-tree`, `markdown` and `move-tab` (`grep -n 'copies\.' recipes/*.ts`). Anchor on Herdr's own text that no recipe before yours rewrites.
-- A new anchor also goes in the fake copy in `tests/herdr-home.ts`. Each recipe has a test in `tests/recipes.test.ts`, "a … that changed fails the recipe", that overrides the file and expects `recipe <name>:`; it must still fail on your recipe's own anchor.
+- A new anchor also goes in the fake copy in `tests/herdr-home.ts`. Each recipe that anchors on Herdr's text has a test in `tests/recipes.test.ts`, "a … that changed fails the recipe", that overrides the file and expects `recipe <name>:`; it must still fail on your recipe's own anchor.
 - Only `from: "repo"` mods get the kit and `lib/`: the generator adds them while reading, before any recipe runs. A view that needs the kit is a mod of this repo, as `mods/agent-list` replaces Herdr's `agents`.
 
 ## Keys
@@ -36,7 +36,7 @@ The `layout:nuoh` section of `keys.json` is rebuilt on every apply, so a key edi
 - A worker that runs without showing (`sync`, `comeback`, the `move-tab` worker) is a floating block whose mod renders an empty `div()`. A `hidden: true` block never starts its mod.
 - Layout nodes take a theme name or `#rrggbb[aa]`, and a theme name carries no alpha, so `frame.ts` holds the window's gradient and its lines in hex (`#181818`, `#0D0D0D`, `#FFFFFF12`, `#FFC799B3`, `#00000000`). It is the one place besides `lib/space-colors.js` and `mods/files/icons/` where hex is allowed.
 - A node's `radius` rounds its own fill and line, not the mod inside: the mod keeps its rows inset from the corners.
-- The pane frame in Herdr 0.1.18 has no inset field and draws no shadow (`shadow: "md"` on it does nothing), and its `radius` doesn't clip the terminal's square corners.
+- The pane frame in Herdr 0.1.18 has no inset field and draws no shadow (`shadow: "md"` on it does nothing), and its `radius` doesn't clip the terminal, which keeps its own corners.
 - `nuoh-cards` opens the panel group after `+` and closes it at Herdr's `.when(w?.buttons,`, so whatever an extra adds between them lands in the group. `nuoh-frame` rewrites every `.bg(on ? t.selected : t.chrome)`, an extra's button included.
 
 ## Extras

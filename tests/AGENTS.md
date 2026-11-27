@@ -14,7 +14,7 @@
 - `recipes.test.ts` builds the plain layout once and shares it; a test that changes the home builds its own.
 - `spaces-tree-harness.ts`: the Spaces tree's fake app, shared by its view tests.
 - `fixtures/extra/`: a minimal extra (one recipe, one mod, one kit icon) for `extras.test.ts`.
-- `fixtures/fake-herdr-app/herdr-app`: a shell stand-in that the apply tests put first on `PATH`. It logs each call to `$FAKE_HERDR_LOG` and answers `--version` (`FAKE_HERDR_VERSION`), `check` (failing for a folder that ends in `FAKE_HERDR_CHECK_FAIL`) and `status` (only with `FAKE_HERDR_WINDOW`, the layout shown, reporting an error for each `nuoh-*` mod that layout names and that is missing; other `FAKE_HERDR_STATUS_*` variables make it hang, fail or print other text).
+- `fixtures/fake-herdr-app/herdr-app`: a shell stand-in that the apply tests put first on `PATH`. It logs each call to `$FAKE_HERDR_LOG` and answers `--version` (`FAKE_HERDR_VERSION`), `check` (failing for a folder that ends in `FAKE_HERDR_CHECK_FAIL`) and `status` (only with `FAKE_HERDR_WINDOW`, the layout shown, reporting an error when a `nuoh-*` mod that layout names is missing; other `FAKE_HERDR_STATUS_*` variables make it hang, fail or print other text).
 - The apply tests set `NUOH_RELOAD_MS=0`: the fake answers at once, so apply needn't wait for a reload.
 
 ## Test panel runs

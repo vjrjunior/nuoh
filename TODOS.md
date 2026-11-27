@@ -54,7 +54,7 @@
 
 **What:** Draw the file's type icon in the Markdown viewer's header and on the rows of `Open Markdown…`, as Files does.
 
-**Why:** Files shows a colored icon for every file; the viewer and the picker still show the kit's grey `file-text`, so a `README.md`, a `TODOS.md` and a `CLAUDE.md` look the same there.
+**Why:** Files shows a colored icon for every file; the picker still shows the kit's grey `file-text`, so a `README.md`, a `TODOS.md` and a `CLAUDE.md` look the same there.
 
 **Context:** The icons, their table and `iconFor` live in `mods/files/` because only Files draws them. A second mod using them moves them into the kit (`kit/`, installed once in `nuoh-kit`), with `fileIcon` reading `mods/${KIT.name}/file-icons/<icon>.svg`, and `scripts/file-icons.ts` writing there.
 
