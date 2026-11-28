@@ -30,7 +30,7 @@ Before installing, tell them this, as Herdr's guide asks. Mods are trusted code 
 | Git Graph (adopted whole, its license in its folder) | `git` in the focused repository and in the folders open in other panes, also on other machines; `find` for the repositories up to 5 folders below a folder that isn't one, never from the home folder or above | those folders |
 | Copies of Herdr's `menu`, `tabs` and `palette` | what Herdr's own run: the menu runs `git rev-parse` | nothing more |
 | `nuoh-sync` | `bun scripts/layout.ts apply` in the clone after a Herdr update, for at most 120 s | the clone and the local config |
-| Workflows view | `bun scripts/workflow.ts` in the clone (`paths`, and `run`, `approve`, `reject`, `stop`, `resume`, `retry` when the person asks) | `~/.config/vjr-herdr/workflows/` and the runs in `~/.local/state/vjr-herdr/workflows/`, which it watches |
+| Workflows view | `bun scripts/workflow.ts` in the clone (`paths`, and `run` with `--from` or `--only`, `approve`, `reject`, `stop`, `resume`, `retry` when the person asks) | `~/.config/vjr-herdr/workflows/`, which it watches and writes when the person changes a workflow on the canvas, and the runs in `~/.local/state/vjr-herdr/workflows/`, which it watches |
 | A workflow's runner, started by Run | `hc run`, `hc send`, `hc wait`, `hc read`, `hc get`, `herdr-app do tab.rename`, and the agents and commands the person's workflow file names | the workflow file and its run's folder |
 
 The rail, the top bar, the Agents list, the pane header and the kit's gallery run nothing and read no files: they use Herdr's live data and commands.

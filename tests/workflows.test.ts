@@ -16,8 +16,16 @@ import {
   runPopupHeight,
   runStatus,
   STARTING_MS,
-  stepRows,
+  agentLabel,
+  edgeState,
+  itemOf,
+  nodeMeta,
+  pillOf,
+  resultOf,
+  switcherHeight,
+  viewsOf,
 } from "../mods/workflows/logic.js";
+import { graphOf } from "../lib/workflow.js";
 
 const WORKFLOW = {
   title: "Flow",
@@ -112,52 +120,96 @@ describe("runs", () => {
   });
 });
 
-describe("steps", () => {
-  test("without a run, every step is to do and shows its own text", () => {
-    const rows = stepRows(WORKFLOW, null, null);
-    expect(rows.map((row) => [row.id, row.node, row.note])).toEqual([
-      ["start", "todo", null],
-      ["implement", "todo", null],
-      ["test", "todo", null],
-      ["review", "todo", null],
-      ["check", "todo", null],
-      ["fix", "todo", null],
-      ["ship", "todo", null],
-    ]);
-    expect(rows[1]).toMatchObject({ icon: "bot", detail: "claude --model opus", task: "Do {{input.task}}" });
-    expect(rows[2]).toMatchObject({ icon: "terminal", detail: "$ bun test" });
-    expect(rows[4]).toMatchObject({ icon: "git-branch", detail: "if {{review.blocking}} > 0" });
-    expect(rows[5]).toMatchObject({ detail: "continues implement", loop: "back to test, up to 3×" });
-    expect(rows[6]).toMatchObject({ icon: "flag", detail: "Ship {{input.task}}?", task: "{{review.blocking}} left" });
+describe("nodes on the canvas", () => {
+  const node = (id: string) => WORKFLOW.nodes.find((one) => one.id === id)!;
+
+  test("without a run, every node is idle and nothing has a result", () => {
+    const views = viewsOf(WORKFLOW, null, null);
+    expect(Object.values(views).map((view) => view.state)).toEqual(Array(7).fill("idle"));
+    expect(resultOf(node("implement"), views.implement)).toBeNull();
+    expect(edgeState(graphOf(WORKFLOW), null, WORKFLOW.edges[0], null)).toBe("idle");
   });
 
-  test("with a run, each step shows its latest record, its passes and the run's values", () => {
-    const rows = stepRows(WORKFLOW, run(), "approval");
-    expect(rows.map((row) => [row.id, row.node, row.note])).toEqual([
-      ["start", "done", "Done"],
-      ["implement", "done", "Done"],
-      ["test", "done", "Done · 2×"],
-      ["review", "done", "Done · 2×"],
-      ["check", "done", "Done · 2×"],
-      ["fix", "todo", "Skipped · 2×"],
-      ["ship", "current", "Needs you · 2×"],
-    ]);
-    expect(rows[1]).toMatchObject({ output: "Did it", terminal: "t5", task: "Do login" });
-    expect(rows[3].fields).toEqual({ blocking: 0 });
-    expect(rows[6]).toMatchObject({ waiting: true, detail: "Ship login?", task: "0 left" });
+  test("with a run, each node shows its latest pass: done, skipped, or waiting at the gate", () => {
+    const views = viewsOf(WORKFLOW, run(), "approval");
+    expect(Object.fromEntries(Object.entries(views).map(([id, view]) => [id, view.state]))).toEqual({
+      start: "done",
+      implement: "done",
+      test: "done",
+      review: "done",
+      check: "done",
+      fix: "skipped",
+      ship: "waiting",
+    });
+    expect(nodeMeta(run(), "test", views.test, 0)).toBe("2×");
+    expect(nodeMeta(run(), "ship", views.ship, 0)).toBe("Needs you");
+    expect(nodeMeta(run(), "fix", views.fix, 0)).toBe("skipped");
+    expect(resultOf(node("test"), views.test)).toEqual({ text: "pass" });
+    expect(resultOf(node("review"), views.review)).toEqual({ fields: { blocking: 0 } });
+    expect(resultOf(node("ship"), views.ship)).toBeNull();
+    expect(resultOf(node("check"), views.check)).toBeNull();
   });
 
-  test("a failed step and a cut-off current step are marked bad", () => {
-    const failed = run({ status: "failed", epoch: {}, steps: [{ id: "implement", status: "failed", error: "no answer" }] });
-    expect(stepRows(WORKFLOW, failed, "failed")[1]).toMatchObject({ node: "bad", note: "Failed", error: "no answer" });
-    const cut = run({ status: "running", epoch: {}, steps: [{ id: "implement", status: "running", terminal: "t5" }] });
-    expect(stepRows(WORKFLOW, cut, "interrupted")[1]).toMatchObject({ node: "bad", note: "Cut off", current: true });
-    expect(stepRows(WORKFLOW, cut, "running")[1]).toMatchObject({ node: "current", note: "Running" });
+  test("a connection is done once its source is, faded on the branch not taken, running into a busy node", () => {
+    const graph = graphOf(WORKFLOW);
+    const edge = (from: string, to: string) => graph.edges.find((one) => one.from === from && one.to === to)!;
+    expect(edgeState(graph, run(), edge("start", "implement"), "approval")).toBe("done");
+    expect(edgeState(graph, run(), edge("check", "fix"), "approval")).toBe("faded");
+    expect(edgeState(graph, run(), edge("check", "ship"), "approval")).toBe("running");
   });
 
-  test("long text is cut to its first lines", () => {
-    const long = { nodes: [{ id: "a", agent: ["claude"], task: "1\n2\n3\n4\n5" }] };
-    expect(stepRows(long, null, null)[0].task).toBe("1\n2\n3\n…");
+  test("a failed node shows its error; a cut-off one says so", () => {
+    const failed = run({ status: "failed", epoch: {}, steps: [{ id: "implement", status: "failed", error: "no answer", started: 1, ended: 46_001 }] });
+    const failedViews = viewsOf(WORKFLOW, failed, "failed");
+    expect(failedViews.implement.state).toBe("failed");
+    expect(resultOf(node("implement"), failedViews.implement)).toEqual({ text: "no answer", tone: "blocked" });
+    expect(nodeMeta(failed, "implement", failedViews.implement, 0)).toBe("46s");
+    const cut = run({ status: "running", epoch: {}, steps: [{ id: "implement", status: "running", terminal: "t5", started: 1 }] });
+    const cutViews = viewsOf(WORKFLOW, cut, "interrupted");
+    expect(cutViews.implement).toMatchObject({ state: "failed", cut: true });
+    expect(nodeMeta(cut, "implement", cutViews.implement, 0)).toBe("cut off");
+    const running = viewsOf(WORKFLOW, cut, "running").implement;
+    expect(running.state).toBe("running");
+    expect(resultOf(node("implement"), running)).toEqual({ text: "Working", tone: "working" });
+  });
+
+  test("a node where a stopped run ended says so", () => {
+    const stopped = run({ status: "stopped", error: "rejected at the gate", epoch: {}, steps: [{ id: "ship", status: "stopped" }] });
+    const views = viewsOf(WORKFLOW, stopped, "stopped");
+    expect(views.ship.state).toBe("idle");
+    expect(nodeMeta(stopped, "ship", views.ship, 0)).toBe("stopped");
+  });
+
+  test("the band's pill says where the run is", () => {
+    expect(pillOf(run(), "approval")).toEqual({ status: "waiting", at: "Waiting at ship", step: "ship" });
+    expect(pillOf(run({ status: "done", ended: 1_000_000 + 125_000 }), "done")).toMatchObject({ status: "done", at: "in 2m" });
+    const failed = run({ status: "failed", steps: [{ id: "implement", status: "failed" }] });
+    expect(pillOf(failed, "failed")).toEqual({ status: "failed", at: "at implement", step: "implement" });
+    expect(pillOf(null, null)).toBeNull();
+  });
+
+  test("an agent node names its program and model; a same-agent node, whose it continues", () => {
+    const agents = [{ name: "Claude Code", run: ["claude"], installed: true }];
+    expect(agentLabel(node("implement"), WORKFLOW, agents)).toMatchObject({ name: "Claude Code", model: "opus" });
+    expect(agentLabel(node("fix"), WORKFLOW, agents).name).toBe("Claude Code · implement");
+    expect(agentLabel(node("review"), WORKFLOW, agents)).toMatchObject({ name: "Codex", model: null, program: null });
+  });
+
+  test("a file is drawn while its graph can be, even with problems", () => {
+    expect(itemOf("bad", "{").workflow).toBeNull();
+    expect(itemOf("bad", "{").problems[0]).toContain("not valid JSON");
+    expect(itemOf("old", JSON.stringify({ steps: [] })).workflow).toBeNull();
+    const broken = itemOf("b", JSON.stringify({ nodes: [{ id: "start", start: {} }, { id: "a", run: [] }] }));
+    expect(broken.workflow?.edges).toEqual([]);
+    expect(broken.problems).toContain('step "a": run must be a list like ["bun", "test"]');
+    const good = itemOf("flow", JSON.stringify(WORKFLOW));
+    expect(good.problems).toEqual([]);
+    expect(good.text).toBe(JSON.stringify(WORKFLOW));
+  });
+
+  test("the switcher is as tall as its rows, up to eight", () => {
+    expect(switcherHeight(9)).toBe(switcherHeight(8));
+    expect(switcherHeight(2) - switcherHeight(1)).toBe(44);
   });
 });
 

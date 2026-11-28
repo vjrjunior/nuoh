@@ -1,6 +1,6 @@
 # nuoh
 
-Herdr's own window, its spaces, agents, tabs and panels, behind a rail of views on the window's left edge, every block a card on a dark gradient, in the VJR palette: near-black cards, a gray ladder and a peach accent. Spaces shows each repository with all its worktrees as a tree, the side panel adds a git Graph beside Files and Changes, Workflows chains agents, commands and approvals into runs, and an extra can add whole views to the rail.
+Herdr's own window, its spaces, agents, tabs and panels, behind a rail of views on the window's left edge, every block a card on a dark gradient, in the VJR palette: near-black cards, a gray ladder and a peach accent. Spaces shows each repository with all its worktrees as a tree, the side panel adds a git Graph beside Files and Changes, Workflows draws agents, commands, conditions and approvals as a graph on a canvas and runs it, and an extra can add whole views to the rail.
 
 ![nuoh](layouts/nuoh.svg)
 
@@ -14,7 +14,7 @@ Left to right, at zoom 1. Every block sits 8px from the next and from the window
   - **The work column:** a 46px band with the tabs (32px pills, the active one on `raised` `#1C1C1C` with a `border` `#232323` line), `+` right after them, the panel buttons in one group at the right, and a 160px slot with the machine pill. Under it, the panes: cards on `surface` with 14px corners, the `#FFFFFF12` line, `#FFC799B3` on the focused one, 8px apart, a 42px header on each, a pane alone in its tab framed too, the panes the tab hasn't selected veiled at 0.4.
   - **The side panel,** 368px (280 to 900), hidden at start: a card like the panes holding Files, Changes or Graph 6px inside it.
   - Between the sidebar and the work column, and between the two sidebar cards, a 1px line shows only under the pointer, in `accent` `#FFC799`.
-- **Workflows,** the second view, fills the views area from the window's top: a 46px band, then the workflows, the chosen one's steps and its runs as three cards ([`workflows`](mods/workflows/RECIPE.md)).
+- **Workflows,** the second view, fills the views area from the window's top: a 46px band with the workflow's name and its run, then one card with the workflow as a canvas of nodes and connections ([`workflows`](mods/workflows/RECIPE.md)).
 - A view an extra adds fills the views area with its own mod, from the window's top.
 - **Terminals:** text `#DBDBDB` on `#101010`, cursor `#FFC799`, selection `#332B24`, `terminal_padding` `[14, 12]` as Herdr's. Fonts are the person's settings, else Herdr's (JetBrains Mono 14, Geist).
 - **Theme:** `vjr` in dark mode and Herdr's `paper` in light. Other colors: `raised` `#1C1C1C`, `selected` `#232323`, `hover` `#282828`, `input` `#343434`, `foreground` `#FFFFFF`, `muted` `#A0A0A0`, `unknown` `#707070`, `dim` `#505050`.

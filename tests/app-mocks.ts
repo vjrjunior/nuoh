@@ -17,6 +17,7 @@ export class Node {
     return condition ? branch(this) : this;
   }
   child(value: unknown) {
+    if (value == null || value === false) throw new Error("child(value) expects an element, a string, or an entity from cx.new(Class, props)");
     if (value instanceof Node) this.kids.push(value);
     else this.texts.push(String(value));
     return this;
@@ -135,7 +136,7 @@ export function makeCx(extra: Record<string, unknown> = {}) {
 export function make(): Node {
   return new Proxy(new Node(), {
     get(target, prop, receiver) {
-      if (prop in target) return Reflect.get(target, prop, receiver);
+      if (prop in target || typeof prop === "symbol") return Reflect.get(target, prop, receiver);
       return (...args: unknown[]) => {
         target.calls.push([String(prop), args]);
         return receiver;
@@ -152,9 +153,52 @@ function recorded(kind: string, path: string): Node {
 
 export const herdr: Record<string, (...args: never[]) => unknown> = {};
 
-const HERDR = ["exec", "notify", "props", "updates", "spaces", "panes", "run", "openOverlay", "theme", "shared", "setShared", "watchFolder", "window", "nextCommand", "layout", "agents", "readTextFile", "home", "terminals", "focused", "appHome", "closeOverlay", "checking", "hc", "settings", "keys", "setAgentOrder", "knownAgents"];
+const HERDR = ["exec", "notify", "props", "updates", "spaces", "panes", "run", "openOverlay", "theme", "shared", "setShared", "watchFolder", "window", "nextCommand", "layout", "agents", "readTextFile", "home", "terminals", "focused", "appHome", "closeOverlay", "checking", "hc", "settings", "keys", "setAgentOrder", "knownAgents", "writeTextFile"];
 
-mock.module("gpui-kit", () => ({ View: class {}, div: make, svg: (path: string) => recorded("svg", path), image: (path: string) => recorded("image", path) }));
+export class FakePath {
+  ops: [string, unknown[]][] = [];
+  constructor(kind: string, width?: number) {
+    this.ops.push([kind, width == null ? [] : [width]]);
+  }
+  record(name: string, args: unknown[]) {
+    this.ops.push([name, args]);
+    return this;
+  }
+  move_to(...args: unknown[]) {
+    return this.record("move_to", args);
+  }
+  line_to(...args: unknown[]) {
+    return this.record("line_to", args);
+  }
+  cubic_bezier_to(...args: unknown[]) {
+    return this.record("cubic_bezier_to", args);
+  }
+  dash_array(...args: unknown[]) {
+    return this.record("dash_array", args);
+  }
+  build() {
+    return { ops: this.ops };
+  }
+}
+
+export const painted: { path: { ops: [string, unknown[]][] }; color: unknown; node: Node }[] = [];
+
+(globalThis as Record<string, unknown>).window = {
+  paint_path(path: { ops: [string, unknown[]][] }, color: unknown) {
+    const node = make();
+    node.calls.push(["paint_path", [path, color]]);
+    painted.push({ path, color, node });
+    return node;
+  },
+};
+
+mock.module("gpui-kit", () => ({
+  View: class {},
+  div: make,
+  svg: (path: string) => recorded("svg", path),
+  image: (path: string) => recorded("image", path),
+  PathBuilder: { stroke: (width: number) => new FakePath("stroke", width), fill: () => new FakePath("fill") },
+}));
 export class FakeInput {
   text: string;
   placeholder?: string;
@@ -178,7 +222,19 @@ export class FakeInput {
     this.handlers[event] = handler;
     return true;
   }
-  focus() {}
+  focused = 0;
+  blurred = 0;
+  released = false;
+  focus() {
+    this.focused += 1;
+  }
+  blur() {
+    this.blurred += 1;
+  }
+  release() {
+    this.released = true;
+    return true;
+  }
   emit(event: string, cx: unknown) {
     this.handlers[event]?.({}, cx);
   }

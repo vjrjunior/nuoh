@@ -1,7 +1,7 @@
 import { View, div } from "gpui-kit";
 import { h_flex, InputState, v_flex } from "gpui-base";
 import { theme } from "herdr";
-import { ICONS, TEXT, addNodeMenu, agentPicker, avatar, branchRow, button, canvasBar, edgeBadge, edgeLook, minimap, nodeButton, nodeField, nodeResult, nodeShell, nodeToolbar, port, refusal, runPill, zoomBar, cardHeader, cardLink, checkRow, chip, columnHead, detailLine, emptyState, flightRow, heading, icon, iconButton, iconPath, input, laneRow, lastClick, link, logLine, menuItem, meta, needRow, nextStep, paneTile, pill, prRow, profile, programIcon, releaseCard, segment, segmentGroup, sheet, sheetBar, spaceCard, statCard, stepCard, stepNode, statusChip, statusDot, tag, taskCard, taskRow, timelineStep, viewCard, viewTile } from "../../kit/kit.js";
+import { ICONS, TEXT, addNodeMenu, agentPicker, avatar, branchRow, nodeCheck, button, canvasBar, edgeBadge, edgeLook, minimap, nodeButton, nodeField, nodeResult, nodeShell, nodeToolbar, port, refusal, runPill, zoomBar, cardHeader, cardLink, checkRow, chip, columnHead, detailLine, emptyState, flightRow, heading, icon, iconButton, iconPath, input, laneRow, lastClick, link, logLine, menuItem, meta, needRow, nextStep, paneTile, pill, prRow, profile, programIcon, releaseCard, segment, segmentGroup, sheet, sheetBar, spaceCard, statCard, stepCard, stepNode, statusChip, statusDot, tag, taskCard, taskRow, timelineStep, viewCard, viewTile } from "../../kit/kit.js";
 
 const STATUSES = ["working", "blocked", "done", "idle", "unknown"];
 const STEPS = ["done", "current", "bad", "todo"];
@@ -38,7 +38,7 @@ export default class Kit extends View {
       .child(agent("running", { meta: "0:42", result: nodeResult({ text: "Reading src/auth/login.ts", color: t.working }, t), actions: nodeButton("kit-node-stop", { label: "Stop", icon: "square", onClick: noop }, t) }))
       .child(agent("done", { meta: "3:18", result: nodeResult({ head: "ANSWER", fields: { blocking: 0, summary: "Nothing blocking." } }, t) }))
       .child(agent("failed", { meta: "1:05", result: nodeResult({ text: "No answer in implement-1.md after a second request.", color: t.blocked }, t), actions: nodeButton("kit-node-retry", { label: "Retry", icon: "rotate-cw", onClick: noop }, t) }))
-      .child(nodeShell("kit-node-command", { kind: "run", name: "test", body: [field("bun test", { rows: 1, mono: "JetBrains Mono" })], actions: nodeButton("kit-node-run-command", { label: "Run step", icon: "play", onClick: noop }, t) }, t))
+      .child(nodeShell("kit-node-command", { kind: "run", name: "test", body: [field("bun test", { rows: 1, mono: "JetBrains Mono" }), nodeCheck("kit-node-allow", { label: "Goes on when it fails", checked: true, onClick: noop }, t)], actions: nodeButton("kit-node-run-command", { label: "Run step", icon: "play", onClick: noop }, t) }, t))
       .child(nodeShell("kit-node-condition", { kind: "condition", name: "clean", body: [field("{{review.blocking}} = 0", { rows: 1, mono: "JetBrains Mono" }), branchRow("kit-yes", { label: "Yes", taken: true }, t), branchRow("kit-no", { label: "No", taken: false }, t)] }, t))
       .child(
         nodeShell(

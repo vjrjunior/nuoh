@@ -398,16 +398,100 @@
 
 ## Workflows
 
-### Run a workflow on a schedule
+### Start workflows from triggers and send their results out
 
-**What:** A `schedule` in a workflow file (daily at a time, weekdays, every N minutes) and a worker that starts its runs, with a "Next run" line in the view and runs missed while Herdr was closed shown as missed.
+**What:** Trigger nodes that start a run without a click (a schedule, with a "Next run" line on the node and runs missed while Herdr was closed shown as missed; a webhook; a Herdr notification; a file appearing), and output nodes that send a result somewhere (a notification, a file, a comment on a task).
 
-**Why:** Many chains are routine: a morning review of open PRs, a nightly dependency check. Today each run is started by hand.
+**Why:** Many workflows are routine, a morning review of open PRs or a nightly dependency check, and today each run is started by hand and read in the view.
 
-**Context:** The worker is a floating block that draws nothing, like `comeback`, and runs `workflow run <name> --space <id>` when a slot comes; a schedule needs a space, given in the file. Keep each workflow's last slot in shared state, written before the run starts, so two copies don't start it twice. The format's checks go in `lib/workflow.js`, the slot arithmetic in a pure module with its tests.
+**Context:** The scheduler is a floating block that draws nothing, like `comeback`, and runs `workflow run <name> --space <id>` when a slot comes; a trigger needs a space, given on its node. Keep each workflow's last slot in shared state, written before the run starts, so two copies don't start it twice. A trigger is another kind of start node in `lib/workflow.js`, the slot arithmetic a pure module with its tests, and the nodes' look comes from the design system first. A webhook needs a listener, which reaches the network: say so in INSTALL.md.
+
+**Effort:** L
+**Priority:** P2
+**Depends on:** Nothing
+
+### Select, group and align nodes on the canvas
+
+**What:** A marquee that selects several nodes to move, duplicate or delete together; groups with a title that move as one; Lock, which keeps a workflow from being changed by a stray drag; alignment guides while dragging.
+
+**Why:** Past ten nodes, moving one at a time and lining them up by eye is slow.
+
+**Context:** The selection becomes a set in `main.js`, and `editor.js` takes lists of ids. A group is a box in the file (`groups: [{ title, nodes }]`) that `checkWorkflow` must accept and the runner ignores. Guides compare the dragged node's edges and centre with its neighbours' in `canvas.js`.
 
 **Effort:** M
-**Priority:** P2
+**Priority:** P3
+**Depends on:** Nothing
+
+### Animate the canvas
+
+**What:** The camera glides to a step (Fit, Find, the band's "Waiting at ship"), Tidy moves the nodes to their new places, and a bright dot travels along a connection while data goes through it.
+
+**Why:** Jumps lose the eye's place; motion shows where things went.
+
+**Context:** Herdr animates natively with `.transition(...)` and `.loop(...)`, never with a timer. The camera is a position on every node, so a glide is a transition on the layer that holds them, which today has none: the nodes would move into one layer with its own offset.
+
+**Effort:** M
+**Priority:** P3
+**Depends on:** Nothing
+
+### Keep a node's past results
+
+**What:** A strip under a node's result with its results from earlier runs, and "Use these settings", which puts back the task and agent that produced one.
+
+**Why:** Comparing what a prompt gave before and after a change now means opening old runs one by one.
+
+**Context:** Each run keeps its `definition`; a node's history is its id across the workflow's runs, read when the node is selected, not for every node on every render.
+
+**Effort:** M
+**Priority:** P3
+**Depends on:** Nothing
+
+### Show templates in text as chips
+
+**What:** `{{implement.output}}` drawn as a chip in a node's text, and typing `{{` offers the steps above it and their fields.
+
+**Why:** Templates are easy to mistype, and a typo only shows when `check` fails.
+
+**Context:** `InputState` has tokens (`replace_with_token`); `lib/workflow.js`'s `ancestors` gives what a step can reference. The file keeps plain `{{…}}` text.
+
+**Effort:** M
+**Priority:** P3
+**Depends on:** Nothing
+
+### Notes and shapes on the canvas
+
+**What:** Sticky notes, free text, rectangles and ink on the canvas, saved with the workflow and ignored by the runner.
+
+**Why:** A workflow someone else reads needs its why written next to its steps.
+
+**Context:** A `notes` list in the file, kept by `checkWorkflow`; the design system draws them first.
+
+**Effort:** M
+**Priority:** P3
+**Depends on:** Nothing
+
+### Templates, versions and folders for workflows
+
+**What:** New workflow offers templates ("Morning brief", "Implement, review, fix"); each save keeps a version that can be restored; the switcher groups workflows in folders.
+
+**Why:** A blank canvas is a slow start, and an edit that broke a workflow has no way back once the window closes.
+
+**Context:** Templates ship as files in the repo and are copied on pick. Versions go in the state folder, one file per save, pruned to the last 50. Folders are subfolders of the workflows folder; `workflow run` takes `folder/name`.
+
+**Effort:** M
+**Priority:** P3
+**Depends on:** Nothing
+
+### Typed ports
+
+**What:** Ports that carry an image or a file as well as text, drawn by type, with a connection refused when the types don't match.
+
+**Why:** A step that makes a screenshot or a file hands it on today as a path in text, which the next agent has to be told about.
+
+**Context:** A port's type goes on the node in the file; the runner hands an agent a file input as its path in the message's input block.
+
+**Effort:** L
+**Priority:** P3
 **Depends on:** Nothing
 
 ### Give each run a worktree of its own
@@ -433,18 +517,6 @@
 **Effort:** S
 **Priority:** P3
 **Depends on:** Nothing
-
-### Edit a workflow's steps in the view
-
-**What:** Reorder, add and remove steps, and change a step's task, agent or condition, from the steps card, saving the file with `writeTextFile` and its expected text.
-
-**Why:** A small change (another model, one more line in a task) now takes an agent in a new tab.
-
-**Context:** The kit's `input` is one line; a task needs a multi-line field, which the kit lacks: add it from the design system first. Validate with `checkWorkflow` before saving and keep the file's key order.
-
-**Effort:** L
-**Priority:** P3
-**Depends on:** A multi-line text field in the kit
 
 ### Keep a project's workflows in its repository
 

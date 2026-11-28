@@ -3,7 +3,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { click, type Node, own, svgs, texts, walk } from "./app-mocks";
 
-const { ICONS, addNodeMenu, agentPicker, avatar, branchRow, button, canvasBar, edgeBadge, edgeLook, EDGE, minimap, nodeButton, nodeField, nodeResult, nodeShell, nodeToolbar, port, PORT, refusal, runPill, zoomBar, cardHeader, cardLink, checkRow, chip, columnHead, detailLine, emptyState, flightRow, iconButton, iconPath, input, laneRow, lastClick, logLine, menuItem, meta, needRow, nextStep, paneTile, pill, prRow, profile, programIcon, releaseCard, segment, segmentGroup, statCard, statusChip, stepCard, stepNode, tag, taskCard, taskRow, timelineStep, toneColor, viewCard, viewTile } = await import("../kit/kit.js");
+const { ICONS, addNodeMenu, agentPicker, avatar, branchRow, nodeCheck, button, canvasBar, edgeBadge, edgeLook, EDGE, minimap, nodeButton, nodeField, nodeResult, nodeShell, nodeToolbar, port, PORT, refusal, runPill, zoomBar, cardHeader, cardLink, checkRow, chip, columnHead, detailLine, emptyState, flightRow, iconButton, iconPath, input, laneRow, lastClick, logLine, menuItem, meta, needRow, nextStep, paneTile, pill, prRow, profile, programIcon, releaseCard, segment, segmentGroup, statCard, statusChip, stepCard, stepNode, tag, taskCard, taskRow, timelineStep, toneColor, viewCard, viewTile } = await import("../kit/kit.js");
 
 const repo = join(import.meta.dir, "..");
 const t = new Proxy({}, { get: (_x, p) => (typeof p === "string" ? `t.${p}` : undefined) }) as any;
@@ -675,6 +675,9 @@ test("the result shows typed fields as rows, and a branch row says whether it wa
   expect(texts(nodeResult({ head: "ANSWER", fields: { blocking: 0, summary: "Clean" } }, t))).toEqual(["ANSWER", "blocking", "0", "summary", "Clean"]);
   expect(own(branchRow("y", { label: "Yes", taken: true }, t), "bg")).toEqual([["t.done1A"]]);
   expect(own(branchRow("n", { label: "No", taken: false }, t), "opacity")).toEqual([[0.5]]);
+  expect(texts(nodeCheck("c", { label: "Goes on when it fails", checked: true }, t))).toEqual(["Goes on when it fails"]);
+  expect(svgs(nodeCheck("c", { label: "x", checked: true }, t))).toEqual([iconPath("check")]);
+  expect(svgs(nodeCheck("c", { label: "x" }, t))).toEqual([]);
   expect(texts(agentPicker("a", { name: "Claude", model: "opus" }, t))).toEqual(["Claude", "opus"]);
   expect(texts(edgeBadge("b", { label: "up to 3×" }, t))).toEqual(["up to 3×"]);
   expect(own(refusal("Already connected", t), "bg")).toEqual([["t.blocked1F"]]);

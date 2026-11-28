@@ -1119,7 +1119,7 @@ export function nodeButton(id, { label, icon: iconName, variant = "secondary", d
 }
 
 export function agentPicker(id, { program = null, name, model, open = false, onClick }, t, z = 1) {
-  const glyph = program ? programIcon(program, { size: 14 * z }, t) : icon("bot", { size: 13 * z, color: t.muted });
+  const glyph = (program ? programIcon(program, { size: 14 * z, fallback: "bot" }, t) : null) ?? icon("bot", { size: 13 * z, color: t.muted });
   return h_flex()
     .id(id)
     .h(24 * z)
@@ -1148,6 +1148,7 @@ export function agentPicker(id, { program = null, name, model, open = false, onC
           .h(24 * z)
           .px(8 * z)
           .min_w(48 * z)
+          .when(typeof model !== "string", (box) => box.w(104 * z))
           .items_center()
           .rounded(6 * z)
           .border_1()
@@ -1209,6 +1210,28 @@ export function branchRow(id, { label, taken = null }, t, z = 1) {
     .text_size(12 * z)
     .text_color(t.foreground)
     .child(label);
+}
+
+export function nodeCheck(id, { label, checked = false, onClick }, t, z = 1) {
+  return h_flex()
+    .id(id)
+    .h(22 * z)
+    .gap(7 * z)
+    .items_center()
+    .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
+    .on_click((_e, cx) => onClick?.(cx))
+    .child(
+      h_flex()
+        .size(14 * z)
+        .flex_none()
+        .items_center()
+        .justify_center()
+        .rounded(4 * z)
+        .when(checked, (el) => el.bg(t.accent))
+        .when(!checked, (el) => el.border(1.5).border_color(t.dim))
+        .when(checked, (el) => el.child(icon("check", { size: 10 * z, color: t.accent_foreground }))),
+    )
+    .child(div().text_size(12 * z).text_color(checked ? t.foreground : t.muted).child(label));
 }
 
 export function edgeBadge(id, { label, onClick }, t, z = 1) {
