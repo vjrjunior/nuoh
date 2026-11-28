@@ -11,14 +11,14 @@
 ## Importing
 
 - A mod imports the kit as `../../kit/kit.js`, by no other path: the generator refuses another path to `kit/kit.js`, rewrites the import to `./kit.js` and copies `kit.js` into the installed mod.
-- Icon paths come from `KIT = { name: "kit" }`. The generator prefixes the name, so the icons are read from `mods/nuoh-kit/icons/`, where they are installed once, with an extra's `kit/icons/*.svg` beside them.
+- Icon paths come from `KIT = { name: "kit" }`. The generator prefixes the name, so the icons are read from `mods/nuoh-kit/icons/`, where they are installed once. An extra's mods use these too: an extra has no kit or icons of its own.
 - A layout whose mods use the kit must include the `kit` recipe: the generator refuses otherwise. A copy of one of Herdr's mods can't import the kit.
 - `scripts/test-panel.ts` gives the test panel its own `kit.js` with `KIT` pointed at `nuoh-kit`, so the panel draws its icons only once the layout is applied.
 
 ## Icons
 
 - Every name in `ICONS` has a file in `icons/` and every file a name. Each is a 24 by 24 `viewBox` drawn in `currentColor`, with no `<title>`.
-- Most are Lucide icons and keep their `@license` comment; their license is `icons/LICENSE-lucide`. `github.svg` is a brand mark under CC0, which needs no license file. An icon taken from another source brings its license file into `icons/`.
+- Most are Lucide icons and keep their `@license` comment; their license is `icons/LICENSE-lucide`. `github.svg`, `clickup.svg`, `cursor.svg` and `zed.svg` are brand marks from Simple Icons under CC0, which needs no license file. An icon taken from another source brings its license file into `icons/`.
 
 ## Gallery
 

@@ -189,7 +189,7 @@ function applyAll(options: ApplyOptions): ApplyResult {
   const record = readRecord();
   const config = readLocalConfig();
   const extras = loadExtras(config.extras);
-  const generated = generate(extras.recipes, { home, version, repo: root, bun: process.execPath, editor: config.editor, icons: extras.icons });
+  const generated = generate(extras.recipes, { home, version, repo: root, bun: process.execPath, editor: config.editor });
   const build = join(state, `build-${process.pid}`);
   const previous = join(state, `previous-${process.pid}`);
   mkdirSync(build, { recursive: true });

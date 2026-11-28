@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { recipesWith } from "../recipes/order";
 import { type Copy, type Editor, type KeyCommand, LAYOUT, type LayoutNode, type ModCommand, type ModSource, PREFIX, type Recipe, RecipeError, type RecipeContext } from "../recipes/recipe";
 
-export type GenerateOptions = { home: string; version: string; repo: string; bun: string; editor?: Editor; icons?: string[] };
+export type GenerateOptions = { home: string; version: string; repo: string; bun: string; editor?: Editor };
 export type Generated = {
   layoutText: string;
   mods: Record<string, Record<string, string>>;
@@ -36,9 +36,8 @@ function installKit(source: ModSource, options: GenerateOptions, files: Record<s
   }
   if (uses) files["kit.js"] = readFileSync(join(options.repo, "kit/kit.js"), "utf8");
   if (source.name === "kit") {
-    for (const icons of [...(options.icons ?? []), join(options.repo, "kit/icons")]) {
-      for (const icon of readdirSync(icons).filter((name) => name.endsWith(".svg"))) files[`icons/${icon}`] = readFileSync(join(icons, icon), "utf8");
-    }
+    const icons = join(options.repo, "kit/icons");
+    for (const icon of readdirSync(icons).filter((name) => name.endsWith(".svg"))) files[`icons/${icon}`] = readFileSync(join(icons, icon), "utf8");
   }
 }
 

@@ -44,5 +44,5 @@ The `layout:nuoh` section of `keys.json` is rebuilt on every apply, so a key edi
 What belongs to one person (their editor, a mod for their team's workflow) stays out of this repo, in `~/.config/vjr-herdr/config.json` (`VJR_HERDR_CONFIG` names another file), read by `scripts/config.ts` on every apply. Without the file the layout is this repo's.
 
 - `editor`, `{ name, argv }`, reaches recipes as `context.editor`; `markdown` and `files` write it into their copies' `EDITOR`.
-- `extras` lists folders, each a path or `{ path, options }` (`~` is the home folder). An extra has `recipes/index.ts` exporting `recipes`, its mods in `mods/<name>/` (`from: "repo"` reads them there), maybe `kit/icons/*.svg`, installed beside the kit's, and maybe its own `lib/` ([`lib/AGENTS.md`](../lib/AGENTS.md)). Its recipes get its `options` as `context.options`.
+- `extras` lists folders, each a path or `{ path, options }` (`~` is the home folder). An extra has `recipes/index.ts` exporting `recipes`, its mods in `mods/<name>/` (`from: "repo"` reads them there), and maybe its own `lib/` ([`lib/AGENTS.md`](../lib/AGENTS.md)). Its recipes get its `options` as `context.options`.
 - A recipe name already taken fails the build. An extra that doesn't load stops apply before it installs anything, and the message names the folder. `tests/fixtures/extra` is a minimal one.

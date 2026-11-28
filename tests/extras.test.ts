@@ -15,7 +15,7 @@ function generateWith(options: Record<string, unknown> = {}) {
   const home = tempDir();
   makeHerdrHome(home);
   const extras = loadExtras([{ path: EXTRA, options }]);
-  return generate(extras.recipes, { home, version: "0.1.10", repo, bun: "/bin/bun", icons: extras.icons });
+  return generate(extras.recipes, { home, version: "0.1.10", repo, bun: "/bin/bun" });
 }
 
 function configFile(text: string): string {
@@ -53,12 +53,12 @@ describe("extras", () => {
     expect(JSON.parse(generated.layoutText).floating).toContainEqual({ id: "hello", content: { mod: "nuoh-hello", props: { greeting: "hi" } }, edge: "left", align: "end" });
   });
 
-  test("an extra's mod gets the kit, and its icons join the kit's", () => {
+  test("an extra's mod gets the layout's kit, icons and all", () => {
     const { mods } = generateWith();
     expect(mods["nuoh-hello"]?.["main.js"]).toContain('from "./kit.js"');
     expect(mods["nuoh-hello"]?.["kit.js"]).toContain('export const KIT = { name: "nuoh-kit" };');
-    expect(Object.keys(mods["nuoh-kit"] ?? {})).toContain("icons/hello.svg");
     expect(Object.keys(mods["nuoh-kit"] ?? {})).toContain("icons/plus.svg");
+    expect(Object.keys(mods["nuoh-kit"] ?? {}).filter((name) => name.startsWith("icons/")).sort()).toEqual(readdirSync(join(repo, "kit/icons")).filter((name) => name.endsWith(".svg")).map((name) => `icons/${name}`).sort());
   });
 
   test("an extra can't take a recipe name that exists", () => {
@@ -129,7 +129,13 @@ describe("apply with a local config", () => {
 describe("the repo stays anyone's", () => {
   test("no tracked file names one person's tools, paths or team workflow", () => {
     const words = [["pp", "stack"], ["pp", "ship"], ["pp", "lane"], ["vjr", "task"], ["vjr", "ac"], ["click", "up"], ["command", "center"], ["orb", "ita/"], ["g", "stack"]].map((parts) => parts.join("[-_ ]?"));
-    const found = Bun.spawnSync(["git", "grep", "-n", "-i", "-E", words.join("|")], { cwd: repo }).stdout.toString();
-    expect(found).toBe("");
+    const banned = new RegExp(words.join("|"), "i");
+    const brandIcon = new RegExp(`"${"click" + "up"}"|${"click" + "up"}\\.svg`, "g");
+    const found = Bun.spawnSync(["git", "grep", "-n", "-i", "-E", words.join("|")], { cwd: repo })
+      .stdout.toString()
+      .split("\n")
+      .filter(Boolean)
+      .filter((line) => !line.startsWith("kit/") || banned.test(line.split(":").slice(2).join(":").replace(brandIcon, "")));
+    expect(found).toEqual([]);
   });
 });

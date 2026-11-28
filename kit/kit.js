@@ -26,8 +26,11 @@ export const ICONS = [
   "circle",
   "circle-check",
   "circle-x",
+  "clickup",
   "columns-2",
+  "command",
   "copy",
+  "cursor",
   "exclamation",
   "external-link",
   "eye",
@@ -63,6 +66,7 @@ export const ICONS = [
   "square-kanban",
   "terminal",
   "x",
+  "zed",
 ];
 
 export const iconPath = (name) => `mods/${KIT.name}/icons/${name}.svg`;

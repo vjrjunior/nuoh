@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import type { Editor, Recipe } from "../recipes/recipe";
@@ -6,7 +6,7 @@ import { localConfigPath } from "./paths";
 
 type Extra = { path: string; options: Record<string, unknown> };
 type LocalConfig = { extras: Extra[]; editor?: Editor };
-type Loaded = { recipes: Recipe[]; icons: string[] };
+type Loaded = { recipes: Recipe[] };
 
 function expand(path: string): string {
   return resolve(path === "~" || path.startsWith("~/") ? join(homedir(), path.slice(1)) : path);
@@ -45,7 +45,6 @@ export function readLocalConfig(file = localConfigPath()): LocalConfig {
 
 export function loadExtras(extras: Extra[]): Loaded {
   const recipes: Recipe[] = [];
-  const icons: string[] = [];
   for (const extra of extras) {
     const entry = join(extra.path, "recipes/index.ts");
     if (!existsSync(entry)) throw new Error(`extra ${extra.path}: recipes/index.ts not found`);
@@ -61,8 +60,6 @@ export function loadExtras(extras: Extra[]): Loaded {
     for (const recipe of found as Recipe[]) {
       recipes.push({ ...recipe, options: extra.options, mods: recipe.mods.map((mod) => (mod.from === "repo" ? { ...mod, root: mod.root ?? extra.path } : mod)) });
     }
-    const folder = join(extra.path, "kit/icons");
-    if (existsSync(folder) && statSync(folder).isDirectory()) icons.push(folder);
   }
-  return { recipes, icons };
+  return { recipes };
 }
