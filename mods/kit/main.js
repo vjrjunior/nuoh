@@ -1,7 +1,7 @@
-import { View } from "gpui-kit";
+import { View, div } from "gpui-kit";
 import { h_flex, InputState, v_flex } from "gpui-base";
 import { theme } from "herdr";
-import { ICONS, TEXT, avatar, button, cardHeader, checkRow, chip, detailLine, emptyState, heading, icon, iconButton, iconPath, input, laneRow, lastClick, link, menuItem, nextStep, paneTile, pill, profile, programIcon, releaseCard, segment, stepCard, stepNode, statusChip, statusDot, tag, timelineStep, viewCard, viewTile } from "../../kit/kit.js";
+import { ICONS, TEXT, avatar, button, cardHeader, cardLink, checkRow, chip, columnHead, detailLine, emptyState, flightRow, heading, icon, iconButton, iconPath, input, laneRow, lastClick, link, logLine, menuItem, meta, needRow, nextStep, paneTile, pill, prRow, profile, programIcon, releaseCard, segment, segmentGroup, sheet, sheetBar, spaceCard, statCard, stepCard, stepNode, statusChip, statusDot, tag, taskCard, taskRow, timelineStep, viewCard, viewTile } from "../../kit/kit.js";
 
 const STATUSES = ["working", "blocked", "done", "idle", "unknown"];
 const STEPS = ["done", "current", "bad", "todo"];
@@ -44,11 +44,17 @@ export default class Kit extends View {
       .child(iconButton("kit-ib-xs", { icon: "plus", tooltip: "Extra small", size: "xs", onClick: noop }, t))
       .child(iconButton("kit-ib-selected", { icon: "git-compare", tooltip: "Selected", selected: true, color: t.accent, onClick: noop }, t))
       .child(iconButton("kit-ib-bordered", { icon: "settings", tooltip: "Bordered", variant: "bordered", onClick: noop }, t));
-    const segments = row()
-      .gap(2)
-      .child(segment("kit-seg-board", { icon: "square-kanban", label: "Board", selected: true, onClick: noop }, t))
-      .child(segment("kit-seg-list", { icon: "list", label: "List", onClick: noop }, t))
-      .child(segment("kit-seg-icon", { icon: "layers", tooltip: "Icon only", onClick: noop }, t));
+    const segments = row().child(
+      segmentGroup(
+        "kit-seg-group",
+        [
+          segment("kit-seg-board", { icon: "square-kanban", label: "Board", selected: true, onClick: noop }, t),
+          segment("kit-seg-list", { icon: "list", label: "List", onClick: noop }, t),
+          segment("kit-seg-icon", { icon: "layers", tooltip: "Icon only", onClick: noop }, t),
+        ],
+        t,
+      ),
+    );
     const tags = row()
       .child(tag("kit-tag-branch", { icon: "git-branch", label: "main" }, t))
       .child(tag("kit-tag-date", { icon: "calendar", label: "Wednesday, Nov 25" }, t))
@@ -154,6 +160,60 @@ export default class Kit extends View {
       .child(emptyState({ title: "Nothing here", detail: "Focus a terminal in a repo." }, t))
       .child(emptyState({ title: "Switched off", detail: "Nothing is read until it's on.", action: button("kit-empty-on", { label: "Turn on", onClick: noop }, t) }, t));
     const clicks = v_flex().w(340).child(lastClick("Sent to the agent", {}, t)).child(lastClick("Not sent: the agent is busy", { ok: false }, t));
+    const face = (name) => avatar(name, { fill: t.accent, letter: t.accent_foreground }, { size: 24, radius: 7, textSize: 11 });
+    const rows = viewCard("kit-rows", t)
+      .w(760)
+      .child(cardHeader("kit-rows-head", { icon: "bell", label: "Rows", count: 4 }, t).child(cardLink("kit-rows-link", { label: "Open", onClick: noop }, t)))
+      .child(
+        v_flex()
+          .gap(2)
+          .px(6)
+          .pb(6)
+          .child(needRow("kit-need", { avatar: face("nuoh"), title: "nuoh", chip: statusChip("blocked", t), note: "waiting for permission", time: "2m", action: button("kit-need-open", { label: "Open", icon: "terminal", onClick: noop }, t) }, t))
+          .child(flightRow("kit-flight", { avatar: face("app"), title: "A task in flight", code: "T-12", branch: "feat/t-12", step: "Check", color: t.blocked, count: "2/6", segments: ["done", "current", "todo", "todo", "todo", "todo"], action: button("kit-flight-go", { label: "Go to the agent", icon: "terminal", iconColor: t.blocked, maxWidth: 210, onClick: noop }, t) }, t))
+          .child(prRow("kit-pr", { avatar: face("menla"), title: "Onboarding copy pass", where: "menla #96 · feat/copy", checks: { icon: "circle-check", color: t.done, text: "Checks passed" }, review: { label: "Ready to merge", tone: "done" }, onClick: noop }, t))
+          .child(taskRow("kit-task", { ring: t.working, title: "Export invoices as CSV", code: "T-13", meta: "Billing · To do", right: div().text_size(TEXT.base).text_color(t.working).child("Due today"), onClick: noop }, t)),
+      );
+    const stats = row().child(statCard("kit-stat", { icon: "bot", label: "Agents", value: 4, legend: [{ text: "1 needs you", color: t.blocked }, { text: "2 working", color: t.working }], onClick: noop }, t).w(300).h(112));
+    const logs = v_flex().w(440).gap(4).child(logLine("kit-log-1", { time: "14:12", who: "nuoh", what: "needs you", color: t.blocked, note: "waiting for permission" }, t)).child(logLine("kit-log-2", { time: "14:05", who: "app", what: "merged", color: t.done, note: "#412" }, t));
+    const board = h_flex()
+      .gap(8)
+      .items_start()
+      .child(
+        viewCard("kit-column", t)
+          .w(268)
+          .child(columnHead({ color: t.working, label: "In progress", count: 1 }, t))
+          .child(
+            v_flex()
+              .px(6)
+              .pb(6)
+              .child(
+                taskCard(
+                  "kit-card",
+                  {
+                    code: "T-14",
+                    top: [chip("Subtask", { size: "xs" }, t), div().flex_1(), meta({ icon: "flag", iconColor: t.working, text: "High", color: t.working }, t), iconButton("kit-card-start", { icon: "play", tooltip: "Start", size: "sm", color: t.dim, onClick: noop }, t)],
+                    title: "Winter break calendar",
+                    meta: [meta({ icon: "folder", iconColor: t.ansi4, text: "School" }, t), meta({ icon: "calendar", text: "Today", color: t.working }, t)],
+                    onClick: noop,
+                  },
+                  t,
+                ),
+              ),
+          ),
+      )
+      .child(
+        sheet("kit-sheet", t)
+          .w(360)
+          .child(sheetBar([iconButton("kit-sheet-close", { icon: "x", tooltip: "Close", onClick: noop }, t), div().flex_1().text_size(TEXT.xl).font_semibold().text_color(t.accent).child("T-14"), button("kit-sheet-start", { label: "Start", icon: "play", variant: "primary", size: "lg", onClick: noop }, t)]))
+          .child(
+            v_flex()
+              .p(20)
+              .gap(14)
+              .child(row().child(chip("In progress", { tone: "working", size: "md" }, t)).child(chip("High", { size: "md", icon: "flag", iconColor: t.working }, t)))
+              .child(spaceCard("kit-space", { avatar: avatar("app", { fill: t.ansi4, letter: t.accent_foreground }, { size: 28, radius: 8 }), name: "app", line: "feat/t-14 · working", action: button("kit-space-open", { label: "Open", icon: "terminal", onClick: noop }, t) }, t)),
+          ),
+      );
     const profiles = row().child(profile("kit-profile-on", { label: "Work", onClick: noop }, t)).child(profile("kit-profile-off", { off: true, onClick: noop }, t));
     const menuItems = v_flex()
       .w(260)
@@ -231,6 +291,10 @@ export default class Kit extends View {
       .child(section("empty", "Empty states", t).child(empties))
       .child(section("last-click", "Last click", t).child(clicks))
       .child(section("profile", "Profile", t).child(profiles))
+      .child(section("stats", "Stat card", t).child(stats))
+      .child(section("rows", "Rows", t).child(rows))
+      .child(section("log", "Log lines", t).child(logs))
+      .child(section("board", "Board and sheet", t).child(board))
       .child(section("menu-items", "Menu items", t).child(menuItems))
       .child(section("dots", "Dots", t).child(dots))
       .child(section("steps", "Steps", t).child(steps))

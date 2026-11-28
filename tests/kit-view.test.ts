@@ -16,7 +16,7 @@ function render() {
 
 test("the gallery shows every section", () => {
   const root = render();
-  for (const id of ["buttons", "icon-buttons", "segments", "tags", "links", "chips", "status-chips", "pills", "program-icons", "avatars", "inputs", "card-headers", "view-parts", "lines", "timeline", "checks", "lanes", "release", "empty", "last-click", "profile", "menu-items", "dots", "steps", "icons"]) {
+  for (const id of ["buttons", "icon-buttons", "segments", "tags", "links", "chips", "status-chips", "pills", "program-icons", "avatars", "inputs", "card-headers", "view-parts", "lines", "timeline", "checks", "lanes", "release", "empty", "last-click", "profile", "stats", "rows", "log", "board", "menu-items", "dots", "steps", "icons"]) {
     expect(byKey(root, `kit-${id}`)).toBeDefined();
   }
 });

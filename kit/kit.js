@@ -124,7 +124,7 @@ function buttonLook(variant, t) {
   return { bg: t.foreground + "0D", hover: t.foreground + "17", border: t.foreground + "14", hoverBorder: t.foreground + "24", text: t.foreground, icon: t.muted };
 }
 
-export function button(id, { label, icon: iconName, variant = "secondary", size = "md", iconColor, full = false, disabled = false, loading = false, tooltip, onClick }, t) {
+export function button(id, { label, icon: iconName, variant = "secondary", size = "md", iconColor, full = false, maxWidth, disabled = false, loading = false, tooltip, onClick }, t) {
   const dims = BUTTON_SIZE[size] ?? BUTTON_SIZE.md;
   const look = buttonLook(variant, t);
   const glyph = loading ? icon("loader-circle", { size: dims.icon, color: iconColor ?? look.icon }).spin(900) : iconName != null ? icon(iconName, { size: dims.icon, color: iconColor ?? look.icon }) : null;
@@ -146,10 +146,12 @@ export function button(id, { label, icon: iconName, variant = "secondary", size 
     .when(!disabled && look.strong, (el) => el.hover((s) => s.opacity(0.9)))
     .when(!disabled && !look.strong, (el) => el.hover((s) => (look.hoverBorder ? s.bg(look.hover).border_color(look.hoverBorder) : s.bg(look.hover))))
     .when(full, (el) => el.w_full().justify_center())
+    .when(maxWidth != null, (el) => el.min_w(0).max_w(maxWidth))
     .when(tooltip != null, (el) => el.tooltip(tooltip))
     .on_click((_e, cx) => onClick?.(cx))
     .when(glyph != null, (el) => el.child(glyph))
-    .when(label != null, (el) => el.child(label));
+    .when(label != null && maxWidth == null, (el) => el.child(label))
+    .when(label != null && maxWidth != null, (el) => el.child(div().min_w(0).truncate().child(label)));
 }
 
 const ICON_BUTTON_SIZE = { xs: { size: CONTROL.tiny, icon: ICON_SIZE.md, radius: RADIUS.control }, sm: { size: CONTROL.small, icon: ICON_SIZE.md, radius: 6 }, md: { size: CONTROL.row, icon: ICON_SIZE.lg, radius: 7 } };
@@ -203,7 +205,7 @@ export function segment(id, { icon: iconName, label, selected = false, tooltip, 
     .when(label != null, (el) => el.child(label));
 }
 
-export function input(state, t, { kind = "text", focused = true, height = CONTROL.large } = {}) {
+export function input(state, t, { kind = "text", focused = true, height = CONTROL.large, font } = {}) {
   const start = kind === "start";
   const glyph = kind === "search" ? icon("search", { size: 13, color: t.unknown }) : start ? icon("plus", { size: ICON_SIZE.md, color: t.muted }) : null;
   return h_flex()
@@ -219,6 +221,7 @@ export function input(state, t, { kind = "text", focused = true, height = CONTRO
     .border_color(focused ? t.accent + "B3" : t.foreground + (start ? "24" : "14"))
     .text_size(TEXT.lg)
     .text_color(t.foreground)
+    .when(font != null, (el) => el.font_family(font))
     .when(glyph != null, (el) => el.child(glyph))
     .child(div().flex_1().min_w(0).child(Input.new(state)));
 }
@@ -254,22 +257,24 @@ export function avatar(name, { fill, letter }, { size = 22, radius = 6, textSize
 
 const CHIP_FILL = { blocked: "1F", working: "1F", done: "1A", accent: "1F" };
 
-export function chip(text, { tone = "neutral", size = "sm", dot = false } = {}, t) {
+export function chip(text, { tone = "neutral", size = "sm", dot = false, icon: iconName, iconColor } = {}, t) {
   const color = CHIP_FILL[tone] != null ? t[tone] : t.muted;
   const fill = CHIP_FILL[tone] != null ? color + CHIP_FILL[tone] : t.foreground + "0F";
   const md = size === "md";
+  const xs = size === "xs";
   return h_flex()
     .flex_none()
-    .h(md ? CONTROL.regular : CONTROL.tiny)
-    .px(md ? 8 : 6)
-    .gap(6)
+    .h(md ? CONTROL.regular : xs ? 16 : CONTROL.tiny)
+    .px(md ? 8 : xs ? 5 : 6)
+    .gap(md && iconName != null ? 5 : 6)
     .items_center()
-    .rounded(md ? 7 : RADIUS.control)
+    .rounded(md ? 7 : xs ? RADIUS.pill : RADIUS.control)
     .bg(fill)
-    .text_size(md ? TEXT.base : TEXT.sm)
-    .font_medium()
+    .text_size(md ? TEXT.base : xs ? TEXT.xs : TEXT.sm)
+    .when(!xs, (el) => el.font_medium())
     .text_color(color)
-    .when(dot || md, (el) => el.child(statusDot(color, { size: 6 })))
+    .when(iconName != null, (el) => el.child(icon(iconName, { size: ICON_SIZE.sm, color: iconColor ?? color })))
+    .when(iconName == null && (dot || md), (el) => el.child(statusDot(color, { size: 6 })))
     .child(text);
 }
 
@@ -717,4 +722,253 @@ export function lastClick(text, { ok = true } = {}, t) {
     .border_color(t.foreground + "0A")
     .child(icon(ok ? "check" : "exclamation", { size: ICON_SIZE.md, color }))
     .child(div().min_w(0).truncate().text_size(TEXT.base).text_color(color).child(text));
+}
+
+export function segmentGroup(id, segments, t) {
+  return h_flex().id(id).flex_none().p(3).gap(2).items_center().rounded(11).bg(t.surface).border_1().border_color(t.foreground + "12").children(segments);
+}
+
+export function cardLink(id, { label, onClick }, t) {
+  return h_flex()
+    .id(id)
+    .flex_none()
+    .h(26)
+    .px(8)
+    .gap(5)
+    .items_center()
+    .rounded(7)
+    .bg(t.foreground + "08")
+    .hover((s) => s.bg(t.foreground + "14"))
+    .on_click((_e, cx) => onClick?.(cx))
+    .child(div().text_size(TEXT.base).text_color(t.muted).child(label))
+    .child(icon("arrow-up-right", { size: ICON_SIZE.md, color: t.unknown }));
+}
+
+export function statCard(id, { icon: iconName, label, value, legend = [], onClick }, t) {
+  const number = typeof value === "number";
+  return viewCard(id, t)
+    .hover((s) => s.bg(t.raised))
+    .on_click((_e, cx) => onClick?.(cx))
+    .child(
+      h_flex()
+        .h(CARD_HEADER)
+        .flex_none()
+        .pl(14)
+        .pr(10)
+        .gap(8)
+        .items_center()
+        .child(icon(iconName, { size: ICON_SIZE.lg, color: t.muted }))
+        .child(div().flex_1().min_w(0).truncate().text_size(TEXT.xl).font_medium().text_color(t.muted).child(label))
+        .child(icon("arrow-up-right", { size: 13, color: t.dim })),
+    )
+    .child(
+      v_flex()
+        .px(14)
+        .gap(6)
+        .child(div().h(36).text_size(number ? 30 : 15).font_semibold().text_color(number ? t.foreground : t.muted).child(String(value)))
+        .child(
+          h_flex()
+            .gap(12)
+            .min_w(0)
+            .overflow_hidden()
+            .children(legend.map((part) => h_flex().flex_none().gap(6).items_center().child(statusDot(part.color, { size: 6 })).child(div().text_size(TEXT.base).text_color(t.unknown).child(part.text)))),
+        ),
+    );
+}
+
+const rowBox = (id, height, t) => h_flex().id(id).h(height).px(8).gap(12).items_center().rounded(10);
+export const ROW_COLUMN = 150;
+export const ROW_ACTION = 210;
+
+export function needRow(id, { avatar: face, title, chip: badge, note, time, action }, t) {
+  return rowBox(id, 58, t)
+    .hover((s) => s.bg(t.foreground + "0A"))
+    .child(face)
+    .child(
+      v_flex()
+        .flex_1()
+        .min_w(0)
+        .gap(3)
+        .child(h_flex().gap(8).items_center().min_w(0).child(div().min_w(0).truncate().text_size(TEXT.xl).font_semibold().text_color(t.foreground).child(title)).when(badge != null, (el) => el.child(badge)))
+        .child(div().min_w(0).truncate().text_size(TEXT.base).text_color(t.unknown).child(note ?? "")),
+    )
+    .when(time != null, (el) => el.child(div().flex_none().text_size(TEXT.base).text_color(t.dim).child(time)))
+    .when(action != null, (el) => el.child(action));
+}
+
+export function flightRow(id, { avatar: face, title, code, codeFont, branch, step, color, count, segments = [], action, why }, t) {
+  const gap = 3;
+  const width = Math.min(22, Math.floor((ROW_COLUMN - gap * (segments.length - 1)) / Math.max(1, segments.length)));
+  return rowBox(id, 56, t)
+    .hover((s) => s.bg(t.foreground + "0A"))
+    .child(face)
+    .child(
+      v_flex()
+        .flex_1()
+        .min_w(0)
+        .gap(3)
+        .child(
+          h_flex()
+            .gap(8)
+            .items_center()
+            .min_w(0)
+            .child(div().min_w(0).truncate().text_size(TEXT.xl).font_medium().text_color(t.foreground).child(title))
+            .when(Boolean(code), (el) => el.child(div().flex_none().when(codeFont != null, (c) => c.font_family(codeFont)).text_size(TEXT.md).text_color(t.dim).child(code))),
+        )
+        .child(h_flex().gap(5).items_center().min_w(0).child(icon("git-branch", { size: ICON_SIZE.sm, color: t.unknown })).child(div().min_w(0).truncate().text_size(TEXT.base).text_color(t.unknown).child(branch ?? ""))),
+    )
+    .child(
+      v_flex()
+        .w(ROW_COLUMN)
+        .flex_none()
+        .gap(7)
+        .child(h_flex().gap(6).items_center().min_w(0).child(div().min_w(0).truncate().text_size(TEXT.base).font_medium().text_color(color).child(step)).child(div().flex_none().text_size(TEXT.base).text_color(t.dim).child(count ?? "")))
+        .child(h_flex().gap(gap).children(segments.map((state) => div().w(width).h(4).rounded(2).bg(state === "done" ? t.done + "B3" : state === "current" ? color : t.foreground + "14")))),
+    )
+    .child(
+      h_flex()
+        .w(ROW_ACTION)
+        .flex_none()
+        .justify_end()
+        .when(action != null, (el) => el.child(action))
+        .when(action == null && why != null, (el) => el.child(div().min_w(0).truncate().text_size(TEXT.base).text_color(t.dim).child(why))),
+    );
+}
+
+export function prRow(id, { avatar: face, title, where, checks, review, onClick }, t) {
+  return rowBox(id, 52, t)
+    .hover((s) => s.bg(t.foreground + "0A"))
+    .on_click((_e, cx) => onClick?.(cx))
+    .child(face)
+    .child(
+      v_flex()
+        .flex_1()
+        .min_w(0)
+        .gap(2)
+        .child(div().min_w(0).truncate().text_size(TEXT.xl).font_medium().text_color(t.foreground).child(title))
+        .child(div().min_w(0).truncate().text_size(TEXT.base).text_color(t.unknown).child(where ?? "")),
+    )
+    .child(h_flex().w(ROW_COLUMN).flex_none().gap(6).items_center().child(icon(checks.icon, { size: 13, color: checks.color })).child(div().min_w(0).truncate().text_size(TEXT.base).text_color(t.muted).child(checks.text)))
+    .child(h_flex().w(ROW_COLUMN).flex_none().justify_end().when(review != null, (el) => el.child(chip(review.label, { tone: review.tone }, t))));
+}
+
+export function taskRow(id, { ring, title, code, codeFont, meta, right, hovered = false, onHover, onClick }, t) {
+  return rowBox(id, 54, t)
+    .gap(11)
+    .when(hovered, (el) => el.bg(t.foreground + "0A"))
+    .when(onHover != null, (el) => el.on_hover((on, cx) => onHover(on, cx)))
+    .on_click((_e, cx) => onClick?.(cx))
+    .child(div().size(14).flex_none().rounded(7).border(1.5).border_color(ring))
+    .child(
+      v_flex()
+        .flex_1()
+        .min_w(0)
+        .gap(3)
+        .child(div().min_w(0).truncate().text_size(TEXT.xl).font_medium().text_color(t.foreground).child(title))
+        .child(
+          h_flex()
+            .gap(6)
+            .items_center()
+            .min_w(0)
+            .child(div().flex_none().when(codeFont != null, (c) => c.font_family(codeFont)).text_size(TEXT.md).text_color(t.dim).child(code ?? ""))
+            .child(div().min_w(0).truncate().text_size(TEXT.base).text_color(t.unknown).child(meta ?? "")),
+        ),
+    )
+    .when(right != null, (el) => el.child(right));
+}
+
+export function logLine(id, { time, who, what, color, note, font }, t) {
+  return h_flex()
+    .id(id)
+    .flex_none()
+    .gap(12)
+    .items_center()
+    .when(font != null, (el) => el.font_family(font))
+    .text_size(TEXT.base)
+    .line_height("20px")
+    .child(div().w(40).flex_none().text_color(t.dim).child(time))
+    .child(div().w(122).flex_none().truncate().text_color(t.muted).child(who))
+    .child(div().w(76).flex_none().truncate().text_color(color).child(what))
+    .child(div().flex_1().min_w(0).truncate().text_color(t.unknown).child(note ?? ""));
+}
+
+export function columnHead({ color, label, count }, t) {
+  return h_flex()
+    .flex_none()
+    .h(CARD_HEADER)
+    .pl(14)
+    .pr(10)
+    .gap(8)
+    .items_center()
+    .child(statusDot(color, { size: 8 }))
+    .child(div().min_w(0).truncate().text_size(TEXT.xl).font_medium().text_color(t.muted).child(label))
+    .child(div().flex_none().text_size(TEXT.base).text_color(t.dim).child(String(count)));
+}
+
+export function meta({ icon: iconName, iconColor, text, color }, t) {
+  return h_flex()
+    .min_w(0)
+    .gap(4)
+    .items_center()
+    .child(icon(iconName, { size: ICON_SIZE.sm, color: iconColor ?? t.unknown }))
+    .child(div().min_w(0).truncate().text_size(TEXT.md).text_color(color ?? t.unknown).child(text));
+}
+
+export function taskCard(id, { code, codeFont, top = [], title, meta: lines = [], footer = null, hovered = false, open = false, onHover, onClick }, t) {
+  let line = t.foreground + "0F";
+  if (open) line = t.accent;
+  else if (hovered) line = t.foreground + "1F";
+  return v_flex()
+    .id(id)
+    .flex_none()
+    .p(12)
+    .gap(8)
+    .rounded(10)
+    .bg(hovered ? t.selected : t.raised)
+    .border_1()
+    .border_color(line)
+    .when(onHover != null, (el) => el.on_hover((on, cx) => onHover(on, cx)))
+    .on_click((_e, cx) => onClick?.(cx))
+    .child(
+      h_flex()
+        .h(22)
+        .gap(6)
+        .items_center()
+        .child(div().flex_none().when(codeFont != null, (c) => c.font_family(codeFont)).text_size(TEXT.md).font_semibold().text_color(t.accent).child(code))
+        .children(top),
+    )
+    .child(div().text_size(TEXT.xl).font_medium().text_color(t.foreground).child(title))
+    .when(lines.length > 0, (el) => el.child(h_flex().min_w(0).gap(10).items_center().children(lines)))
+    .when(footer != null, (el) => el.child(v_flex().gap(8).child(div().h(1).flex_none().bg(t.foreground + "0A")).child(footer)));
+}
+
+export function sheet(id, t) {
+  return v_flex().id(id).bg(t.surface).border_1().border_color(t.foreground + "1F").rounded(14).shadow_lg().overflow_hidden();
+}
+
+export function sheetBar(items) {
+  return h_flex().flex_none().h(50).px(10).gap(6).items_center().children(items.filter(Boolean));
+}
+
+export function spaceCard(id, { avatar: face, name, line, action }, t) {
+  return h_flex()
+    .id(id)
+    .flex_none()
+    .p(12)
+    .gap(10)
+    .items_center()
+    .rounded(10)
+    .bg(t.foreground + "06")
+    .border_1()
+    .border_color(t.foreground + "0F")
+    .child(face)
+    .child(
+      v_flex()
+        .flex_1()
+        .min_w(0)
+        .gap(2)
+        .child(div().min_w(0).truncate().text_size(TEXT.xl).font_semibold().text_color(t.foreground).child(name))
+        .child(div().min_w(0).truncate().text_size(TEXT.base).text_color(t.unknown).child(line ?? "")),
+    )
+    .when(action != null, (el) => el.child(action));
 }

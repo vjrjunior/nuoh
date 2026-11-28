@@ -3,7 +3,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { click, type Node, own, svgs, texts, walk } from "./app-mocks";
 
-const { ICONS, avatar, button, cardHeader, checkRow, chip, detailLine, emptyState, iconButton, iconPath, input, laneRow, lastClick, menuItem, nextStep, paneTile, pill, profile, programIcon, releaseCard, segment, statusChip, stepCard, stepNode, tag, timelineStep, toneColor, viewCard, viewTile } = await import("../kit/kit.js");
+const { ICONS, avatar, button, cardHeader, cardLink, checkRow, chip, columnHead, detailLine, emptyState, flightRow, iconButton, iconPath, input, laneRow, lastClick, logLine, menuItem, meta, needRow, nextStep, paneTile, pill, prRow, profile, programIcon, releaseCard, segment, segmentGroup, statCard, statusChip, stepCard, stepNode, tag, taskCard, taskRow, timelineStep, toneColor, viewCard, viewTile } = await import("../kit/kit.js");
 
 const repo = join(import.meta.dir, "..");
 const t = new Proxy({}, { get: (_x, p) => (typeof p === "string" ? `t.${p}` : undefined) }) as any;
@@ -528,4 +528,84 @@ test("a profile button says the flow with an accent dot, or Off with a dim one",
   const off = profile("p", { off: true, onClick() {} }, t) as Node;
   expect(own(off.kids[0] as Node, "bg")).toEqual([["t.dim"]]);
   expect(texts(off)).toEqual(["Off"]);
+});
+
+test("a chip can be the 16 px subtask tag, or carry an icon in place of its dot", () => {
+  const xs = chip("Subtask", { size: "xs" }, t) as Node;
+  expect(own(xs, "h")).toEqual([[16]]);
+  expect(own(xs, "rounded")).toEqual([[4]]);
+  expect(own(xs, "text_size")).toEqual([[10.5]]);
+  const flagged = chip("High", { size: "md", icon: "flag", iconColor: "t.working" }, t) as Node;
+  expect(svgs(flagged)).toEqual(["mods/kit/icons/flag.svg"]);
+  expect(own(flagged.kids[0] as Node, "text_color")).toEqual([["t.working"]]);
+});
+
+test("a button with a width limit cuts its label to fit", () => {
+  const node = button("b", { label: "A long label for a small place", maxWidth: 210, onClick() {} }, t) as Node;
+  expect(own(node, "max_w")).toEqual([[210]]);
+  expect(own(node.kids.at(-1) as Node, "truncate")).toEqual([[]]);
+});
+
+test("a segment group holds its segments 2 px apart on the surface", () => {
+  const node = segmentGroup("g", [segment("a", { label: "A", onClick() {} }, t), segment("b", { label: "B", onClick() {} }, t)], t) as Node;
+  expect(own(node, "p")).toEqual([[3]]);
+  expect(own(node, "rounded")).toEqual([[11]]);
+  expect(node.kids).toHaveLength(2);
+});
+
+test("a card link is a 26 px chip with its label and an arrow", () => {
+  const node = cardLink("l", { label: "GitHub", onClick() {} }, t) as Node;
+  expect(own(node, "h")).toEqual([[26]]);
+  expect(own(node, "bg")).toEqual([["t.foreground08"]]);
+  expect(texts(node)).toEqual(["GitHub"]);
+  expect(svgs(node)).toEqual(["mods/kit/icons/arrow-up-right.svg"]);
+});
+
+test("a stat card shows its value large, or a word smaller and muted, over its legend", () => {
+  const node = statCard("s", { icon: "bot", label: "Agents", value: 4, legend: [{ text: "1 needs you", color: "t.blocked" }] }, t) as Node;
+  expect(texts(node)).toEqual(["Agents", "4", "1 needs you"]);
+  const value = walk(node).find((n) => n.texts.includes("4")) as Node;
+  expect(own(value, "text_size")).toEqual([[30]]);
+  const word = walk(statCard("s", { icon: "list", label: "Tasks", value: "Connect" }, t) as Node).find((n) => n.texts.includes("Connect")) as Node;
+  expect(own(word, "text_size")).toEqual([[15]]);
+  expect(own(word, "text_color")).toEqual([["t.muted"]]);
+});
+
+test("the rows are 58, 56, 52 and 54 px with 10 px corners", () => {
+  const face = "face";
+  expect(own(needRow("n", { avatar: face, title: "a" }, t) as Node, "h")).toEqual([[58]]);
+  expect(own(flightRow("f", { avatar: face, title: "a", step: "s", color: "t.done", segments: ["done"] }, t) as Node, "h")).toEqual([[56]]);
+  expect(own(prRow("p", { avatar: face, title: "a", checks: { icon: "circle", color: "t.dim", text: "No checks" } }, t) as Node, "h")).toEqual([[52]]);
+  expect(own(taskRow("r", { ring: "t.dim", title: "a" }, t) as Node, "h")).toEqual([[54]]);
+  expect(own(needRow("n", { avatar: face, title: "a" }, t) as Node, "rounded")).toEqual([[10]]);
+});
+
+test("a flight row draws one bar per step: done ones faded, the current one in its color", () => {
+  const node = flightRow("f", { avatar: "x", title: "a", step: "Check", color: "t.blocked", count: "2/3", segments: ["done", "current", "todo"] }, t) as Node;
+  const bars = walk(node).filter((n) => own(n, "h").some(([h]) => h === 4));
+  expect(bars.map((n) => own(n, "bg")[0][0])).toEqual(["t.doneB3", "t.blocked", "t.foreground14"]);
+});
+
+test("a log line is time, who, what in its color and the note, in the given font", () => {
+  const node = logLine("l", { time: "14:12", who: "nuoh", what: "merged", color: "t.done", note: "#412", font: "Mono" }, t) as Node;
+  expect(texts(node)).toEqual(["14:12", "nuoh", "merged", "#412"]);
+  expect(own(node, "font_family")).toEqual([["Mono"]]);
+  expect(own(node.kids[2] as Node, "text_color")).toEqual([["t.done"]]);
+});
+
+test("a task card lights its line when hovered and turns it accent while its task is open", () => {
+  const line = (options: Record<string, unknown>) => own(taskCard("c", { code: "T-1", title: "a", ...options }, t) as Node, "border_color")[0][0];
+  expect(line({})).toBe("t.foreground0F");
+  expect(line({ hovered: true })).toBe("t.foreground1F");
+  expect(line({ open: true })).toBe("t.accent");
+  expect(own(taskCard("c", { code: "T-1", title: "a", hovered: true }, t) as Node, "bg")).toEqual([["t.selected"]]);
+});
+
+test("a column head and a meta mark keep the design system's sizes", () => {
+  const head = columnHead({ color: "t.working", label: "In progress", count: 2 }, t) as Node;
+  expect(own(head, "h")).toEqual([[40]]);
+  expect(texts(head)).toEqual(["In progress", "2"]);
+  const mark = meta({ icon: "calendar", text: "Today", color: "t.working" }, t) as Node;
+  expect(own(mark.kids[0] as Node, "size")).toEqual([[11]]);
+  expect(own(mark.kids[1] as Node, "text_color")).toEqual([["t.working"]]);
 });
