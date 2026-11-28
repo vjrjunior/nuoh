@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { checkoutOf, parseWorktrees } from "../lib/checkouts.js";
-import { REASONS, SCHEDULE_TTL, SETTLE, atShell, freshArgv, freshCommand, frontRunsSession, isClaude, isDraft, keepArgs, leaves, matchingFolder, movedNote, parseSchedule, projectFolder, promptBox, resumeArgv, runsSession, scheduleStep, spaceName, splitSteps, tabTree, targetsFor } from "../mods/move-tab/logic.js";
+import { CUT_TTL, REASONS, SCHEDULE_TTL, SETTLE, atShell, cutNotice, freshArgv, freshCommand, frontRunsSession, isClaude, isDraft, keepArgs, leaves, matchingFolder, movedNote, parseSchedule, projectFolder, promptBox, resumeArgv, runsSession, scheduleStep, spaceName, splitSteps, tabTree, targetsFor } from "../mods/move-tab/logic.js";
 
 describe("move-tab logic", () => {
   test("keeps the allowed flags and their values", () => {
@@ -217,5 +217,41 @@ describe("a Claude with no conversation yet", () => {
     expect(freshCommand({ cwd: "/r/main", args: ["--model", "opus"] })).toBe("cd /r/main && claude --model opus");
     expect(freshCommand({ cwd: "/r/My App", args: [] })).toBe("cd '/r/My App' && claude");
     expect(freshCommand({ cwd: "/r/it's", args: [] })).toBeNull();
+  });
+});
+
+describe("a move cut off in the middle", () => {
+  const NOW = 1_800_000_000_000;
+  const claude = { session: "abc-1", cwd: "/r/main", args: ["--model", "opus"], fresh: false };
+  const cut = (claudes: unknown[] = [claude], at = NOW - 1000) => ({ id: "r1", at, home: "s1", place: "feat/x", claudes });
+
+  test("gives back each Claude that ended and runs nowhere", () => {
+    expect(cutNotice(cut(), [], NOW)).toEqual({
+      title: "A move was cut off",
+      body: "The move to feat/x stopped after Claude ended. To resume Claude by hand: cd /r/main && claude --resume abc-1 --model opus",
+      level: "error",
+      action: { name: "tab.new", args: { space: "s1", folder: "/r/main", argv: ["claude", "--resume", "abc-1", "--model", "opus"] } },
+    });
+  });
+
+  test("a Claude with no conversation yet is started again, not resumed", () => {
+    const notice = cutNotice(cut([{ ...claude, session: "new-1", fresh: true }]), [], NOW);
+    expect(notice?.body).toBe("The move to feat/x stopped after Claude ended. To start Claude again by hand: cd /r/main && claude --model opus");
+    expect(notice?.action.args.argv).toEqual(["claude", "--model", "opus"]);
+  });
+
+  test("skips a Claude a terminal already resumes", () => {
+    const running = { address: "t9", state: "live", argv: ["/bin/zsh", "-l"], foreground: { argv: ["claude", "--resume", "abc-1"] } };
+    expect(cutNotice(cut(), [running], NOW)).toBeNull();
+    const other = { ...claude, session: "abc-2", cwd: "/r/main/api", args: [] };
+    expect(cutNotice(cut([claude, other]), [running], NOW)?.body).toBe("The move to feat/x stopped after Claude ended. To resume Claude by hand: cd /r/main/api && claude --resume abc-2");
+  });
+
+  test("drops a record that is a day old or that can't be read", () => {
+    expect(cutNotice(cut([claude], NOW - CUT_TTL - 1), [], NOW)).toBeNull();
+    expect(cutNotice(null, [], NOW)).toBeNull();
+    expect(cutNotice({ at: NOW }, [], NOW)).toBeNull();
+    expect(cutNotice(cut([{ ...claude, session: "../x" }]), [], NOW)).toBeNull();
+    expect(cutNotice(cut([]), [], NOW)).toBeNull();
   });
 });

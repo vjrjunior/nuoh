@@ -138,18 +138,6 @@
 
 ## Move tab
 
-### A toast for a move cut off by a layout switch or restart
-
-**What:** When a layout switch or an app restart cancels a Move tab in the middle, show a toast that gives the Claude's resume command.
-
-**Why:** The worker's task is cancelled with the move, and the session id is lost with it, so a Claude that already ended gets no notice and no way back besides `/resume`.
-
-**Context:** `mods/move-tab/move.js` keeps the ended Claudes in `run.ended`, in memory only. Writing each one to shared state or a terminal label before ending it would let the next copy of the worker find it and post the toast.
-
-**Effort:** S
-**Priority:** P2
-**Depends on:** Nothing
-
 ### Clean up the space a failed move opened
 
 **What:** When a move opened a space with `space.new` and the build then fails, close that space (or say in the error toast that it was left behind).

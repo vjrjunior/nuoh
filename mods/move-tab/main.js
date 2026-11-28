@@ -1,15 +1,17 @@
 import { View, div } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
-import { agents, closeOverlay, focused, notify, panes, props, setShared, shared, spaces, terminals, theme } from "herdr";
+import { agents, checking, closeOverlay, focused, notify, panes, props, setShared, shared, spaces, terminals, theme } from "herdr";
 import { CONTROL, RADIUS, TEXT, heading, icon } from "../../kit/kit.js";
 import { appIo } from "./io.js";
 import { parseWorktrees, placeOf } from "../../lib/checkouts.js";
-import { LABEL, REASONS, REFUSED, parseSchedule, scheduleStep, targetsFor } from "./logic.js";
+import { CUT, LABEL, REASONS, REFUSED, cutNotice, parseSchedule, scheduleStep, targetsFor } from "./logic.js";
 import { moveTab } from "./move.js";
 
 const KEY = "move-tab.request";
 const STALE = 10000;
 const LIST_HEIGHT = 260;
+const TERMINALS_WAIT = 5000;
+const TERMINALS_POLL = 500;
 
 function message(text, t) {
   return div().px(8).py(6).text_size(TEXT.md).text_color(t.muted).child(text);
@@ -32,6 +34,7 @@ export default class MoveTab extends View {
     this.targets = null;
     this.picked = false;
     this.handle = null;
+    if (this.role === "worker" && shared(CUT) && !checking()) cx.spawn(async (cx) => this.recover(cx));
     if (this.role === "worker" || !this.tab) return;
     this.handle = cx.focus_handle();
     this.handle.focus();
@@ -55,6 +58,15 @@ export default class MoveTab extends View {
     if (!text) return [];
     const local = spaces().filter((candidate) => candidate.machine == null);
     return targetsFor({ checkouts: parseWorktrees(text), spaces: local, panes: panes(), from: { space: space.id } });
+  }
+
+  async recover(cx) {
+    const cut = shared(CUT);
+    for (let waited = 0; (terminals() ?? []).length === 0 && waited < TERMINALS_WAIT; waited += TERMINALS_POLL) await cx.sleep(TERMINALS_POLL);
+    if (shared(CUT)?.id !== cut?.id) return;
+    setShared(CUT, null);
+    const notice = cutNotice(cut, terminals() ?? [], Date.now());
+    if (notice) notify(notice);
   }
 
   pick(index) {

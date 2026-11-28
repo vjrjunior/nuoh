@@ -1,6 +1,5 @@
 import { base, checkoutOf, parseWorktrees, placeOf } from "../../lib/checkouts.js";
-import { resumeCommand } from "../../lib/claude.js";
-import { REASONS, REFUSED, atShell, freshArgv, freshCommand, frontRunsSession, isClaude, isDraft, keepArgs, leaves, matchingFolder, movedNote, promptBox, resumeArgv, runsSession, spaceName, splitSteps } from "./logic.js";
+import { REASONS, REFUSED, atShell, byHand, cutRecord, freshArgv, frontRunsSession, isClaude, isDraft, keepArgs, leaves, matchingFolder, movedNote, promptBox, resumeArgv, runsSession, spaceName, splitSteps } from "./logic.js";
 
 const END_WAIT = 10000;
 const POLL = 250;
@@ -8,7 +7,7 @@ const PANE_WAIT = 2000;
 const RUN_WAIT = 5000;
 
 export async function moveTab(request, io) {
-  const run = { home: null, place: null, ended: [], started: new Set(), unsure: new Set(), moved: null };
+  const run = { id: request.id ?? null, home: null, place: null, ended: [], started: new Set(), unsure: new Set(), moved: null, cut: false };
   let notice;
   try {
     notice = await move(request, io, run);
@@ -16,6 +15,9 @@ export async function moveTab(request, io) {
     const message = bare(error?.message ?? String(error));
     notice = run.moved ? { title: "Moved the tab", body: `${run.moved}, but ${message}.`, level: "warning" } : failed(`${message}.`, run);
   }
+  try {
+    if (run.cut) io.cut(null);
+  } catch {}
   try {
     io.notify(notice);
   } catch {}
@@ -73,6 +75,7 @@ async function move(request, io, run) {
       await io.act("tab.new", { space: space.id, folder: source.path });
       sheltered = true;
     }
+    keepCut(run, io, claude);
     if (!(await ended(claude.pid, io))) return failed(`Claude in ${claude.where} didn't exit, so nothing moved.`, run);
     run.ended.push(claude);
   }
@@ -162,6 +165,7 @@ async function launch(name, args, part, run, io) {
     if (part.kind === "claude") {
       run.started.add(part);
       part.terminal = made.terminal ?? null;
+      keepCut(run, io);
     }
     return made;
   } catch (error) {
@@ -191,14 +195,8 @@ async function notRunning(claudes, io) {
 }
 
 function didntStart(claudes, into, run) {
-  const commands = claudes.map((claude) => resumeCommand({ cwd: claude.launch.folder, session: claude.session, args: claude.args }) ?? `claude --resume ${claude.session}`);
-  const [first] = claudes;
-  return {
-    title: "Moved the tab, but Claude didn't start",
-    body: `${run.moved}. To resume Claude by hand: ${commands.join("; ")}`,
-    level: "error",
-    action: { name: "tab.new", args: { space: into, folder: first.launch.folder, argv: resumeArgv({ session: first.session, args: first.args, note: null }) } },
-  };
+  const { text, action } = byHand(claudes.map((claude) => ({ ...claude, cwd: claude.launch.folder })), into);
+  return { title: "Moved the tab, but Claude didn't start", body: `${run.moved}. ${text}`, level: "error", action };
 }
 
 async function ended(pid, io) {
@@ -236,17 +234,14 @@ function failed(message, run) {
   const unsure = [...run.unsure].map((claude) => `Claude from ${claude.where} may already be running in ${run.place}.`);
   const notice = { title: "Couldn't move the tab", body: [message, ...unsure].join(" "), level: "error" };
   if (offered.length === 0) return notice;
-  const commands = offered.map((claude) =>
-    claude.fresh ? (freshCommand({ cwd: claude.cwd, args: claude.args }) ?? "claude") : (resumeCommand({ cwd: claude.cwd, session: claude.session, args: claude.args }) ?? `claude --resume ${claude.session}`),
-  );
-  const [first] = offered;
-  const how = offered.every((claude) => claude.fresh) ? "To start Claude again by hand" : "To resume Claude by hand";
-  const argv = first.fresh ? freshArgv({ args: first.args, prompt: null }) : resumeArgv({ session: first.session, args: first.args, note: null });
-  return {
-    ...notice,
-    body: `${notice.body} ${how}: ${commands.join("; ")}`,
-    action: { name: "tab.new", args: { space: run.home, folder: first.cwd, argv } },
-  };
+  const { text, action } = byHand(offered, run.home);
+  return { ...notice, body: `${notice.body} ${text}`, action };
+}
+
+function keepCut(run, io, ending = null) {
+  const claudes = [...run.ended, ...(ending ? [ending] : [])].filter((claude) => !run.started.has(claude));
+  run.cut = true;
+  io.cut(claudes.length > 0 ? cutRecord({ id: run.id, at: io.now(), home: run.home, place: run.place, claudes }) : null);
 }
 
 function bare(text) {

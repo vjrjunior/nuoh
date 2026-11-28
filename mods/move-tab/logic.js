@@ -1,5 +1,5 @@
 import { base, checkoutOf, placeOf } from "../../lib/checkouts.js";
-import { LOADS_CODE, OPTIONS, SESSION, isShell, keepOptions, quote } from "../../lib/claude.js";
+import { LOADS_CODE, OPTIONS, SESSION, isShell, keepOptions, quote, resumeCommand } from "../../lib/claude.js";
 
 export const ALLOWED = { ...OPTIONS, ...LOADS_CODE };
 export const keepArgs = (argv, cwd) => keepOptions(argv, ALLOWED, cwd);
@@ -26,6 +26,8 @@ export const REASONS = {
 };
 
 export const LABEL = "vjr.move-to";
+export const CUT = "move-tab.cut";
+export const CUT_TTL = 24 * 60 * 60 * 1000;
 export const REFUSED = "Can't move this tab";
 export const SCHEDULE_TTL = 4 * 60 * 60 * 1000;
 export const SETTLE = 2000;
@@ -95,6 +97,35 @@ export function resumeArgv({ session, args, note, prompt }) {
   if (typeof session !== "string" || !SESSION.test(session)) return null;
   const argv = ["claude", "--resume", session, ...args, ...(note ? ["--append-system-prompt", note] : [])];
   return typeof prompt === "string" && prompt !== "" ? [...argv, prompt] : argv;
+}
+
+export function byHand(claudes, space) {
+  const commands = claudes.map((claude) =>
+    claude.fresh ? (freshCommand({ cwd: claude.cwd, args: claude.args }) ?? "claude") : (resumeCommand({ cwd: claude.cwd, session: claude.session, args: claude.args }) ?? `claude --resume ${claude.session}`),
+  );
+  const [first] = claudes;
+  const how = claudes.every((claude) => claude.fresh) ? "To start Claude again by hand" : "To resume Claude by hand";
+  const argv = first.fresh ? freshArgv({ args: first.args, prompt: null }) : resumeArgv({ session: first.session, args: first.args, note: null });
+  return { text: `${how}: ${commands.join("; ")}`, action: { name: "tab.new", args: { space, folder: first.cwd, argv } } };
+}
+
+export function cutRecord({ id, at, home, place, claudes }) {
+  return { id, at, home, place, claudes: claudes.map(({ session, cwd, args, fresh }) => ({ session, cwd, args, fresh })) };
+}
+
+export function cutNotice(cut, terminals, now) {
+  if (!cut || typeof cut !== "object" || !Number.isFinite(cut.at) || now - cut.at > CUT_TTL || !Array.isArray(cut.claudes)) return null;
+  const left = cut.claudes.filter(
+    (claude) =>
+      claude &&
+      typeof claude.cwd === "string" &&
+      Array.isArray(claude.args) &&
+      (claude.fresh === true || (typeof claude.session === "string" && SESSION.test(claude.session) && !terminals.some((terminal) => runsSession(terminal, claude.session)))),
+  );
+  if (left.length === 0) return null;
+  const where = typeof cut.place === "string" ? ` to ${cut.place}` : "";
+  const { text, action } = byHand(left, cut.home);
+  return { title: "A move was cut off", body: `The move${where} stopped after Claude ended. ${text}`, level: "error", action };
 }
 
 export function spaceName(branch) {

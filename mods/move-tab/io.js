@@ -1,7 +1,7 @@
 import * as fs from "fs/promises";
-import { exec, home, notify, panes, readTextFile, spaces, terminals } from "herdr";
+import { exec, home, notify, panes, readTextFile, setShared, spaces, terminals } from "herdr";
 import { parseSession } from "../../lib/claude.js";
-import { LABEL, projectFolder, tabTree } from "./logic.js";
+import { CUT, LABEL, projectFolder, tabTree } from "./logic.js";
 
 const DOC_GET = JSON.stringify({ jsonrpc: "2.0", id: 1, method: "doc.get", params: { name: "herdr-app" } });
 
@@ -107,5 +107,6 @@ export function appIo(cx) {
     sleep: (ms) => cx.sleep(ms),
     now: () => Date.now(),
     notify: (notice) => notify(notice),
+    cut: (record) => setShared(CUT, record),
   };
 }

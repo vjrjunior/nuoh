@@ -71,6 +71,7 @@ function twoClaudes(changes: any = {}) {
 function fakeIo(w: any) {
   const log: string[] = [];
   const notices: any[] = [];
+  const cuts: any[] = [];
   const polls: Record<number, number> = {};
   const reads: Record<string, number> = {};
   let clock = 0;
@@ -80,6 +81,7 @@ function fakeIo(w: any) {
   return {
     log,
     notices,
+    cuts,
     spaces: () => w.spaces,
     panes: () => w.panes,
     terminals: () => w.terminals,
@@ -129,6 +131,9 @@ function fakeIo(w: any) {
       clock += ms;
     },
     now: () => clock,
+    cut: (record: any) => {
+      cuts.push(record);
+    },
     notify: (notice: any) => {
       notices.push(notice);
       if (w.notifyThrows) throw new Error("the toast broke");
@@ -677,5 +682,47 @@ describe("moveTab for a scheduled move", () => {
     w.sessions[11] = { session: "new-id", cwd: "/r/wt" };
     const { acts } = await move(w, { tab: "tb3", space: "s2", to: "/r/main", toSpace: null, only: "t3" });
     expect(acts[0]).toEqual({ name: "space.new", args: { folder: "/r/main" } });
+  });
+});
+
+describe("a move cut off in the middle", () => {
+  const record = (claudes: any[]) => ({ id: "r1", home: "s1", place: "feat/x", claudes, at: expect.any(Number) });
+  const first = { session: "new-id", cwd: "/r/main", args: ["--model", "opus"], fresh: false };
+  const second = { session: "two-id", cwd: "/r/main/api", args: ["--effort", "high"], fresh: false };
+
+  test("each Claude is written down before it ends, and the record goes when the move ends", async () => {
+    const w = world();
+    const io = fakeIo(w);
+    let atSignal: any;
+    w.onSignal = () => {
+      atSignal = io.cuts.at(-1);
+    };
+    await moveTab(REQUEST, io);
+    expect(atSignal).toEqual(record([first]));
+    expect(io.cuts.at(-1)).toBeNull();
+  });
+
+  test("a Claude started again leaves the record before the move ends", async () => {
+    const w = twoClaudes();
+    const io = fakeIo(w);
+    const signals: any[] = [];
+    w.onSignal = () => signals.push(io.cuts.at(-1));
+    await moveTab(REQUEST, io);
+    expect(signals).toEqual([record([first]), record([first, second])]);
+    expect(io.cuts.slice(2)).toEqual([record([second]), null, null]);
+  });
+
+  test("a move that fails after a Claude ended clears the record, since its toast gives the way back", async () => {
+    const w = world({ fail: { "space.new": "boom" } });
+    w.spaces = w.spaces.slice(0, 1);
+    w.panes = w.panes.slice(0, 1);
+    const { io, notice } = await move(w, { toSpace: null });
+    expect(notice.title).toBe("Couldn't move the tab");
+    expect(io.cuts.at(-1)).toBeNull();
+  });
+
+  test("a refused move writes nothing", async () => {
+    const { io } = await move(world({ infos: { t1: claudeInfo("working") } }));
+    expect(io.cuts).toEqual([]);
   });
 });

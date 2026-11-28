@@ -294,6 +294,72 @@ describe("move-tab worker", () => {
   });
 });
 
+describe("move-tab worker after a cut-off move", () => {
+  const CUT = "move-tab.cut";
+  const record = () => ({ id: "r1", at: Date.now() - 1000, home: "s1", place: "feat/live", claudes: [{ session: "sess-1", cwd: "/r/main", args: [], fresh: false }] });
+
+  beforeEach(() => {
+    herdr.checking = (() => false) as never;
+    herdr.terminals = (() => [{ address: "t1", state: "live", argv: ["/bin/zsh", "-l"] }]) as never;
+  });
+
+  test("the next worker gives back the Claude that ended, once", async () => {
+    app.shared[CUT] = record();
+    const { cx } = worker();
+    await flush();
+    expect(app.shared[CUT]).toBeNull();
+    expect(app.notes).toEqual([
+      {
+        title: "A move was cut off",
+        body: "The move to feat/live stopped after Claude ended. To resume Claude by hand: cd /r/main && claude --resume sess-1",
+        level: "error",
+        action: { name: "tab.new", args: { space: "s1", folder: "/r/main", argv: ["claude", "--resume", "sess-1"] } },
+      },
+    ]);
+    expect(cx.spawned).toBe(1);
+    worker();
+    await flush();
+    expect(app.notes).toHaveLength(1);
+  });
+
+  test("after a restart it waits for the terminals before looking", async () => {
+    let calls = 0;
+    const running = { address: "t9", state: "live", foreground: { argv: ["claude", "--resume", "sess-1"] } };
+    herdr.terminals = (() => (++calls < 3 ? [] : [running])) as never;
+    app.shared[CUT] = record();
+    worker();
+    await flush();
+    expect(calls).toBeGreaterThan(2);
+    expect(app.shared[CUT]).toBeNull();
+    expect(app.notes).toEqual([]);
+  });
+
+  test("a record a newer move wrote while it waited is left to that move", async () => {
+    let calls = 0;
+    herdr.terminals = (() => {
+      calls += 1;
+      if (calls === 2) app.shared[CUT] = { ...record(), id: "r2" };
+      return calls < 3 ? [] : [{ address: "t1", state: "live" }];
+    }) as never;
+    app.shared[CUT] = record();
+    worker();
+    await flush();
+    expect(app.shared[CUT]).toMatchObject({ id: "r2" });
+    expect(app.notes).toEqual([]);
+  });
+
+  test("a check or a popup never looks", async () => {
+    app.shared[CUT] = record();
+    herdr.checking = (() => true) as never;
+    expect(worker().cx.spawned).toBe(0);
+    herdr.checking = (() => false) as never;
+    given = { tab: "tb1", space: "s1", overlay: "o7" };
+    await popup();
+    expect(app.shared[CUT]).toMatchObject({ id: "r1" });
+    expect(app.notes).toEqual([]);
+  });
+});
+
 describe("move-tab scheduled moves", () => {
   const T = 1_800_000_000_000;
   const LABEL = "vjr.move-to";
