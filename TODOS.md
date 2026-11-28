@@ -395,3 +395,65 @@
 **Effort:** M
 **Priority:** P2
 **Depends on:** Nothing
+
+## Workflows
+
+### Run a workflow on a schedule
+
+**What:** A `schedule` in a workflow file (daily at a time, weekdays, every N minutes) and a worker that starts its runs, with a "Next run" line in the view and runs missed while Herdr was closed shown as missed.
+
+**Why:** Many chains are routine: a morning review of open PRs, a nightly dependency check. Today each run is started by hand.
+
+**Context:** The worker is a floating block that draws nothing, like `comeback`, and runs `workflow run <name> --space <id>` when a slot comes; a schedule needs a space, given in the file. Keep each workflow's last slot in shared state, written before the run starts, so two copies don't start it twice. The format's checks go in `lib/workflow.js`, the slot arithmetic in a pure module with its tests.
+
+**Effort:** M
+**Priority:** P2
+**Depends on:** Nothing
+
+### Give each run a worktree of its own
+
+**What:** `"worktree": true` (or a branch name template) in a workflow file: the run makes a checkout under Herdr's worktrees folder, runs every step there, and offers to remove it when the run is done.
+
+**Why:** Two runs of `implement-review` in the same checkout step on each other's files; a worktree per run lets them go side by side.
+
+**Context:** Today a `run` step can make one and later steps can take it with `"cwd": "{{wt.output}}"`, but the runner should own it so `retry` and `resume` find it again. Herdr's worktree directory is `settings().worktrees.directory`, default `~/.herdr/worktrees`; the space for the checkout comes from `space.new {folder}`.
+
+**Effort:** M
+**Priority:** P2
+**Depends on:** Nothing
+
+### Name the runner "Workflow" in Herdr's toasts and lists
+
+**What:** A `workflow` entry in Herdr's `programs.json` (name "Workflow", the `route` icon) so a run reads "Workflow needs you" instead of "workflow needs you".
+
+**Why:** The runner reports `app=workflow`, and Herdr shows an unknown app's name as it is.
+
+**Context:** `programs.json` is the person's file, which `apply-layout` doesn't write; either apply learns to merge one entry into it, keeping what is there, or INSTALL.md asks the person. The icon must be a path in Herdr's home, so it would point at `mods/nuoh-kit/icons/route.svg`.
+
+**Effort:** S
+**Priority:** P3
+**Depends on:** Nothing
+
+### Edit a workflow's steps in the view
+
+**What:** Reorder, add and remove steps, and change a step's task, agent or condition, from the steps card, saving the file with `writeTextFile` and its expected text.
+
+**Why:** A small change (another model, one more line in a task) now takes an agent in a new tab.
+
+**Context:** The kit's `input` is one line; a task needs a multi-line field, which the kit lacks: add it from the design system first. Validate with `checkWorkflow` before saving and keep the file's key order.
+
+**Effort:** L
+**Priority:** P3
+**Depends on:** A multi-line text field in the kit
+
+### Keep a project's workflows in its repository
+
+**What:** List `<repo>/.nuoh/workflows/*.json` beside the person's own, for the spaces in that repository, so a team shares its workflows with the code.
+
+**Why:** A workflow that runs a repository's own tests and review belongs with that repository.
+
+**Context:** `workflow run` would take `--file` or look in the space's checkout; the view groups the list by where each file lives. A repository's workflow is code the person didn't write: show it as such before its first run.
+
+**Effort:** M
+**Priority:** P3
+**Depends on:** Nothing

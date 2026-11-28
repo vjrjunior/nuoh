@@ -422,6 +422,19 @@ describe("retry and resume", () => {
     expect(done.steps[1]).toMatchObject({ attempt: 2, output: "Again." });
   });
 
+  test("resume waits at the gate again, and an approval then finishes the run", async () => {
+    const context = setup({ gate: { steps: [{ id: "ask", run: ["true"] }, { id: "ship", approve: "Ship?" }, { id: "after", run: ["true"] }] } });
+    const run = await startRun(context.io, context.dirs, "gate", {});
+    saveRun(context.dirs, { ...run, status: "approval", at: 1, runner: "t-dead", steps: [{ id: "ask", attempt: 1, status: "done", started: 1, output: "" }, { id: "ship", attempt: 1, status: "approval", started: 2 }] });
+    expect((await summaries(context.io, context.dirs))[0].status).toBe("interrupted");
+    context.world.onReport.blocked = () => decide(context.dirs, run.id, "approve", context.world.clock);
+    context.world.self = "t-runner";
+    const done = await executeRun(context.io, context.dirs, run.id);
+    expect(done.status).toBe("done");
+    expect(steps(done)).toEqual(["ask:done", "ship:done", "after:done"]);
+    expect(context.world.spawned.map((call) => call.argv.join(" "))).toEqual(["true"]);
+  });
+
   test("resume refuses a run whose runner is alive or that is over", async () => {
     const context = setup({ gate: { steps: [{ id: "ask", approve: "Ship?" }] } });
     const run = await startRun(context.io, context.dirs, "gate", {});
@@ -458,6 +471,14 @@ describe("the command line", () => {
     expect(run(repo, "workflow.ts", ["ls"], made.env).stdout).toBe('broken  invalid: step "fix": continue must name an earlier step\nimplement-review  Implement, review, fix · 6 steps\n');
     const listed = JSON.parse(run(repo, "workflow.ts", ["ls", "--json"], made.env).stdout);
     expect(listed.map((item: any) => [item.name, item.problems.length])).toEqual([["broken", 4], ["implement-review", 0]]);
+  });
+
+  test("paths makes both folders and prints them for the view", () => {
+    const made = makeHomes();
+    const result = run(repo, "workflow.ts", ["paths"], made.env);
+    const paths = JSON.parse(result.stdout);
+    expect(paths).toEqual({ workflows: join(made.env.XDG_CONFIG_HOME, "vjr-herdr/workflows"), runs: join(made.env.XDG_STATE_HOME, "vjr-herdr/workflows"), script: join(repo, "scripts/workflow.ts") });
+    expect(existsSync(paths.workflows) && existsSync(paths.runs)).toBe(true);
   });
 
   test("format teaches the file's place and shape", () => {

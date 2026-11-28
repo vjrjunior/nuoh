@@ -166,7 +166,7 @@ export function generateWith(recipes: Recipe[], options: GenerateOptions): Gener
   }
   const replacements: Record<string, string> = {};
   const keys: Record<string, string | KeyCommand | ModCommand> = {};
-  applyRecipes(recipes, { copies, layout: main, replacements, keys, bun: options.bun, editor: options.editor });
+  applyRecipes(recipes, { copies, layout: main, replacements, keys, repo: options.repo, bun: options.bun, editor: options.editor });
   for (const copy of Object.values(copies)) {
     if (copy.files["kit.js"] !== undefined && !Object.hasOwn(copies, "kit")) throw new RecipeError(`${copy.name} uses the kit, but ${LAYOUT} has no kit`);
   }

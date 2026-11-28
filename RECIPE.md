@@ -1,6 +1,6 @@
 # nuoh
 
-Herdr's own window, its spaces, agents, tabs and panels, behind a rail of views on the window's left edge, every block a card on a dark gradient, in the VJR palette: near-black cards, a gray ladder and a peach accent. Spaces shows each repository with all its worktrees as a tree, the side panel adds a git Graph beside Files and Changes, and an extra can add whole views to the rail.
+Herdr's own window, its spaces, agents, tabs and panels, behind a rail of views on the window's left edge, every block a card on a dark gradient, in the VJR palette: near-black cards, a gray ladder and a peach accent. Spaces shows each repository with all its worktrees as a tree, the side panel adds a git Graph beside Files and Changes, Workflows chains agents, commands and approvals into runs, and an extra can add whole views to the rail.
 
 ![nuoh](layouts/nuoh.svg)
 
@@ -14,6 +14,7 @@ Left to right, at zoom 1. Every block sits 8px from the next and from the window
   - **The work column:** a 46px band with the tabs (32px pills, the active one on `raised` `#1C1C1C` with a `border` `#232323` line), `+` right after them, the panel buttons in one group at the right, and a 160px slot with the machine pill. Under it, the panes: cards on `surface` with 14px corners, the `#FFFFFF12` line, `#FFC799B3` on the focused one, 8px apart, a 42px header on each, a pane alone in its tab framed too, the panes the tab hasn't selected veiled at 0.4.
   - **The side panel,** 368px (280 to 900), hidden at start: a card like the panes holding Files, Changes or Graph 6px inside it.
   - Between the sidebar and the work column, and between the two sidebar cards, a 1px line shows only under the pointer, in `accent` `#FFC799`.
+- **Workflows,** the second view, fills the views area from the window's top: a 46px band, then the workflows, the chosen one's steps and its runs as three cards ([`workflows`](mods/workflows/RECIPE.md)).
 - A view an extra adds fills the views area with its own mod, from the window's top.
 - **Terminals:** text `#DBDBDB` on `#101010`, cursor `#FFC799`, selection `#332B24`, `terminal_padding` `[14, 12]` as Herdr's. Fonts are the person's settings, else Herdr's (JetBrains Mono 14, Geist).
 - **Theme:** `vjr` in dark mode and Herdr's `paper` in light. Other colors: `raised` `#1C1C1C`, `selected` `#232323`, `hover` `#282828`, `input` `#343434`, `foreground` `#FFFFFF`, `muted` `#A0A0A0`, `unknown` `#707070`, `dim` `#505050`.
@@ -39,14 +40,15 @@ root                row, gradient, padding 8, gap 8
 │  ├─ lights        block 46px, window_drag → topbar { role: "lights" }
 │  └─ rail          block, the card → rail { views }
 └─ views            stack, active "workspace"
-   └─ workspace     row, gap 8, hover-only divider
-      ├─ sidebar    column, 268px (44 to 480), gap 8
-      │  ├─ space-title    block 46px, window_drag → topbar { role: "title" }
-      │  └─ sidebar-lists  column: spaces → spaces-tree, agents → agent-list
-      └─ work       column, gap 8
-         ├─ work-top       row 46px, window_drag: tabs → tabs, machine 160px → topbar { role: "machine" }
-         └─ work-body      row, gap 8: main → { tab: "active" }, header pane-header
-                           panel (column, hidden) › panel-body (stack): files → files, changes → changes, graph → git-graph
+   ├─ workspace     row, gap 8, hover-only divider
+   │  ├─ sidebar    column, 268px (44 to 480), gap 8
+   │  │  ├─ space-title    block 46px, window_drag → topbar { role: "title" }
+   │  │  └─ sidebar-lists  column: spaces → spaces-tree, agents → agent-list
+   │  └─ work       column, gap 8
+   │     ├─ work-top       row 46px, window_drag: tabs → tabs, machine 160px → topbar { role: "machine" }
+   │     └─ work-body      row, gap 8: main → { tab: "active" }, header pane-header
+   │                       panel (column, hidden) › panel-body (stack): files → files, changes → changes, graph → git-graph
+   └─ workflows     column, gap 8: workflows-bar 46px, window_drag → workflows { role: "bar" }, workflows-body → workflows { role: "body" }
 ```
 
 The root also keeps Herdr's `titlebar: "none"` and `terminal_padding`, gets `terminal_menu: "nuoh-menu"`, `link_handlers: ["nuoh-markdown"]`, `theme: { light: "paper", dark: "vjr" }`, `preview: "layouts/nuoh.svg"`, `cloned_from` and three floating blocks that draw nothing: `comeback`, `move-tab` (the worker) and `sync`. The recipes run in the order `recipes/order.ts` gives:
@@ -60,10 +62,11 @@ The root also keeps Herdr's `titlebar: "none"` and `terminal_padding`, gets `ter
 7. **`move-tab`** installs [`mods/move-tab/`](mods/move-tab/RECIPE.md), adds `Move to…` to the menu and the tab drag to the tab bar, the worker's floating block, and binds `cmd-shift-m`.
 8. **`files`** points the `files` block at [`mods/files/`](mods/files/RECIPE.md).
 9. **`rail`** moves the window into `workspace`, the first child of the `views` stack, beside the [`rail`](mods/rail/RECIPE.md) block, and binds `cmd-shift-j`.
-10. **The extras**, the local config's recipes, which find the window as Herdr ships it plus the steps above.
-11. **`rail-keys`** binds `ctrl-cmd-<n>` to each view the rail lists.
-12. **`nuoh-frame`** removes `brand`, `sidebar-footer` and `status`, paints the gradient, builds `rail-column`, `space-title` and `work-top` around [`topbar`](mods/topbar/RECIPE.md), lines the panes, and reshapes the tabs.
-13. **`nuoh-cards`** makes Spaces, Agents ([`agent-list`](mods/agent-list/RECIPE.md)), the panes ([`pane-header`](mods/pane-header/RECIPE.md)) and every panel beside them cards, and gathers the panel buttons into one group.
+10. **`workflows-view`** puts the [`workflows`](mods/workflows/RECIPE.md) view after `workspace`, and its tile after the Workspace's.
+11. **The extras**, the local config's recipes, which find the window as Herdr ships it plus the steps above.
+12. **`rail-keys`** binds `ctrl-cmd-<n>` to each view the rail lists.
+13. **`nuoh-frame`** removes `brand`, `sidebar-footer` and `status`, paints the gradient, builds `rail-column`, `space-title` and `work-top` around [`topbar`](mods/topbar/RECIPE.md), lines the panes, and reshapes the tabs.
+14. **`nuoh-cards`** makes Spaces, Agents ([`agent-list`](mods/agent-list/RECIPE.md)), the panes ([`pane-header`](mods/pane-header/RECIPE.md)) and every panel beside them cards, and gathers the panel buttons into one group.
 
 The `layout:nuoh` section of `keys.json` takes the key `global` binds to `app.palette` (as `mod.open:nuoh-palette`), `cmd-shift-o` (`mod.open:nuoh-markdown`), `cmd-shift-m` (`mod.open:nuoh-move-tab`), `cmd-shift-j` (`nuoh-rail.waiting`), and `ctrl-cmd-<n>` as `{ "command": "layout.select", "args": { "stack": "views", "child": <view> } }`.
 
@@ -88,8 +91,8 @@ The art is `layouts/nuoh.svg`; the theme is `themes/vjr.json`, generated from `p
 
 - `bun run apply-layout` prints `applied`, and running it again prints `unchanged`.
 - `herdr-app do layout.switch '{"name":"nuoh"}'` shows the layout, and `herdr-app status` lists no errors.
-- `~/.config/herdr-app/layouts/nuoh.json` has `rail-column` and `views` as the root's children, `views` shows `workspace`, and it has no `brand`, `sidebar-footer` or `status` node.
-- The `layout:nuoh` section of `keys.json` binds `ctrl-cmd-1` to `layout.select` of `workspace`, `cmd-shift-o` to `mod.open:nuoh-markdown`, `cmd-shift-m` to `mod.open:nuoh-move-tab` and `cmd-shift-j` to `nuoh-rail.waiting`.
+- `~/.config/herdr-app/layouts/nuoh.json` has `rail-column` and `views` as the root's children, `views` shows `workspace` and holds `workflows` after it, and it has no `brand`, `sidebar-footer` or `status` node.
+- The `layout:nuoh` section of `keys.json` binds `ctrl-cmd-1` to `layout.select` of `workspace`, `ctrl-cmd-2` to `layout.select` of `workflows`, `cmd-shift-o` to `mod.open:nuoh-markdown`, `cmd-shift-m` to `mod.open:nuoh-move-tab` and `cmd-shift-j` to `nuoh-rail.waiting`.
 - `herdr-app shot` shows the gradient, the rail card, the band with the window buttons, the Spaces and Agents cards, and the panes as cards with their header, the focused one lined in `#FFC799B3`.
 - `herdr-app do layout.select '{"stack":"panel-body","child":"graph"}'` and then `herdr-app do layout.show '{"id":"panel"}'` show the focused repository's history in a card beside the panes.
 - Changing `built` in the `sync` block's props to an older version brings it back to the installed version within seconds, with a line for it in `~/.local/state/vjr-herdr/layout.log`.

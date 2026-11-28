@@ -4,10 +4,11 @@ A recipe is `{ name, mods, apply }` (`recipe.ts`). `mods` names what it copies: 
 
 ## Order
 
-`recipesWith` in `order.ts` runs `OWN`, `rail`, the extras, `rail-keys`, `nuoh-frame`, `nuoh-cards`. A new recipe goes in `OWN`. Each one gets the copies and the tree as the recipes before it left them:
+`recipesWith` in `order.ts` runs `OWN`, `rail`, `VIEWS`, the extras, `rail-keys`, `nuoh-frame`, `nuoh-cards`. A new recipe goes in `OWN`, or in `VIEWS` when it adds a view of this repo's to the rail. Each one gets the copies and the tree as the recipes before it left them:
 
 - `OWN` sees Herdr's tree as shipped: `spaces`, `agents`, `tabs`, `main`, `panel-body`, `files`.
 - `rail` moves the root's `children`, `divider`, `gap`, `padding` and `resizable` into `workspace`, the first child of the `views` stack, beside the `rail` block. Every id inside keeps its name.
+- `VIEWS` (`workflows-view`) puts this repo's views after `workspace` in the stack and after its tile on the rail. Its recipes get `repo` and `bun` in the context, for mods that run this repo's scripts.
 - The extras find Herdr's blocks inside `workspace`. An extra adds a whole view by pushing a child onto `findNode(layout, "views").children` and `{ id, label, icon }` (a kit icon's name) onto `findNode(layout, "rail").content.props.views`; at the front of both, it becomes the first view.
 - `rail-keys` gives each view `ctrl-cmd-<n>` in the rail's order, bound to `layout.select` on `views`. It fails on a view the stack doesn't have and on more than 9 views.
 - `nuoh-frame` (`frame.ts`) removes `brand`, `sidebar-footer` and `status`, wraps `rail` in `rail-column` under a 46px band, opens the sidebar with `space-title`, moves `tabs` into `work-top` beside `machine`, and draws the pane frame's corners and lines. A missing id fails it.

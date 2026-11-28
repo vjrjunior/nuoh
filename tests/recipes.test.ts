@@ -115,6 +115,7 @@ describe("nuoh", () => {
       "nuoh-sync",
       "nuoh-tabs",
       "nuoh-topbar",
+      "nuoh-workflows",
     ]);
     expect(modsIn(nuohLayout()).filter((mod) => mod.startsWith("vjr-"))).toEqual([]);
   });
@@ -142,7 +143,15 @@ describe("nuoh", () => {
       border: { width: 1, color: "#FFFFFF12" },
       radius: 16,
       shadow: "md",
-      content: { mod: "nuoh-rail", props: { views: [{ id: "workspace", label: "Workspace", icon: "terminal", key: "ctrl-cmd-1" }] } },
+      content: {
+        mod: "nuoh-rail",
+        props: {
+          views: [
+            { id: "workspace", label: "Workspace", icon: "terminal", key: "ctrl-cmd-1" },
+            { id: "workflows", label: "Workflows", icon: "route", key: "ctrl-cmd-2" },
+          ],
+        },
+      },
     });
   });
 
@@ -150,7 +159,17 @@ describe("nuoh", () => {
     const views = findNode(nuohLayout(), "views");
     expect(views?.type).toBe("stack");
     expect(views?.active).toBe("workspace");
-    expect(ids(views)).toEqual(["workspace"]);
+    expect(ids(views)).toEqual(["workspace", "workflows"]);
+  });
+
+  test("the Workflows view comes after the Workspace: a band that drags the window over the view's body", () => {
+    const view = findNode(nuohLayout(), "workflows");
+    expect(view).toMatchObject({ type: "column", gap: 8, resizable: false });
+    const props = (role: string) => ({ mod: "nuoh-workflows", props: { role, repo, bun: "/bin/bun" } });
+    expect(view?.children).toEqual([
+      { id: "workflows-bar", type: "block", size: { px: 46 }, window_drag: true, content: props("bar") },
+      { id: "workflows-body", type: "block", content: props("body") },
+    ]);
   });
 
   test("the fields only the root reads stay on the root, with the traffic lights centered in the band", () => {
@@ -437,9 +456,10 @@ describe("nuoh", () => {
     const layout = JSON.parse(generated.layoutText);
     expect(findNode(layout, "rail")?.content.props.views.map((view: { id: string; key: string }) => [view.id, view.key])).toEqual([
       ["workspace", "ctrl-cmd-1"],
-      ["board", "ctrl-cmd-2"],
+      ["workflows", "ctrl-cmd-2"],
+      ["board", "ctrl-cmd-3"],
     ]);
-    expect(generated.keys["ctrl-cmd-2"]).toEqual({ command: "layout.select", args: { stack: "views", child: "board" } });
+    expect(generated.keys["ctrl-cmd-3"]).toEqual({ command: "layout.select", args: { stack: "views", child: "board" } });
     expect(findNode(layout, "board")?.content.mod).toBe("nuoh-files");
   });
 

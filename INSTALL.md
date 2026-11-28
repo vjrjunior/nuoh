@@ -30,14 +30,16 @@ Before installing, tell them this, as Herdr's guide asks. Mods are trusted code 
 | Git Graph (adopted whole, its license in its folder) | `git` in the focused repository and in the folders open in other panes, also on other machines; `find` for the repositories up to 5 folders below a folder that isn't one, never from the home folder or above | those folders |
 | Copies of Herdr's `menu`, `tabs` and `palette` | what Herdr's own run: the menu runs `git rev-parse` | nothing more |
 | `nuoh-sync` | `bun scripts/layout.ts apply` in the clone after a Herdr update, for at most 120 s | the clone and the local config |
+| Workflows view | `bun scripts/workflow.ts` in the clone (`paths`, and `run`, `approve`, `reject`, `stop`, `resume`, `retry` when the person asks) | `~/.config/vjr-herdr/workflows/` and the runs in `~/.local/state/vjr-herdr/workflows/`, which it watches |
+| A workflow's runner, started by Run | `hc run`, `hc send`, `hc wait`, `hc read`, `hc get`, `herdr-app do tab.rename`, and the agents and commands the person's workflow file names | the workflow file and its run's folder |
 
 The rail, the top bar, the Agents list, the pane header and the kit's gallery run nothing and read no files: they use Herdr's live data and commands.
 
-Git Graph reaches the network only through git, when the person asks for Fetch, Pull or Push or deletes a remote branch. Its check for a new release is turned off (`CHECK = false` in `mods/git-graph/update.js`). Comeback types `claude --resume` into each terminal that lost its Claude in a restart, and Move tab ends a Claude with SIGTERM and resumes it in the other checkout; without Claude Code both do nothing.
+Git Graph reaches the network only through git, when the person asks for Fetch, Pull or Push or deletes a remote branch. Its check for a new release is turned off (`CHECK = false` in `mods/git-graph/update.js`). Comeback types `claude --resume` into each terminal that lost its Claude in a restart, and Move tab ends a Claude with SIGTERM and resumes it in the other checkout; without Claude Code both do nothing. A workflow runs only when the person starts it, and its agents get the argv its file gives, with no permission flags added; nuoh ships no workflow.
 
 The install writes only:
 - `~/.config/herdr-app/themes/vjr.json`, and `~/.config/ghostty/themes/VJR` when Ghostty's config folder exists;
-- `~/.config/herdr-app/layouts/nuoh.json` and `nuoh.svg`, and 15 mods named `mods/nuoh-*`;
+- `~/.config/herdr-app/layouts/nuoh.json` and `nuoh.svg`, and 16 mods named `mods/nuoh-*`;
 - the `layout:nuoh` section of `~/.config/herdr-app/keys.json`;
 - its own records, backups and log in `~/.local/state/vjr-herdr/`.
 

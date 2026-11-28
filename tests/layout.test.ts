@@ -78,6 +78,7 @@ describe("apply", () => {
       "nuoh-sync",
       "nuoh-tabs",
       "nuoh-topbar",
+      "nuoh-workflows",
     ]);
     expect(readdirSync(join(home, "layouts")).filter((name) => name.startsWith("nuoh")).sort()).toEqual(["nuoh.json", "nuoh.svg"]);
     expect(layout().floating.map((block: { content: { mod: string } }) => block.content.mod)).toEqual(["nuoh-comeback", "nuoh-move-tab", "nuoh-sync"]);
@@ -94,6 +95,7 @@ describe("apply", () => {
       "cmd-shift-m": "mod.open:nuoh-move-tab",
       "cmd-shift-j": "nuoh-rail.waiting",
       "ctrl-cmd-1": { command: "layout.select", args: { stack: "views", child: "workspace" } },
+      "ctrl-cmd-2": { command: "layout.select", args: { stack: "views", child: "workflows" } },
     });
   });
 
@@ -178,7 +180,7 @@ describe("apply", () => {
 
     apply();
 
-    expect(log().filter((line) => line.startsWith("check "))).toHaveLength(15);
+    expect(log().filter((line) => line.startsWith("check "))).toHaveLength(16);
   });
 
   test("checks the mods side by side", () => {
@@ -187,7 +189,7 @@ describe("apply", () => {
 
     apply([], { FAKE_HERDR_CHECK_SLEEP: "0.5" });
 
-    expect(log().filter((line) => line.startsWith("check "))).toHaveLength(15);
+    expect(log().filter((line) => line.startsWith("check "))).toHaveLength(16);
     expect(Date.now() - started).toBeLessThan(8000);
   });
 
@@ -197,7 +199,7 @@ describe("apply", () => {
     apply();
 
     expect(record().version).toBe("0.1.10");
-    expect(record().mods).toHaveLength(15);
+    expect(record().mods).toHaveLength(16);
     expect(record().files.sort()).toEqual(["layouts/nuoh.json", "layouts/nuoh.svg"]);
     expect(record().sections).toEqual(["layout:nuoh"]);
   });

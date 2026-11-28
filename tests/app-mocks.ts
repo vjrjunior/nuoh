@@ -152,7 +152,7 @@ function recorded(kind: string, path: string): Node {
 
 export const herdr: Record<string, (...args: never[]) => unknown> = {};
 
-const HERDR = ["exec", "notify", "props", "updates", "spaces", "panes", "run", "openOverlay", "theme", "shared", "setShared", "watchFolder", "window", "nextCommand", "layout", "agents", "readTextFile", "home", "terminals", "focused", "appHome", "closeOverlay", "checking", "hc", "settings", "keys", "setAgentOrder"];
+const HERDR = ["exec", "notify", "props", "updates", "spaces", "panes", "run", "openOverlay", "theme", "shared", "setShared", "watchFolder", "window", "nextCommand", "layout", "agents", "readTextFile", "home", "terminals", "focused", "appHome", "closeOverlay", "checking", "hc", "settings", "keys", "setAgentOrder", "knownAgents"];
 
 mock.module("gpui-kit", () => ({ View: class {}, div: make, svg: (path: string) => recorded("svg", path), image: (path: string) => recorded("image", path) }));
 export class FakeInput {

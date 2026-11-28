@@ -1,3 +1,4 @@
+import { mkdirSync } from "node:fs";
 import { runSummary, warnings } from "../lib/workflow.js";
 import { runsDir, workflowsDir } from "./paths";
 import { realIo } from "./workflow-io";
@@ -5,6 +6,7 @@ import { decide, type Dirs, executeRun, listWorkflows, loadRun, loadWorkflow, re
 
 const USAGE = `usage: workflow <command>
   ls [--json]                         the workflows and their problems
+  paths                               the folders of workflows and runs, made if missing, as JSON
   check [name]                        validate one workflow, or all
   format                              how to write a workflow
   run <name> [--input key=value]... [--space <id>] [--json]
@@ -152,6 +154,11 @@ export async function main(args: string[], dirs: Dirs): Promise<number> {
     }
     case "format":
       console.log(FORMAT);
+      return 0;
+    case "paths":
+      mkdirSync(dirs.workflows, { recursive: true });
+      mkdirSync(dirs.runs, { recursive: true });
+      console.log(JSON.stringify({ workflows: dirs.workflows, runs: dirs.runs, script: import.meta.path }));
       return 0;
     case "run":
       console.log(started(await startRun(io, dirs, need(first, "workflow's name"), parsed.inputs, parsed.space), parsed.json));

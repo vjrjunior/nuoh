@@ -9,6 +9,7 @@ export type RecipeContext = {
   layout: LayoutNode;
   replacements: Record<string, string>;
   keys: Record<string, string | KeyCommand | ModCommand>;
+  repo?: string;
   bun?: string;
   editor?: Editor;
   options: Record<string, unknown>;
