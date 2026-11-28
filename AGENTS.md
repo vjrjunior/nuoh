@@ -13,7 +13,7 @@ Asked only to install the layout on someone's machine? Follow [`INSTALL.md`](INS
 | [`lib/AGENTS.md`](lib/AGENTS.md) | a module that more than one mod imports |
 | [`kit/AGENTS.md`](kit/AGENTS.md) | the UI kit: its components, icons and tokens, and how mods draw with it |
 | [`tests/AGENTS.md`](tests/AGENTS.md) | a test, the fake Herdr home, or a test panel run |
-| [`scripts/AGENTS.md`](scripts/AGENTS.md) | the palette build, the theme install, `apply-layout`, the local config |
+| [`scripts/AGENTS.md`](scripts/AGENTS.md) | the palette build, the theme install, `apply-layout`, the workflow runner, the local config |
 | `mods/<mod>/RECIPE.md` | what that mod shows and does, and what it runs |
 
 ## Herdr's guide

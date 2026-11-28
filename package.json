@@ -13,6 +13,7 @@
     "watch": "bun --watch scripts/watch.ts",
     "file-icons": "bun scripts/file-icons.ts",
     "test": "bun test",
-    "test-panel": "bun scripts/test-panel.ts"
+    "test-panel": "bun scripts/test-panel.ts",
+    "workflow": "bun scripts/workflow.ts"
   }
 }
