@@ -124,7 +124,7 @@ function buttonLook(variant, t) {
   return { bg: t.foreground + "0D", hover: t.foreground + "17", border: t.foreground + "14", hoverBorder: t.foreground + "24", text: t.foreground, icon: t.muted };
 }
 
-export function button(id, { label, icon: iconName, variant = "secondary", size = "md", iconColor, full = false, maxWidth, disabled = false, loading = false, tooltip, onClick }, t) {
+export function button(id, { label, icon: iconName, variant = "secondary", size = "md", iconColor, full = false, maxWidth, disabled = false, loading = false, tooltip, stop = false, onClick }, t) {
   const dims = BUTTON_SIZE[size] ?? BUTTON_SIZE.md;
   const look = buttonLook(variant, t);
   const glyph = loading ? icon("loader-circle", { size: dims.icon, color: iconColor ?? look.icon }).spin(900) : iconName != null ? icon(iconName, { size: dims.icon, color: iconColor ?? look.icon }) : null;
@@ -148,7 +148,11 @@ export function button(id, { label, icon: iconName, variant = "secondary", size 
     .when(full, (el) => el.w_full().justify_center())
     .when(maxWidth != null, (el) => el.min_w(0).max_w(maxWidth))
     .when(tooltip != null, (el) => el.tooltip(tooltip))
-    .on_click((_e, cx) => onClick?.(cx))
+    .when(stop, (el) => el.on_mouse_down("left", (_e, cx) => cx.stop_propagation()))
+    .on_click((_e, cx) => {
+      if (stop) cx.stop_propagation();
+      onClick?.(cx);
+    })
     .when(glyph != null, (el) => el.child(glyph))
     .when(label != null && maxWidth == null, (el) => el.child(label))
     .when(label != null && maxWidth != null, (el) => el.child(div().min_w(0).truncate().child(label)));
@@ -564,7 +568,7 @@ export function profile(id, { label, off = false, onClick }, t) {
     .child(icon("chevron-down", { size: ICON_SIZE.sm, color: t.unknown }));
 }
 
-export function laneRow(id, { color, code, codeFont, title, step, why, dots = [], action = null, last = false, onClick }, t) {
+export function laneRow(id, { color, code, codeFont, title, badge = null, step, why, dots = [], action = null, last = false, onClick }, t) {
   const dot = (state) => {
     if (state === "done") return statusDot(t.done, { size: 6 }).opacity(0.6);
     if (state === "current") return statusDot(color, { size: 6 });
@@ -597,7 +601,8 @@ export function laneRow(id, { color, code, codeFont, title, step, why, dots = []
                     .text_color(t.unknown)
                     .child(code),
                 )
-                .child(div().flex_1().min_w(0).truncate().text_size(TEXT.lg).font_medium().text_color(t.foreground).child(title)),
+                .child(div().flex_1().min_w(0).truncate().text_size(TEXT.lg).font_medium().text_color(t.foreground).child(title))
+                .when(badge != null, (el) => el.child(badge)),
             )
             .child(
               h_flex()
