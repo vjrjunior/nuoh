@@ -162,13 +162,13 @@
 **Priority:** P3
 **Depends on:** Nothing
 
-### Move Move tab's popup onto the kit's popupRow
+### Move Move tab's popup onto the kit's menuItem
 
-**What:** Draw the rows of Move tab's popup with `popupRow` from `kit/kit.js`, and drop its own row code.
+**What:** Draw the rows of Move tab's popup with `menuItem` from `kit/kit.js`, and drop its own row code.
 
-**Why:** A component goes in the kit as soon as a second mod draws the same thing. The Spaces folders popups brought `popupRow` into the kit; Move tab's popup still draws the same row by hand.
+**Why:** The kit holds every component the design system has, and the popup draws the design system's Menu item by hand.
 
-**Context:** `row` in `mods/move-tab/main.js` uses the kit's tokens (`CONTROL.large`, `RADIUS.control`, `TEXT.sm`) and marks the selected row with `selected`, which is `popupRow`'s `selected`. The popup has view tests that look the rows up by id.
+**Context:** `row` in `mods/move-tab/main.js` uses the kit's tokens (`CONTROL.large`, `RADIUS.control`, `TEXT.sm`) and marks the selected row with `selected`, which is `menuItem`'s `selected` (a `foreground + "0D"` fill); its detail line would be `menuItem`'s `description`. The popup's height follows its rows, now `MENU_ITEM` (30px). The popup has view tests that look the rows up by id.
 
 **Effort:** S
 **Priority:** P3
@@ -380,4 +380,18 @@
 
 **Effort:** M
 **Priority:** P3
+**Depends on:** Nothing
+
+## Kit
+
+### Draw the sidebar's rows and the rail with the kit's components
+
+**What:** Bring the design system's Agent row, Space row, Worktree row, Folder band and Rail tile into `kit/kit.js` at its sizes, and draw `agent-list`, `spaces-tree` and `rail` with them.
+
+**Why:** `kit/AGENTS.md` says every component a mod draws that the design system has lives in the kit, and a mod only lays them out. These mods were drawn before that rule and still build those rows by hand.
+
+**Context:** The sets are on the sketch's Design system page (`docs/sketches/herdr-ui.fig`), section 05 and the rail's. The rows are in `mods/agent-list/main.js`, `mods/spaces-tree/rows.js` and `mods/spaces-tree/rail.js`, the tiles in `mods/rail/main.js`; their view tests look the rows up by id. The Command Center, the Brain and ClickUp already draw only with the kit.
+
+**Effort:** M
+**Priority:** P2
 **Depends on:** Nothing
