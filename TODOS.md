@@ -328,20 +328,6 @@
 **Priority:** P2
 **Depends on:** Nothing
 
-## Test panel
-
-### Copy a step's text from the test panel
-
-**What:** Give each line of a test panel step a way to copy it, so a command or a message the step asks to paste into a terminal can be taken from the panel itself.
-
-**Why:** The panel's text can't be selected. The scheduled-move run asked the person to paste three messages into a Claude, and they had to come through the chat instead, which is what the panel exists to avoid.
-
-**Context:** `tools/test-panel/main.js` draws each `step.do` line as plain text in an `h_flex`. A small copy icon button at the end of each line (the kit's `iconButton` with `copy` from `kit/icons/`) could write it with `cx.write_to_clipboard(text)`, which the click handler's `cx` has. A run could also mark only the lines meant to be pasted, for example with a `"paste"` field next to `"do"`.
-
-**Effort:** S
-**Priority:** P2
-**Depends on:** Nothing
-
 ## Verify
 
 ### Confirm comeback after a real reboot

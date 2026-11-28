@@ -1,5 +1,5 @@
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
-import { byKey, click, flush, herdr, makeCx, type Node } from "./app-mocks";
+import { byKey, click, flush, herdr, makeCx, type Node, svgs, texts } from "./app-mocks";
 
 const { default: plan } = await import("../tools/test-panel/run.js");
 const { default: TestPanel } = await import("../tools/test-panel/main.js");
@@ -82,5 +82,49 @@ describe("answering a step", () => {
     await flush();
     expect(order).toEqual(["layout.switch nuoh"]);
     expect(store[KEY].results).toMatchObject([{ step: 0, verdict: "passed", shot: null }]);
+  });
+});
+
+describe("texts to paste", () => {
+  const PASTE = ["Say pwd", 'echo "it moved" && pwd'];
+
+  function panel(step = 0) {
+    plan.steps = [{ title: "Type", do: ["Paste each text into the Claude."], paste: PASTE }, { title: "Next" }];
+    store[KEY] = { ...store[KEY], step };
+    herdr.settings = () => ({ font_family: "JetBrains Mono" });
+    const view = new TestPanel();
+    view.init({}, cx);
+    return view;
+  }
+
+  test("each text is a mono line with a copy button under the instructions", () => {
+    const root = panel().render(cx) as Node;
+    expect(texts(root)).toContain("Paste each text into the Claude.");
+    for (const [index, text] of PASTE.entries()) {
+      const button = byKey(root, `test-paste-${index}`);
+      expect(svgs(button)).toEqual(["mods/kit/icons/copy.svg"]);
+      expect(texts(root)).toContain(text);
+    }
+  });
+
+  test("the button copies the exact text and shows a check until the step changes", () => {
+    const view = panel();
+    const copyCx = makeCx();
+    click(byKey(view.render(copyCx) as Node, "test-paste-1"), copyCx);
+    expect(copyCx.clipboard).toEqual(['echo "it moved" && pwd']);
+    expect(copyCx.stopped).toBeGreaterThan(0);
+    const after = view.render(copyCx) as Node;
+    expect(svgs(byKey(after, "test-paste-1"))).toEqual(["mods/kit/icons/check.svg"]);
+    expect(svgs(byKey(after, "test-paste-0"))).toEqual(["mods/kit/icons/copy.svg"]);
+    plan.steps[1] = { title: "Next", paste: PASTE };
+    store[KEY] = { ...store[KEY], step: 1 };
+    expect(svgs(byKey(view.render(copyCx) as Node, "test-paste-1"))).toEqual(["mods/kit/icons/copy.svg"]);
+  });
+
+  test("a step without texts to paste draws no rows", () => {
+    plan.steps = [{ title: "Square" }];
+    const view = new TestPanel();
+    view.init({}, cx);
+    expect(() => byKey(view.render(cx) as Node, "test-paste-0")).toThrow("no element test-paste-0");
   });
 });

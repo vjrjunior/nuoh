@@ -88,6 +88,17 @@ describe("install", () => {
     expect(() => readRun(file)).toThrow("step 1 needs a title");
   });
 
+  test("a step's paste is a list of texts", () => {
+    const dir = mkdtempSync(join(tmpdir(), "test-panel-"));
+    const file = join(dir, "paste.json");
+    writeFileSync(file, JSON.stringify({ title: "Paste", steps: [{ title: "Type", paste: ["Say pwd", "echo hi"] }] }));
+    expect(readRun(file).steps[0]?.paste).toEqual(["Say pwd", "echo hi"]);
+    for (const paste of ["Say pwd", [1], [""]]) {
+      writeFileSync(file, JSON.stringify({ title: "Paste", steps: [{ title: "Type" }, { title: "Again", paste }] }));
+      expect(() => readRun(file)).toThrow("step 2's paste is a list of texts");
+    }
+  });
+
   test("results list each verdict with its note and every event by step", () => {
     const state = {
       run: "r1",

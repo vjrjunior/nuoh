@@ -1,7 +1,7 @@
 import { View, div } from "gpui-kit";
 import { Input, InputState, h_flex, v_flex } from "gpui-base";
-import { closeOverlay, exec, openOverlay, props, run, setShared, shared, spaces, terminals, theme } from "herdr";
-import { RADIUS, TEXT, button, heading, stepNode } from "../../kit/kit.js";
+import { closeOverlay, exec, openOverlay, props, run, settings, setShared, shared, spaces, terminals, theme } from "herdr";
+import { CONTROL, RADIUS, TEXT, button, heading, iconButton, stepNode } from "../../kit/kit.js";
 import plan from "./run.js";
 import { changes, same, snapshot, summary } from "./events.js";
 
@@ -124,6 +124,46 @@ export default class TestPanel extends View {
       );
   }
 
+  pasteRow(text, index, state, t) {
+    const id = `${state.run}:${state.step}:${index}`;
+    const mono = settings()?.font_family;
+    return h_flex()
+      .gap(6)
+      .items_center()
+      .pl(8)
+      .rounded(RADIUS.control)
+      .border_1()
+      .border_color(t.border)
+      .bg(t.background)
+      .child(
+        div()
+          .flex_1()
+          .min_w(0)
+          .py(4)
+          .text_size(TEXT.base)
+          .when(typeof mono === "string" && mono !== "", (el) => el.font_family(mono))
+          .child(text),
+      )
+      .child(
+        iconButton(
+          `test-paste-${index}`,
+          {
+            icon: this.copied === id ? "check" : "copy",
+            tooltip: "Copy",
+            size: CONTROL.row,
+            bordered: false,
+            stop: true,
+            onClick: (cx) => {
+              cx.write_to_clipboard(text);
+              this.copied = id;
+              cx.notify();
+            },
+          },
+          t,
+        ),
+      );
+  }
+
   stepView(step, state, t) {
     const events = state.log.filter((item) => item.step === state.step).slice(-4);
     return v_flex()
@@ -142,6 +182,7 @@ export default class TestPanel extends View {
             ),
           ),
       )
+      .when((step.paste ?? []).length > 0, (el) => el.child(v_flex().gap(4).children(step.paste.map((text, index) => this.pasteRow(text, index, state, t)))))
       .when(Boolean(step.expect), (el) =>
         el.child(
           v_flex()

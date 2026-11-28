@@ -6,7 +6,7 @@ import { herdrAppHome, stateDir } from "./paths";
 export const PANEL = `${PREFIX}test-panel`;
 export const PANEL_KIT = `${PREFIX}kit`;
 
-type Step = { title: string; do?: string[]; expect?: string; run?: { command: string; args?: Record<string, unknown> }[] };
+type Step = { title: string; do?: string[]; paste?: string[]; expect?: string; run?: { command: string; args?: Record<string, unknown> }[] };
 export type Run = {
   id: string;
   title: string;
@@ -46,6 +46,9 @@ export function readRun(file: string, now = Date.now()): Run {
   if (typeof run.title !== "string" || !Array.isArray(run.steps)) throw new Error(`${file}: a run needs a title and steps`);
   for (const [index, step] of run.steps.entries()) {
     if (typeof step.title !== "string") throw new Error(`${file}: step ${index + 1} needs a title`);
+    if (step.paste !== undefined && (!Array.isArray(step.paste) || step.paste.some((text: unknown) => typeof text !== "string" || text === ""))) {
+      throw new Error(`${file}: step ${index + 1}'s paste is a list of texts`);
+    }
   }
   const id = typeof run.id === "string" && run.id ? run.id : `${basename(file).replace(/\.json$/, "")}-${now}`;
   return { ...run, id, shots: run.shots ?? join(stateDir(), "test-panel", id) };

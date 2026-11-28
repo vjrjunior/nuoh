@@ -19,7 +19,7 @@
 
 ## Test panel runs
 
-A check only a person in the window can make (a drag, a toast, a key) goes in one test panel run, all the checks together, never as steps in the chat. The panel shows one step at a time with what to do, what to expect, a note, `Passed` and `Failed`.
+A check only a person in the window can make (a drag, a toast, a key) goes in one test panel run, all the checks together, never as steps in the chat. The panel shows one step at a time with what to do, the texts to paste, what to expect, a note, `Passed` and `Failed`.
 
 ```sh
 bun run test-panel <run.json>   # installs nuoh-test-panel (nuoh must be applied) and opens it in each of the run's layouts
@@ -34,12 +34,13 @@ bun run test-panel --close      # closes the panel in every layout
   "watch": ["move-tab.drag"],
   "shotOn": ["move-tab.request"],
   "report": "t17",
-  "steps": [{ "title": "Arrastar uma aba até uma worktree", "run": [{ "command": "space.select", "args": { "id": "sp..." } }], "do": ["Arraste a aba até feat/x e solte."], "expect": "A linha acende, depois a aba se move." }]
+  "steps": [{ "title": "Arrastar uma aba até uma worktree", "run": [{ "command": "space.select", "args": { "id": "sp..." } }], "do": ["Arraste a aba até feat/x e solte."], "paste": ["Say pwd"], "expect": "A linha acende, depois a aba se move." }]
 }
 ```
 
 - The run is written in Brazilian Portuguese: its `title` (and `intro`, shown before the first step) and each step's `title`, `do` and `expect`. What the window names (a tooltip, `Settings › Look`) stays as the window writes it.
 - A step's `run` commands execute when it opens, so a step can switch the space, the tab or the zoom for the person.
+- `paste` lists exact texts the person pastes (a command, a message to a Claude): each shows as a mono line with a copy button, since the panel's text can't be selected. It is checked to be a list of non-empty strings. Keep instructions in `do`, which has no copy button.
 - `layouts` lists where the panel opens, the one shown by default. Spaces and tabs opened, closed, moved and reordered, a tab's pane count and the layout are logged on their own; `watch` adds shared keys.
 - Each answer takes a `herdr-app shot`, and so does each change of a key in `shotOn`; shots go to `~/.local/state/vjr-herdr/test-panel/<id>/` unless `shots` names a folder.
 - `report` is a terminal address, usually `$HC_TERMINAL_ID`: after the last answer the panel sends it a one-line summary with `hc send`.
