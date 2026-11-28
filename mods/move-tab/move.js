@@ -1,10 +1,11 @@
 import { base, checkoutOf, parseWorktrees, placeOf } from "../../lib/checkouts.js";
 import { resumeCommand } from "../../lib/claude.js";
-import { REASONS, REFUSED, atShell, freshArgv, freshCommand, isClaude, isDraft, keepArgs, leaves, matchingFolder, movedNote, promptBox, resumeArgv, runsSession, spaceName, splitSteps } from "./logic.js";
+import { REASONS, REFUSED, atShell, freshArgv, freshCommand, frontRunsSession, isClaude, isDraft, keepArgs, leaves, matchingFolder, movedNote, promptBox, resumeArgv, runsSession, spaceName, splitSteps } from "./logic.js";
 
 const END_WAIT = 10000;
 const POLL = 250;
 const PANE_WAIT = 2000;
+const RUN_WAIT = 5000;
 
 export async function moveTab(request, io) {
   const run = { home: null, place: null, ended: [], started: new Set(), unsure: new Set(), moved: null };
@@ -118,6 +119,8 @@ async function move(request, io, run) {
     await io.act("space.select", { id: into });
     await io.act("tab.select", { id: made[0].tab });
   }
+  const silent = await notRunning(run.ended.filter((claude) => !claude.fresh && claude.terminal), io);
+  if (silent.length > 0) return didntStart(silent, into, run);
   const notice = { title: `Moved to ${run.place}`, level: "success", timeout: 4000 };
   if (run.ended.some((claude) => claude.fresh)) return { ...notice, body: "Claude had no conversation yet, so a new one started." };
   return run.ended.length > 0 ? { ...notice, body: "Claude's background jobs ended." } : notice;
@@ -156,7 +159,10 @@ async function readPane(block, where, io) {
 async function launch(name, args, part, run, io) {
   try {
     const made = await io.act(name, args);
-    if (part.kind === "claude") run.started.add(part);
+    if (part.kind === "claude") {
+      run.started.add(part);
+      part.terminal = made.terminal ?? null;
+    }
     return made;
   } catch (error) {
     if (part.kind === "claude") (resumed(part, io) ? run.started : run.unsure).add(part);
@@ -170,6 +176,29 @@ function resumed(claude, io) {
   } catch {
     return false;
   }
+}
+
+async function notRunning(claudes, io) {
+  const start = io.now();
+  let waiting = claudes;
+  for (;;) {
+    const shown = [];
+    for (const claude of waiting) shown.push(frontRunsSession(await io.get(claude.terminal), claude.session));
+    waiting = waiting.filter((_claude, index) => !shown[index]);
+    if (waiting.length === 0 || io.now() - start >= RUN_WAIT) return waiting;
+    await io.sleep(POLL);
+  }
+}
+
+function didntStart(claudes, into, run) {
+  const commands = claudes.map((claude) => resumeCommand({ cwd: claude.launch.folder, session: claude.session, args: claude.args }) ?? `claude --resume ${claude.session}`);
+  const [first] = claudes;
+  return {
+    title: "Moved the tab, but Claude didn't start",
+    body: `${run.moved}. To resume Claude by hand: ${commands.join("; ")}`,
+    level: "error",
+    action: { name: "tab.new", args: { space: into, folder: first.launch.folder, argv: resumeArgv({ session: first.session, args: first.args, note: null }) } },
+  };
 }
 
 async function ended(pid, io) {

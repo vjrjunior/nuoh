@@ -131,10 +131,18 @@ export function scheduleStep({ schedule, status, since, now }) {
   return now - since >= SETTLE ? { go: true } : { wait: SETTLE - (now - since) };
 }
 
-export function runsSession(terminal, session) {
+function resumes(terminal, session, lists) {
   if (terminal?.state !== "live" || typeof session !== "string" || !SESSION.test(session)) return false;
   const resume = new RegExp(`(^|\\s)--resume\\s+${session}(\\s|$)`);
-  return [terminal.argv, terminal.foreground?.argv].some((argv) => Array.isArray(argv) && resume.test(argv.join(" ")));
+  return lists.some((argv) => Array.isArray(argv) && resume.test(argv.join(" ")));
+}
+
+export function runsSession(terminal, session) {
+  return resumes(terminal, session, [terminal?.argv, terminal?.foreground?.argv]);
+}
+
+export function frontRunsSession(terminal, session) {
+  return resumes(terminal, session, [terminal?.foreground?.argv]);
 }
 
 export function tabTree(stdout, tab) {

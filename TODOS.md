@@ -138,18 +138,6 @@
 
 ## Move tab
 
-### Check that a moved Claude runs before saying it moved
-
-**What:** After a move builds the new tab, wait a moment for `terminals()` to show a live terminal whose argv or foreground argv holds `--resume <id>`, and only then post the success toast. When it doesn't show up, post an error toast with the resume command and a click action that resumes it, as a failed move does.
-
-**Why:** The success toast is posted as soon as `herdr-app do` returns. If the resumed Claude then fails to start (a bad option, a missing `claude`), the old tab is already closed, the toast said it moved, and nothing on screen holds the session id: only Claude's `/resume` in the old folder finds the conversation.
-
-**Context:** `mods/move-tab/move.js` posts the notice at the end of `move`. `runsSession` in `mods/move-tab/logic.js` already tells whether a terminal resumes a session, and `resumed` in `move.js` uses it when a launch throws. The wait should be short and bounded, like `PANE_WAIT`, and use `io.sleep` so the fake clock tests it.
-
-**Effort:** S
-**Priority:** P2
-**Depends on:** Nothing
-
 ### A toast for a move cut off by a layout switch or restart
 
 **What:** When a layout switch or an app restart cancels a Move tab in the middle, show a toast that gives the Claude's resume command.

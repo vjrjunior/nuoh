@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { checkoutOf, parseWorktrees } from "../lib/checkouts.js";
-import { REASONS, SCHEDULE_TTL, SETTLE, atShell, freshArgv, freshCommand, isClaude, isDraft, keepArgs, leaves, matchingFolder, movedNote, parseSchedule, projectFolder, promptBox, resumeArgv, runsSession, scheduleStep, spaceName, splitSteps, tabTree, targetsFor } from "../mods/move-tab/logic.js";
+import { REASONS, SCHEDULE_TTL, SETTLE, atShell, freshArgv, freshCommand, frontRunsSession, isClaude, isDraft, keepArgs, leaves, matchingFolder, movedNote, parseSchedule, projectFolder, promptBox, resumeArgv, runsSession, scheduleStep, spaceName, splitSteps, tabTree, targetsFor } from "../mods/move-tab/logic.js";
 
 describe("move-tab logic", () => {
   test("keeps the allowed flags and their values", () => {
@@ -65,6 +65,14 @@ describe("move-tab logic", () => {
     expect(runsSession({ address: "t9", state: "exited", argv: ["claude", "--resume", "abc-1"] }, "abc-1")).toBe(false);
     expect(runsSession(live({}), "abc-1")).toBe(false);
     expect(runsSession(live({ argv: ["claude", "--resume", ".*"] }), ".*")).toBe(false);
+  });
+  test("tells a Claude running in front from the shell that launched it", () => {
+    const launched = ["/bin/zsh", "-lic", '"$@"; exec "$0" -li', "/bin/zsh", "claude", "--resume", "abc-1"];
+    const live = (front: string[]) => ({ address: "t9", state: "live", argv: launched, foreground: { argv: front } });
+    expect(frontRunsSession(live(["claude", "--resume", "abc-1", "--model", "opus"]), "abc-1")).toBe(true);
+    expect(frontRunsSession(live(["/bin/zsh", "-li"]), "abc-1")).toBe(false);
+    expect(runsSession(live(["/bin/zsh", "-li"]), "abc-1")).toBe(true);
+    expect(frontRunsSession(null, "abc-1")).toBe(false);
   });
   test("writes the moved note", () => {
     expect(movedNote({ from: "/r/main", fromBranch: "main", to: "/r/wt", toBranch: null }))

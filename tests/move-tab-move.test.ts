@@ -52,6 +52,7 @@ function world(changes: any = {}) {
     screens: {} as Record<string, string | string[]>,
     cursors: {} as Record<string, { row: number; col: number } | null>,
     transcripts: ["new-id", "two-id"] as string[],
+    launched: (argv: string[]) => ({ state: "live", argv: ["/bin/zsh", "-lic", '"$@"; exec "$0" -li', "/bin/zsh", ...argv], foreground: { argv } }) as any,
     ...changes,
   };
 }
@@ -119,6 +120,7 @@ function fakeIo(w: any) {
       log.push(`act ${name} ${JSON.stringify(args)}`);
       if (name in w.fail) throw w.throwRaw ? w.fail[name] : new Error(w.fail[name]);
       const made = create(name, args);
+      if (made.terminal && args.argv && !(made.terminal in w.infos)) w.infos[made.terminal] = w.launched(args.argv);
       if (!(name in w.failAfter)) return made;
       if (w.listed) w.terminals.push({ address: made.terminal, state: "live", argv: ["/bin/zsh", "-l"], foreground: { argv: args.argv } });
       throw new Error(w.failAfter[name]);
@@ -174,6 +176,7 @@ async function move(w: any, request: any = {}) {
   return { io, result, notice: io.notices[0], acts: actsOf(io.log) };
 }
 
+const ENDING = 250;
 const RULE = "─".repeat(40);
 const box = (input: string) => ["⏺ Done.", RULE, `❯\u00a0${input}`, RULE, "  [Opus 5.5] │ main"].join("\n");
 
@@ -461,6 +464,41 @@ describe("moveTab", () => {
     expect(notice).toEqual({ title: "Moved to feat/x", body: "Claude's background jobs ended.", level: "success", timeout: 4000 });
     const detached = await move(world({ worktrees: "worktree /r/main\nbranch refs/heads/main\n\nworktree /r/wt\ndetached\n" }));
     expect(detached.notice.title).toBe("Moved to wt");
+  });
+
+  test("waits for the resumed Claude to show before saying it moved", async () => {
+    const shell = { state: "live", foreground: { argv: ["/bin/zsh", "-li"] } };
+    const w = world({ launched: (argv: string[]) => [shell, shell, shell, { state: "live", foreground: { argv } }] });
+    const { io, notice } = await move(w);
+    expect(notice.title).toBe("Moved to feat/x");
+    expect(io.now() - ENDING).toBe(750);
+  });
+
+  test("a resumed Claude that never shows gets an error with the way back", async () => {
+    const w = world({ launched: () => ({ state: "live", argv: ["/bin/zsh", "-lic", "claude --resume new-id"], foreground: { argv: ["/bin/zsh", "-li"] } }) });
+    const { io, notice, result } = await move(w);
+    expect(notice).toEqual({
+      title: "Moved the tab, but Claude didn't start",
+      body: "The tab is now in feat/x. To resume Claude by hand: cd /r/wt && claude --resume new-id --model opus",
+      level: "error",
+      action: { name: "tab.new", args: { space: "s2", folder: "/r/wt", argv: ["claude", "--resume", "new-id", "--model", "opus"] } },
+    });
+    expect(result).toEqual({ moved: true });
+    expect(io.now() - ENDING).toBe(5000);
+  });
+
+  test("only the Claudes that didn't show are offered", async () => {
+    const w = twoClaudes({ launched: (argv: string[]) => (argv.includes("two-id") ? { state: "exited", foreground: null } : { state: "live", foreground: { argv } }) });
+    const { notice } = await move(w);
+    expect(notice.body).toBe("The tab is now in feat/x. To resume Claude by hand: cd /r/wt && claude --resume two-id --effort high");
+    expect(notice.action.args.argv).toEqual(["claude", "--resume", "two-id", "--effort", "high"]);
+  });
+
+  test("a new Claude has no conversation to look for", async () => {
+    const w = world({ transcripts: [], launched: () => ({ state: "live", foreground: { argv: ["/bin/zsh", "-li"] } }) });
+    const { io, notice } = await move(w);
+    expect(notice.title).toBe("Moved to feat/x");
+    expect(io.now()).toBe(ENDING);
   });
 
   test("keeps a named tab's name", async () => {

@@ -301,6 +301,7 @@ describe("move-tab scheduled moves", () => {
   const tree = { type: "row", children: [{ type: "block", id: "p1", content: { terminal: "t1" } }] };
   const docReply = JSON.stringify({ result: { value: { spaces: [{ id: "s1", tabs: [{ id: "tb1", root: tree }] }] } } });
   const claude = JSON.stringify({ address: "t1", pid: 10, cwd: "/r/main", foreground: { pid: 11, argv: ["claude"], cwd: "/r/main" }, status: { app: "claude-code", state: "idle" } });
+  const resumed = JSON.stringify({ address: "t9", state: "live", foreground: { pid: 12, argv: ["claude", "--resume", "sess-1"], cwd: "/r/wt/live" } });
   let status: string;
   let labelled: string | null;
   let since: number;
@@ -322,6 +323,7 @@ describe("move-tab scheduled moves", () => {
         labelled = null;
         return ok("");
       }
+      if (call.command === "hc" && call.args[1] === "t9") return ok(resumed);
       if (call.command === "hc") return ok(claude);
       if (call.command === "sh") return ok(docReply);
       if (call.command === "git") return ok(PORCELAIN);
