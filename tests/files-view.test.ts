@@ -285,7 +285,7 @@ describe("the row menu", () => {
     const { view, cx } = await open();
     fire(view, cx, "file-README.md", "down:right");
     expect(overlays).toEqual([
-      { mod: "files", kind: "popup", width: 240, height: 5 * 2 + 26 + 5 * 28, props: { role: "menu", path: `${ROOT}/README.md`, relative: "README.md", dir: false, open: false, pane: "p1" } },
+      { mod: "files", kind: "popup", width: 240, height: 5 * 2 + 26 + 5 * 30, props: { role: "menu", path: `${ROOT}/README.md`, relative: "README.md", dir: false, open: false, pane: "p1" } },
     ]);
   });
 

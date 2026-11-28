@@ -21,7 +21,7 @@ The `nuoh` layout's panes and the cards around them. Each pane is a card on the 
 ## Built from
 
 - **`recipes/cards.ts`** (`nuoh-cards`, the last recipe): the `main` pane frame gets `background: "surface"`, `shadow: "md"`, `veil: 0.4` and `header: { content: { mod: "pane-header" }, height: 42, position: "top", reveal: "always" }` on top of `nuoh-frame`'s radius and lines ([`mods/topbar/RECIPE.md`](../topbar/RECIPE.md)) and Herdr's `gap: 8` and `lone: true`. Every child of `work-body` but `main` gets the card (`surface`, the 1px line, `radius: 14`, `shadow: "md"`) and `padding: 6`. In nuoh's copy of `tabs`, the `tab-scroll` row trades `flex_1()` for `flex_initial()` and `overflow_x_scrollbar()` for `overflow_x_scroll()`, and after `+` come a `div().flex_1()` and the `panel-group` row, closed before Herdr's `.when(w?.buttons,`. In `nuoh-git-graph`, `.rounded(paneFrame(layout())?.radius ?? 0)` becomes `.rounded(10)`, the well Files and Changes draw.
-- **`mods/pane-header/`**: `main.js` draws the header with the kit's `programIcon`, `statusChip` and `iconButton`; `logic.js` holds the title, the folder label, the zoom rule and the 320px check; `lib/agent-title.js` cleans the terminal's title, as for the Agents list. It reads `props().pane`, `panes()`, `home()` and `settings().zoom`, and runs no programs and reads no files.
+- **`mods/pane-header/`**: `main.js` draws the header with the kit's `paneTile`, `programIcon`, `statusChip` and `iconButton`; `logic.js` holds the title, the folder label, the zoom rule and the 320px check; `lib/agent-title.js` cleans the terminal's title, as for the Agents list. It reads `props().pane`, `panes()`, `home()` and `settings().zoom`, and runs no programs and reads no files.
 
 ## Watch out
 

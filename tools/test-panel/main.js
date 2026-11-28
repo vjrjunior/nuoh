@@ -1,7 +1,7 @@
 import { View, div } from "gpui-kit";
 import { Input, InputState, h_flex, v_flex } from "gpui-base";
 import { closeOverlay, exec, openOverlay, props, run, settings, setShared, shared, spaces, terminals, theme } from "herdr";
-import { CONTROL, RADIUS, TEXT, button, heading, iconButton, stepNode } from "../../kit/kit.js";
+import { RADIUS, TEXT, button, heading, iconButton, stepNode } from "../../kit/kit.js";
 import plan from "./run.js";
 import { changes, same, snapshot, summary } from "./events.js";
 
@@ -119,7 +119,7 @@ export default class TestPanel extends View {
         this.controls([
           h_flex()
             .child(div().flex_1())
-            .child(button("test-start", { label: plan.steps.length ? "Start" : "No steps", variant: "solid", disabled: !plan.steps.length, onClick: (cx) => this.start(cx) }, t)),
+            .child(button("test-start", { label: plan.steps.length ? "Start" : "No steps", variant: "primary", disabled: !plan.steps.length, onClick: (cx) => this.start(cx) }, t)),
         ]),
       );
   }
@@ -150,8 +150,6 @@ export default class TestPanel extends View {
           {
             icon: this.copied === id ? "check" : "copy",
             tooltip: "Copy",
-            size: CONTROL.row,
-            bordered: false,
             stop: true,
             onClick: (cx) => {
               cx.write_to_clipboard(text);
@@ -199,8 +197,8 @@ export default class TestPanel extends View {
             .items_center()
             .when(state.step > 0, (el) => el.child(button("test-back", { label: "Back", icon: "arrow-left", onClick: (cx) => this.back(cx) }, t)))
             .child(div().flex_1())
-            .child(button("test-fail", { label: "Failed", icon: "x", color: t.blocked, onClick: (cx) => this.answer("failed", cx) }, t))
-            .child(button("test-pass", { label: "Passed", icon: "check", variant: "solid", onClick: (cx) => this.answer("passed", cx) }, t)),
+            .child(button("test-fail", { label: "Failed", icon: "x", iconColor: t.blocked, onClick: (cx) => this.answer("failed", cx) }, t))
+            .child(button("test-pass", { label: "Passed", icon: "check", variant: "primary", onClick: (cx) => this.answer("passed", cx) }, t)),
         ]),
       )
       .when(events.length > 0, (el) => el.child(v_flex().gap(2).children(events.map((item) => div().text_size(TEXT.sm).text_color(t.dim).truncate().child(item.text)))));

@@ -3,18 +3,18 @@ import { v_flex, h_flex, InputState } from "gpui-base";
 import { props, theme, shared, setShared, closeOverlay, openOverlay } from "herdr";
 import { createFolder, deleteFolder, fileUnit, folderOf, newFolderId, nextColor, pinFolder, readFolders, readPins, recolorFolder, renameFolder } from "./folders.js";
 import { PALETTE, paint } from "../../lib/space-colors.js";
-import { CONTROL, TEXT, button, input, popupRow } from "../../kit/kit.js";
+import { CONTROL, MENU_ITEM, TEXT, button, input, menuItem } from "../../kit/kit.js";
 
 export const FOLDERS = "spaces.folders";
 export const PINS = "spaces.pinned";
-export const FOLDER_MENU = { width: 220, height: 151 };
+export const FOLDER_MENU = { width: 220, height: 157 };
 export const NAME_DIALOG = { width: 340, height: 180 };
 const PAD = 4;
 const TITLE = 24;
 const SEPARATOR = 9;
 
 export function movePopupHeight(count, inFolder) {
-  return PAD * 2 + TITLE + (count + 1 + (inFolder ? 1 : 0)) * (CONTROL.row + 1) + (inFolder ? SEPARATOR : 0);
+  return PAD * 2 + TITLE + (count + 1 + (inFolder ? 1 : 0)) * (MENU_ITEM + 1) + (inFolder ? SEPARATOR : 0);
 }
 
 export const readState = () => readFolders(shared(FOLDERS));
@@ -93,9 +93,9 @@ function moveView(view, t) {
     .gap(1)
     .bg(t.popover)
     .child(div().h(TITLE).flex_none().px(8).pt(6).text_size(TEXT.xs).text_color(t.unknown).truncate().child(`MOVE TO FOLDER · ${String(name ?? "").toUpperCase()}`))
-    .children(state.folders.map((folder) => popupRow(`move-${folder.id}`, { dot: paint(folder.color, t), label: folder.name, check: folder.id === current, onClick: () => file(folder.id) }, t)))
+    .children(state.folders.map((folder) => menuItem(`move-${folder.id}`, { dot: paint(folder.color, t), label: folder.name, check: folder.id === current, onClick: () => file(folder.id) }, t)))
     .child(
-      popupRow(
+      menuItem(
         "move-new",
         {
           icon: "plus",
@@ -108,7 +108,7 @@ function moveView(view, t) {
         t,
       ),
     )
-    .when(Boolean(current), (el) => el.child(separator(t)).child(popupRow("move-out", { icon: "x", label: "Remove from folder", onClick: () => file(null) }, t)));
+    .when(Boolean(current), (el) => el.child(separator(t)).child(menuItem("move-out", { icon: "x", label: "Remove from folder", onClick: () => file(null) }, t)));
 }
 
 function folderView(view, t) {
@@ -133,7 +133,7 @@ function folderView(view, t) {
     )
     .child(separator(t))
     .child(
-      popupRow(
+      menuItem(
         "folder-pin",
         {
           icon: folder.pinned ? "pin-off" : "pin",
@@ -147,7 +147,7 @@ function folderView(view, t) {
       ),
     )
     .child(
-      popupRow(
+      menuItem(
         "folder-rename",
         {
           icon: "folder",
@@ -162,12 +162,12 @@ function folderView(view, t) {
     )
     .child(separator(t))
     .child(
-      popupRow(
+      menuItem(
         "folder-delete",
         {
           icon: "x",
           label: "Delete folder",
-          color: t.blocked,
+          danger: true,
           onClick: () => {
             saveState(state, deleteFolder(state, folder.id));
             closePopup(view);
@@ -224,7 +224,7 @@ function nameView(view, t) {
         .gap(8)
         .justify_end()
         .child(button("name-cancel", { label: "Cancel", onClick: () => closePopup(view) }, t))
-        .child(button("name-save", { label: renaming ? "Save" : "Create", variant: "solid", disabled: empty, onClick: () => saveName(view) }, t)),
+        .child(button("name-save", { label: renaming ? "Save" : "Create", variant: "primary", disabled: empty, onClick: () => saveName(view) }, t)),
     );
 }
 

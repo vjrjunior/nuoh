@@ -341,7 +341,7 @@ export default class Files extends View {
       })
       .child(this.header(t))
       .when(!this.preview && !this.machine && Boolean(this.root), (el) =>
-        el.child(div().flex_none().px(8).py(6).border_b_1().border_color(t.border).child(input(this.input, t, { height: CONTROL.row, active: this.typing }))),
+        el.child(div().flex_none().px(8).py(6).border_b_1().border_color(t.border).child(input(this.input, t, { kind: "search", height: CONTROL.row, focused: this.typing }))),
       )
       .child(this.body(t));
   }
@@ -353,11 +353,11 @@ export default class Files extends View {
       const editor = editorName();
       return bar
         .pl(6)
-        .child(iconButton("files-back", { icon: "arrow-left", tooltip: "Back to files", bordered: false, size: CONTROL.small, onClick: (cx) => this.back(cx) }, t))
+        .child(iconButton("files-back", { icon: "arrow-left", tooltip: "Back to files", size: "sm", onClick: (cx) => this.back(cx) }, t))
         .child(this.fileImage(this.preview.path))
         .child(div().flex_none().max_w(160).truncate().font_semibold().child(nameOf(path)))
         .child(div().flex_1().min_w(0).truncate().text_size(TEXT.sm).text_color(t.dim).child(folderOf(this.preview.path) || ""))
-        .child(button("files-editor", { label: editor ?? "Open", icon: "external-link", iconColor: t.muted, height: CONTROL.small, onClick: () => openInEditor(path) }, t));
+        .child(button("files-editor", { label: editor ?? "Open", icon: "external-link", size: "sm", onClick: () => openInEditor(path) }, t));
     }
     const title = this.root ? nameOf(this.root) : "Files";
     const where = this.root ? shortFolder(folderOf(this.root), home()) : "";
@@ -369,7 +369,7 @@ export default class Files extends View {
           .child(
             iconButton(
               "files-changed",
-              { icon: "git-compare", tooltip: this.changedOnly ? "Show all files" : "Show changed files only", color: this.changedOnly ? t.accent : t.muted, bordered: this.changedOnly, size: CONTROL.small, onClick: (cx) => this.setChangedOnly(!this.changedOnly, cx) },
+              { icon: "git-compare", tooltip: this.changedOnly ? "Show all files" : "Show changed files only", color: this.changedOnly ? t.accent : t.muted, selected: this.changedOnly, size: "sm", onClick: (cx) => this.setChangedOnly(!this.changedOnly, cx) },
               t,
             ),
           )
@@ -379,8 +379,7 @@ export default class Files extends View {
               {
                 icon: "chevrons-down-up",
                 tooltip: "Collapse all",
-                bordered: false,
-                size: CONTROL.small,
+                size: "sm",
                 onClick: (cx) => {
                   this.open = new Set();
                   cx.notify();
@@ -417,7 +416,7 @@ export default class Files extends View {
         .items_start()
         .child(div().text_size(TEXT.base).text_color(t.dim).child(this.preview.note ?? "Loading file…"))
         .when(Boolean(this.preview.note), (el) =>
-          el.child(button("files-default-app", { label: "Open with default app", icon: "external-link", iconColor: t.muted, onClick: () => openWithApp(join(this.root, this.preview.path)) }, t)),
+          el.child(button("files-default-app", { label: "Open with default app", icon: "external-link", size: "sm", onClick: () => openWithApp(join(this.root, this.preview.path)) }, t)),
         );
     }
     if (this.query.trim()) return this.results(t);

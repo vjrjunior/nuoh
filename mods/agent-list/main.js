@@ -1,7 +1,7 @@
 import { View, div } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
 import { agents, closeOverlay, layout, openOverlay, props, run, setAgentOrder, setShared, shared, spaces, terminals, theme } from "herdr";
-import { CONTROL, ICON_SIZE, TEXT, avatar, cardHeader, icon, iconButton, popupRow, programIcon, statusChip, statusDot } from "../../kit/kit.js";
+import { CONTROL, ICON_SIZE, TEXT, avatar, cardHeader, icon, iconButton, menuItem, programIcon, statusChip, statusDot } from "../../kit/kit.js";
 import { avatarLook } from "../../lib/space-colors.js";
 import { isNarrow } from "../../lib/layout-tree.js";
 import { agentTitle } from "../../lib/agent-title.js";
@@ -69,7 +69,7 @@ export default class AgentList extends View {
       .child(div().px(8).pt(4).pb(6).text_size(TEXT.sm).text_color(t.dim).child("Sort agents"))
       .children(
         SORTS.map((sort) =>
-          popupRow(
+          menuItem(
             `sort-${sort.id}`,
             {
               icon: sort.icon,
@@ -105,9 +105,7 @@ export default class AgentList extends View {
         icon: agent.pinned ? "pin-off" : "pin",
         tooltip: agent.pinned ? "Unpin" : "Pin to the top",
         color: t.dim,
-        size: CONTROL.tiny,
-        iconSize: ICON_SIZE.md,
-        bordered: false,
+        size: "xs",
         stop: true,
         onClick: (cx) => {
           run("terminal.pin", { terminal: agent.address, pinned: !agent.pinned });
@@ -259,9 +257,6 @@ export default class AgentList extends View {
               icon: "list-filter",
               tooltip: `Sort agents: ${sort.label}`,
               color: t.muted,
-              size: CONTROL.row,
-              iconSize: ICON_SIZE.lg,
-              bordered: false,
               onClick: () => openOverlay({ mod: "agent-list", kind: "popup", width: SORT_POPUP.width, height: SORT_POPUP.height, props: { sortMenu: true } }),
             },
             t,

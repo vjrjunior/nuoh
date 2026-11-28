@@ -129,12 +129,12 @@ export default class Markdown extends View {
       .bg(t.chrome)
       .border_b_1()
       .border_color(t.border)
-      .when(this.history.length > 0, (el) => el.child(button("md-back", { icon: "arrow-left", label: "Back", onClick: (cx) => this.back(cx) }, t)))
+      .when(this.history.length > 0, (el) => el.child(button("md-back", { icon: "arrow-left", label: "Back", size: "sm", onClick: (cx) => this.back(cx) }, t)))
       .child(div().flex_none().text_size(12).font_semibold().text_color(t.foreground).child(file ? nameOf(file) : "Markdown"))
       .child(div().flex_1().min_w(0).overflow_hidden().whitespace_nowrap().text_ellipsis_start().text_size(11).text_color(t.dim).child(file ? shortFolder(folderOf(file), home()) : ""))
       .when(Boolean(file), (el) =>
         el
-          .child(button("md-editor", { label: EDITOR.name, icon: "external-link", iconColor: t.muted, onClick: () => exec(EDITOR.argv[0], [...EDITOR.argv.slice(1), file]).catch(() => {}) }, t))
+          .child(button("md-editor", { label: EDITOR.name, icon: "external-link", size: "sm", onClick: () => exec(EDITOR.argv[0], [...EDITOR.argv.slice(1), file]).catch(() => {}) }, t))
           .child(
             iconButton(
               "md-reload",

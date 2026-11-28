@@ -266,7 +266,7 @@ export default class SpacesTree extends withRail(withRows(withActions(View))) {
   }
 
   headButton(id, name, tooltip, action, t) {
-    return iconButton(id, { icon: name, tooltip, color: t.muted, size: CONTROL.row, iconSize: ICON_SIZE.lg, bordered: false, stop: true, onPress: () => this.endDrag(), onClick: action }, t);
+    return iconButton(id, { icon: name, tooltip, color: t.muted, stop: true, onPress: () => this.endDrag(), onClick: action }, t);
   }
 
   cardHead(t) {

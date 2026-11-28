@@ -1,7 +1,7 @@
 import { div } from "gpui-kit";
 import { h_flex, InputState, ScrollHandle, v_flex } from "gpui-base";
 import { closeOverlay, exec, focused, hc, home, panes, theme } from "herdr";
-import { CONTROL, TEXT, heading, input, popupRow } from "../../kit/kit.js";
+import { CONTROL, TEXT, heading, input, menuItem } from "../../kit/kit.js";
 import { openMarkdown } from "../../lib/open-markdown.js";
 import { EXISTING, LOOKUP, REPO_MARKDOWN, mentions, missingNames, onScreen, parseExisting, parseLookup, parseRepoMarkdown, pickerRows } from "./logic.js";
 
@@ -121,7 +121,7 @@ export class Picker {
         const at = offset + index;
         this.place.push(children.length);
         children.push(
-          popupRow(`md-pick-${at}`, { icon: "file-text", label: row.name, detail: row.where, selected: at === this.at, onClick: (cx) => this.choose(row, cx) }, t),
+          menuItem(`md-pick-${at}`, { icon: "file-text", label: row.name, detail: row.where, selected: at === this.at, onClick: (cx) => this.choose(row, cx) }, t),
         );
       });
     };
@@ -142,7 +142,7 @@ export class Picker {
         else if (event.key === "down") this.move(1, cx);
         else if (event.key === "up") this.move(-1, cx);
       })
-      .child(input(this.input, t))
+      .child(input(this.input, t, { kind: "search" }))
       .child(v_flex().id("md-picker-list").flex_none().h(LIST_HEIGHT).overflow_y_scrollbar().track_scroll(this.scroll).children(children))
       .child(
         h_flex()

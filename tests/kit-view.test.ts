@@ -16,7 +16,7 @@ function render() {
 
 test("the gallery shows every section", () => {
   const root = render();
-  for (const id of ["buttons", "icon-buttons", "links", "chips", "status-chips", "pill", "program-icons", "avatars", "inputs", "card-headers", "view-parts", "lines", "popup-rows", "dots", "steps", "icons"]) {
+  for (const id of ["buttons", "icon-buttons", "segments", "tags", "links", "chips", "status-chips", "pills", "program-icons", "avatars", "inputs", "card-headers", "view-parts", "lines", "menu-items", "dots", "steps", "icons"]) {
     expect(byKey(root, `kit-${id}`)).toBeDefined();
   }
 });
@@ -43,25 +43,26 @@ test("the gallery shows the buttons and chips the mods use", () => {
   const colorOf = (id: string) => walk(byKey(root, id)).flatMap((n) => calls(n, "text_color"));
   expect(texts(byKey(root, "kit-b-named"))).toContain("GitHub");
   expect(colorOf("kit-b-named")).toContain("t.muted");
+  for (const variant of ["primary", "secondary", "tinted", "ghost", "danger"]) expect(byKey(root, `kit-b-${variant}`)).toBeDefined();
+  for (const size of ["sm", "md", "lg"]) expect(byKey(root, `kit-b-${size}`)).toBeDefined();
   expect(svgs(byKey(root, "kit-b-pass"))).toEqual(["mods/kit/icons/check.svg"]);
   expect(colorOf("kit-b-pass")).toContain("t.done");
   expect(svgs(byKey(root, "kit-b-fail"))).toEqual(["mods/kit/icons/x.svg"]);
   expect(colorOf("kit-b-fail")).toContain("t.blocked");
-  const chips = svgs(byKey(root, "kit-chips"));
-  expect(chips).toContain("mods/kit/icons/exclamation.svg");
-  expect(chips).not.toContain("mods/kit/icons/x.svg");
+  expect(texts(byKey(root, "kit-chips"))).toEqual(expect.arrayContaining(["blocked", "working", "done", "neutral"]));
 });
 
-test("the gallery shows popup rows with an icon, a color dot, a check and a selected one", () => {
-  const section = byKey(render(), "kit-popup-rows");
-  expect(texts(section)).toEqual(expect.arrayContaining(["New folder…", "Clients", "Remove from folder", "Selected"]));
+test("the gallery shows menu items with an icon, a color dot, a check, a line under one and a selected one", () => {
+  const section = byKey(render(), "kit-menu-items");
+  expect(texts(section)).toEqual(expect.arrayContaining(["New folder…", "Clients", "Remove from folder", "Selected", "Work", "the team's flow"]));
   expect(svgs(section)).toEqual(expect.arrayContaining(["mods/kit/icons/plus.svg", "mods/kit/icons/check.svg"]));
 });
 
-test("the gallery shows an input with the accent border and a quiet one with the input border", () => {
+test("the gallery shows a focused search input, a quiet one and a dashed start field", () => {
   const section = byKey(render(), "kit-inputs");
   const borders = walk(section).flatMap((n) => calls(n, "border_color"));
-  expect(borders).toEqual(["t.accent", "t.input"]);
+  expect(borders).toEqual(["t.accentB3", "t.foreground14", "t.foreground24"]);
+  expect(svgs(section)).toEqual(["mods/kit/icons/search.svg", "mods/kit/icons/plus.svg"]);
 });
 
 test("the gallery shows the status chips and both card headers the nuoh sidebar uses", () => {
@@ -80,9 +81,12 @@ test("the gallery shows the status chips and both card headers the nuoh sidebar 
 });
 
 test("the gallery shows the view parts the nuoh views draw their bands and cards with", () => {
-  const section = byKey(render(), "kit-view-parts");
-  expect(texts(byKey(section, "kit-bp-label"))).toEqual(["Read 2m ago"]);
-  expect(texts(byKey(section, "kit-bp-square"))).toEqual([]);
+  const root = render();
+  const pills = byKey(root, "kit-pills");
+  expect(texts(byKey(pills, "kit-pill-status"))).toEqual(["Read 2m ago"]);
+  expect(texts(byKey(pills, "kit-pill-square"))).toEqual([]);
+  expect(texts(byKey(pills, "kit-pill-picker"))).toEqual(["This computer"]);
+  const section = byKey(root, "kit-view-parts");
   expect(byKey(section, "kit-view-card")).toBeDefined();
-  expect(svgs(section)).toEqual(expect.arrayContaining(["mods/kit/icons/layers.svg", "mods/kit/icons/rotate-cw.svg", "mods/kit/icons/settings.svg"]));
+  expect(svgs(section)).toEqual(expect.arrayContaining(["mods/kit/icons/layers.svg", "mods/kit/icons/command.svg"]));
 });

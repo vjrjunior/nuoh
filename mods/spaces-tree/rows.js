@@ -120,7 +120,7 @@ export const withRows = (Base) =>
     }
 
     iconButton(id, name, tooltip, action, t) {
-      return iconButton(id, { icon: name, tooltip, color: t.unknown, size: CONTROL.tiny, iconSize: ICON_SIZE.md, bordered: false, stop: true, onPress: () => this.endDrag(), onClick: action }, t);
+      return iconButton(id, { icon: name, tooltip, color: t.unknown, size: "xs", stop: true, onPress: () => this.endDrag(), onClick: action }, t);
     }
 
     name(row, t) {

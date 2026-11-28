@@ -3,7 +3,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { click, type Node, own, svgs, texts, walk } from "./app-mocks";
 
-const { ICONS, avatar, barPill, button, cardHeader, chip, iconButton, iconPath, popupRow, programIcon, statusChip, stepNode, toneColor, viewCard, viewTile } = await import("../kit/kit.js");
+const { ICONS, avatar, button, cardHeader, chip, iconButton, iconPath, input, menuItem, paneTile, pill, programIcon, segment, statusChip, stepNode, tag, toneColor, viewCard, viewTile } = await import("../kit/kit.js");
 
 const repo = join(import.meta.dir, "..");
 const t = new Proxy({}, { get: (_x, p) => (typeof p === "string" ? `t.${p}` : undefined) }) as any;
@@ -52,43 +52,78 @@ test("a todo step is an empty input ring", () => {
   expect(node.kids).toHaveLength(0);
 });
 
-test("an icon button has its tooltip and a colored icon", () => {
+test("an icon button has its tooltip, and its color on the button so the icon follows its hover", () => {
   const node = iconButton("b", { icon: "github", tooltip: "GitHub", color: "t.accent", onClick() {} }, t);
   expect(calls(node, "tooltip")).toContainEqual(["GitHub"]);
   expect(svgs(node)).toEqual(["mods/kit/icons/github.svg"]);
-  expect(calls(node, "text_color")).toContainEqual(["t.accent"]);
+  expect(own(node, "text_color")).toEqual([["t.accent"]]);
+  expect(own(node.kids[0] as Node, "text_color")).toEqual([]);
 });
 
-test("a solid button uses the accent, an outline button the input border", () => {
-  const solid = button("s", { label: "Go", variant: "solid", onClick() {} }, t);
-  expect(own(solid, "bg")).toContainEqual(["t.accent"]);
-  const outline = button("o", { label: "Go", onClick() {} }, t);
-  expect(own(outline, "border_color")).toContainEqual(["t.input"]);
+test("an icon button is a 28 px ghost by default, 22 or 18 px smaller, and 34 px bordered on the surface", () => {
+  const ghost = iconButton("g", { icon: "x", onClick() {} }, t);
+  expect(own(ghost, "size")).toEqual([[28]]);
+  expect(own(ghost, "rounded")).toEqual([[7]]);
+  expect(own(ghost, "bg")).toEqual([]);
+  expect(own(ghost.kids[0] as Node, "size")).toEqual([[14]]);
+  expect(own(iconButton("s", { icon: "x", size: "sm", onClick() {} }, t), "size")).toEqual([[22]]);
+  expect(own(iconButton("x", { icon: "x", size: "xs", onClick() {} }, t), "size")).toEqual([[18]]);
+  const bordered = iconButton("b", { icon: "x", variant: "bordered", onClick() {} }, t);
+  expect(own(bordered, "size")).toEqual([[34]]);
+  expect(own(bordered, "rounded")).toEqual([[10]]);
+  expect(own(bordered, "bg")).toEqual([["t.surface"]]);
+  expect(own(bordered, "border_color")).toEqual([["t.foreground12"]]);
+  expect(own(iconButton("on", { icon: "x", selected: true, onClick() {} }, t), "bg")).toEqual([["t.foreground14"]]);
 });
 
-test("a disabled button still reports its click", () => {
+test("a button's variant sets its fill, line, text and icon", () => {
+  const look = (variant: string) => {
+    const node = button("b", { label: "Go", icon: "play", variant, onClick() {} }, t);
+    return { bg: own(node, "bg"), border: own(node, "border_color"), text: own(node, "text_color"), icon: own(node.kids[0] as Node, "text_color") };
+  };
+  expect(look("primary")).toEqual({ bg: [["t.solid"]], border: [], text: [["t.solid_foreground"]], icon: [["t.solid_foreground"]] });
+  expect(look("secondary")).toEqual({ bg: [["t.foreground0D"]], border: [["t.foreground14"]], text: [["t.foreground"]], icon: [["t.muted"]] });
+  expect(look("tinted")).toEqual({ bg: [["t.accent1F"]], border: [], text: [["t.accent"]], icon: [["t.accent"]] });
+  expect(look("ghost")).toEqual({ bg: [], border: [], text: [["t.muted"]], icon: [["t.unknown"]] });
+  expect(look("danger")).toEqual({ bg: [["t.blocked1F"]], border: [], text: [["t.blocked"]], icon: [["t.blocked"]] });
+  expect(own(button("b", { label: "Go", onClick() {} }, t), "bg")).toEqual([["t.foreground0D"]]);
+});
+
+test("a disabled button fades and still reports its click", () => {
   let clicks = 0;
-  const node = button("d", { label: "Next", disabled: true, onClick: () => clicks++ }, t);
-  expect(own(node, "bg")).toContainEqual(["t.raised"]);
+  const node = button("d", { label: "Next", variant: "primary", disabled: true, onClick: () => clicks++ }, t);
+  expect(own(node, "opacity")).toEqual([[0.4]]);
   click(node);
   expect(clicks).toBe(1);
 });
 
-test("a chip draws its mark before the text", () => {
-  const node = chip("passed", { mark: "check", color: "t.done" }, t);
-  expect(svgs(node)).toEqual(["mods/kit/icons/check.svg"]);
-  expect(node.texts).toEqual(["passed"]);
-  expect(node.kids).toHaveLength(1);
+test("a loading button spins the loader in place of its icon", () => {
+  const node = button("l", { label: "Working…", icon: "play", loading: true, onClick() {} }, t);
+  expect(svgs(node)).toEqual(["mods/kit/icons/loader-circle.svg"]);
+  expect(own(node.kids[0] as Node, "spin")).toEqual([[900]]);
+});
+
+test("a chip is a light fill of its tone, 18 px small and 24 px with a dot at md", () => {
+  const sm = chip("passed", { tone: "done" }, t);
+  expect(sm.texts).toEqual(["passed"]);
+  expect(own(sm, "h")).toEqual([[18]]);
+  expect(own(sm, "bg")).toEqual([["t.done1A"]]);
+  expect(own(sm, "text_color")).toEqual([["t.done"]]);
+  expect(sm.kids).toHaveLength(0);
+  const neutral = chip("pending", {}, t);
+  expect(own(neutral, "bg")).toEqual([["t.foreground0F"]]);
+  expect(own(neutral, "text_color")).toEqual([["t.muted"]]);
+  const md = chip("Working", { tone: "working", size: "md" }, t);
+  expect(own(md, "h")).toEqual([[24]]);
+  expect(own(md, "rounded")).toEqual([[7]]);
+  expect(own(md.kids[0] as Node, "bg")).toEqual([["t.working"]]);
 });
 
 test("a button's icon takes iconColor while the label keeps the text color", () => {
-  const node = button("b", { label: "GitHub", icon: "github", iconColor: "t.muted", onClick() {} }, t);
+  const node = button("b", { label: "Passed", icon: "check", iconColor: "t.done", onClick() {} }, t);
   const iconNode = node.kids.find((k) => k.calls.some(([c]) => c === "svg")) as Node;
-  expect(own(iconNode, "text_color")).toEqual([["t.muted"]]);
+  expect(own(iconNode, "text_color")).toEqual([["t.done"]]);
   expect(own(node, "text_color")).toEqual([["t.foreground"]]);
-  const plain = button("b", { label: "GitHub", icon: "github", onClick() {} }, t);
-  const plainIcon = plain.kids.find((k) => k.calls.some(([c]) => c === "svg")) as Node;
-  expect(own(plainIcon, "text_color")).toEqual([["t.foreground"]]);
 });
 
 test("an avatar is its name's first letter, bold, on its fill", () => {
@@ -133,17 +168,14 @@ for (const file of ADOPTERS) {
   });
 }
 
-test("a button's text size follows its height", () => {
-  const size = (height?: number) => own(button("b", { label: "Go", height, onClick() {} }, t), "text_size");
-  expect(size(32)).toEqual([[12]]);
-  expect(size(28)).toEqual([[11.5]]);
-  expect(size()).toEqual([[11]]);
-});
-
-test("a button's hint stays at the small text size whatever the height", () => {
-  const hint = (height?: number) => own(button("b", { label: "Go", hint: "ctrl-k", height, onClick() {} }, t).kids.at(-1) as Node, "text_size");
-  expect(hint(32)).toEqual([[11]]);
-  expect(hint()).toEqual([[11]]);
+test("a button's size sets its height, sides, corners, text and icon", () => {
+  const dims = (size: string) => {
+    const node = button("b", { label: "Go", icon: "play", size, onClick() {} }, t);
+    return [own(node, "h")[0][0], own(node, "px")[0][0], own(node, "rounded")[0][0], own(node, "text_size")[0][0], own(node.kids[0] as Node, "size")[0][0]];
+  };
+  expect(dims("sm")).toEqual([22, 8, 6, 11.5, 10]);
+  expect(dims("md")).toEqual([28, 10, 8, 12, 12]);
+  expect(dims("lg")).toEqual([34, 12, 10, 12.5, 13]);
 });
 
 test("toneColor maps the accent tone to the accent color", () => {
@@ -186,28 +218,35 @@ test("a button without a label adds no text child", () => {
   expect(svgs(node)).toEqual(["mods/kit/icons/plus.svg"]);
 });
 
-test("a popup row has its icon, label and detail, and runs its click", () => {
+test("a menu item has its icon, label and detail, and runs its click", () => {
   let clicks = 0;
-  const node = popupRow("r", { icon: "plus", label: "New folder…", detail: "cmd-n", onClick: () => clicks++ }, t);
-  expect(svgs(node)).toEqual(["mods/kit/icons/plus.svg"]);
-  expect(texts(node)).toEqual(["New folder…", "cmd-n"]);
+  const node = menuItem("r", { icon: "columns-2", label: "Split right", detail: "cmd-d", onClick: () => clicks++ }, t);
+  expect(svgs(node)).toEqual(["mods/kit/icons/columns-2.svg"]);
+  expect(texts(node)).toEqual(["Split right", "cmd-d"]);
+  expect(own(node, "min_h")).toEqual([[30]]);
+  expect(own(node, "rounded")).toEqual([[7]]);
   expect(own(node, "bg")).toEqual([]);
   click(node);
   expect(clicks).toBe(1);
 });
 
-test("a popup row shows its choice as a selected background or an accent check", () => {
-  expect(own(popupRow("s", { icon: "x", label: "Here", selected: true, onClick() {} }, t), "bg")).toContainEqual(["t.selected"]);
-  const checked = popupRow("c", { dot: "t.ansi4", label: "Clients", check: true, onClick() {} }, t);
+test("a menu item shows the keyboard's choice as a light fill and a chosen one with an accent check", () => {
+  expect(own(menuItem("s", { icon: "x", label: "Here", selected: true, onClick() {} }, t), "bg")).toEqual([["t.foreground0D"]]);
+  const checked = menuItem("c", { dot: "t.ansi4", label: "Clients", check: true, onClick() {} }, t);
   expect(svgs(checked)).toEqual(["mods/kit/icons/check.svg"]);
   expect(calls(checked, "text_color")).toContainEqual(["t.accent"]);
   expect(calls(checked, "bg")).toContainEqual(["t.ansi4"]);
 });
 
-test("a popup row in a color tints its label and icon", () => {
-  const node = popupRow("d", { icon: "x", label: "Delete", color: "t.blocked", onClick() {} }, t);
+test("a danger menu item is blocked, icon and label", () => {
+  const node = menuItem("d", { icon: "x", label: "Delete", danger: true, onClick() {} }, t);
   expect(own(node, "text_color")).toContainEqual(["t.blocked"]);
   expect(calls(node, "text_color").filter(([color]) => color === "t.muted")).toEqual([]);
+});
+
+test("a menu item can put a line under its label", () => {
+  const node = menuItem("w", { label: "Work", description: "the team's flow", onClick() {} }, t);
+  expect(texts(node)).toEqual(["Work", "the team's flow"]);
 });
 
 test("a status chip says what an agent's state asks of the person, on a light fill of its color", () => {
@@ -272,9 +311,9 @@ test("a view tile is a 28 px rounded square with a 16 px icon in the foreground"
   expect(own(node.kids[0] as Node, "text_color")).toEqual([["t.foreground"]]);
 });
 
-test("a bar pill is 34 px high on the surface, keeps its press from the window drag and runs its click", () => {
+test("a pill is 34 px high on the surface, keeps its press from the window drag and runs its click", () => {
   const order: string[] = [];
-  const node = barPill("sync", { icon: "rotate-cw", label: "Read 2m ago", tooltip: "Read again", onClick: () => order.push("click") }, t) as Node;
+  const node = pill("sync", { icon: "rotate-cw", label: "Read 2m ago", tooltip: "Read again", onClick: () => order.push("click") }, t) as Node;
   expect(node.key).toBe("sync");
   expect(own(node, "h")).toEqual([[34]]);
   expect(own(node, "px")).toEqual([[10]]);
@@ -291,8 +330,8 @@ test("a bar pill is 34 px high on the surface, keeps its press from the window d
   expect(order).toEqual(["stop", "click"]);
 });
 
-test("a bar pill without a label is a 34 px square with a 14 px icon", () => {
-  const node = barPill("gear", { icon: "settings", onClick() {} }, t) as Node;
+test("a pill without a label is a 34 px square with a 14 px icon", () => {
+  const node = pill("gear", { icon: "settings", onClick() {} }, t) as Node;
   expect(own(node, "w")).toEqual([[34]]);
   expect(own(node, "px")).toEqual([]);
   expect(own(node, "tooltip")).toEqual([]);
@@ -300,11 +339,63 @@ test("a bar pill without a label is a 34 px square with a 14 px icon", () => {
   expect(own(node.kids[0] as Node, "size")).toEqual([[14]]);
 });
 
-test("a bar pill can spin its icon and color it", () => {
-  const node = barPill("sync", { icon: "rotate-cw", label: "Reading…", spin: true, color: "t.blocked", onClick() {} }, t) as Node;
+test("a picker pill has a 14 px icon and a dim chevron after its label", () => {
+  const node = pill("machine", { icon: "monitor", label: "This computer", chevron: true, onClick() {} }, t) as Node;
+  expect(svgs(node)).toEqual(["mods/kit/icons/monitor.svg", "mods/kit/icons/chevron-down.svg"]);
+  expect(own(node.kids[0] as Node, "size")).toEqual([[14]]);
+  expect(own(node.kids.at(-1) as Node, "text_color")).toEqual([["t.dim"]]);
+});
+
+test("a pill can spin its icon and color it", () => {
+  const node = pill("sync", { icon: "rotate-cw", label: "Reading…", spin: true, color: "t.blocked", onClick() {} }, t) as Node;
   expect(own(node.kids[0] as Node, "spin")).toEqual([[900]]);
   expect(own(node.kids[0] as Node, "text_color")).toEqual([["t.blocked"]]);
-  expect(own(barPill("still", { icon: "rotate-cw", label: "Read", onClick() {} }, t).kids[0] as Node, "spin")).toEqual([]);
+  expect(own(pill("still", { icon: "rotate-cw", label: "Read", onClick() {} }, t).kids[0] as Node, "spin")).toEqual([]);
+});
+
+test("a tag is a 22 px light chip with a gray icon, its label cut to fit, and a chevron when it picks", () => {
+  const node = tag("branch", { icon: "git-branch", label: "main", tooltip: "main", maxWidth: 140 }, t) as Node;
+  expect(own(node, "h")).toEqual([[22]]);
+  expect(own(node, "px")).toEqual([[7]]);
+  expect(own(node, "rounded")).toEqual([[6]]);
+  expect(own(node, "bg")).toEqual([["t.foreground0D"]]);
+  expect(own(node, "max_w")).toEqual([[140]]);
+  expect(own(node, "tooltip")).toEqual([["main"]]);
+  expect(own(node.kids[0] as Node, "text_color")).toEqual([["t.unknown"]]);
+  expect(own(node.kids[1] as Node, "truncate")).toEqual([[]]);
+  expect(svgs(tag("p", { icon: "building-2", label: "Team", chevron: true, onClick() {} }, t))).toEqual(["mods/kit/icons/building-2.svg", "mods/kit/icons/chevron-down.svg"]);
+});
+
+test("a segment is 28 px, the chosen one on a light fill in the foreground", () => {
+  const on = segment("board", { icon: "square-kanban", label: "Board", selected: true, onClick() {} }, t) as Node;
+  expect(own(on, "h")).toEqual([[28]]);
+  expect(own(on, "px")).toEqual([[10]]);
+  expect(own(on, "bg")).toEqual([["t.foreground14"]]);
+  expect(own(on, "text_color")).toEqual([["t.foreground"]]);
+  const off = segment("list", { icon: "list", onClick() {} }, t) as Node;
+  expect(own(off, "px")).toEqual([[7]]);
+  expect(own(off, "bg")).toEqual([]);
+  expect(own(off, "text_color")).toEqual([["t.muted"]]);
+});
+
+test("a pane tile is a 24 px square with 7 px corners on a light fill", () => {
+  const node = paneTile("x", t) as Node;
+  expect(own(node, "size")).toEqual([[24]]);
+  expect(own(node, "rounded")).toEqual([[7]]);
+  expect(own(node, "bg")).toEqual([["t.foreground0D"]]);
+});
+
+test("an input is 32 px with 9 px corners, an accent line while focused, a search glyph or a dashed start", () => {
+  const state = {} as any;
+  const focused = input(state, t) as Node;
+  expect(own(focused, "h")).toEqual([[32]]);
+  expect(own(focused, "rounded")).toEqual([[9]]);
+  expect(own(focused, "border_color")).toEqual([["t.accentB3"]]);
+  expect(own(input(state, t, { focused: false }) as Node, "border_color")).toEqual([["t.foreground14"]]);
+  expect(svgs(input(state, t, { kind: "search" }))).toEqual(["mods/kit/icons/search.svg"]);
+  const start = input(state, t, { kind: "start", focused: false }) as Node;
+  expect(own(start, "border_dashed")).toEqual([[]]);
+  expect(svgs(start)).toEqual(["mods/kit/icons/plus.svg"]);
 });
 
 test("a view card is a surface card with 14 px corners, a light line and a medium shadow", () => {

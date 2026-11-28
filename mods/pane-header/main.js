@@ -1,11 +1,9 @@
 import { View, div } from "gpui-kit";
 import { h_flex } from "gpui-base";
 import { home, panes, props, run, settings, theme } from "herdr";
-import { CONTROL, ICON_SIZE, TEXT, iconButton, programIcon, statusChip } from "../../kit/kit.js";
+import { TEXT, iconButton, paneTile, programIcon, statusChip } from "../../kit/kit.js";
 import { folderLabel, isNarrow, paneTitle, showsZoom } from "./logic.js";
 
-const TILE = 24;
-const TILE_RADIUS = 7;
 const PROGRAM_ICON = 14;
 
 export default class PaneHeader extends View {
@@ -15,7 +13,7 @@ export default class PaneHeader extends View {
   }
 
   button(id, glyph, tooltip, command, args, t) {
-    return iconButton(id, { icon: glyph, tooltip, size: CONTROL.row, iconSize: ICON_SIZE.lg, bordered: false, stop: true, color: t.muted, onClick: () => run(command, args) }, t);
+    return iconButton(id, { icon: glyph, tooltip, stop: true, color: t.muted, onClick: () => run(command, args) }, t);
   }
 
   buttons(me, all, t) {
@@ -57,16 +55,7 @@ export default class PaneHeader extends View {
         cx.notify();
       })
       .on_click(() => run("pane.focus", { pane: me.pane }))
-      .child(
-        h_flex()
-          .size(TILE)
-          .flex_none()
-          .items_center()
-          .justify_center()
-          .rounded(TILE_RADIUS)
-          .bg(t.foreground + "0D")
-          .child(programIcon(me.program, { size: PROGRAM_ICON, color: t.muted, fallback: "terminal" }, t)),
-      )
+      .child(paneTile(programIcon(me.program, { size: PROGRAM_ICON, color: t.muted, fallback: "terminal" }, t), t))
       .child(div().min_w(0).truncate().text_size(TEXT.xl).font_medium().text_color(me.focused ? t.foreground : t.muted).child(paneTitle(me)))
       .when(chip != null, (el) => el.child(chip))
       .child(div().flex_1())

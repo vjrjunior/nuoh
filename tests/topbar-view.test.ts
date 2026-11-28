@@ -60,9 +60,9 @@ describe("the title", () => {
     expect(calls(name, "text_color")).toEqual(["t.foreground"]);
   });
 
-  test("the branch chip sits on raised with the branch icon in a quieter gray", () => {
+  test("the branch is the kit's tag, with the branch icon in a quieter gray", () => {
     const chip = byKey(draw(), "branch");
-    expect(calls(chip, "bg")).toEqual(["t.raised"]);
+    expect(calls(chip, "bg")).toEqual(["t.foreground0D"]);
     expect(calls(chip, "h")).toEqual([22]);
     expect(calls(chip, "tooltip")).toEqual(["feat/nuoh-frame"]);
     expect(calls(chip.kids[0] as Node, "text_color")).toEqual(["t.unknown"]);
@@ -127,7 +127,7 @@ describe("the machine pill", () => {
     const pill = byKey(root, "machine");
     expect(calls(pill, "h")).toEqual([34]);
     expect(calls(pill, "bg")).toEqual(["t.surface"]);
-    expect(calls(pill, "border_color")).toEqual(["t.border"]);
+    expect(calls(pill, "border_color")).toEqual(["t.foreground12"]);
     expect(calls(pill, "tooltip")).toEqual(["Add machine"]);
   });
 
