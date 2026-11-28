@@ -23,6 +23,17 @@ The layout's `sync` block carries `built`, `repo` and `bun` (`process.execPath`)
 - `layout.log`: one line per run with the time, `cli` or the Herdr version asked for, the result and how long it took, or `failed:` and why.
 - `layout.lock` holds the running apply's pid. A second apply prints `busy`; a lock whose process is gone is taken over.
 - `build-<pid>` and `previous-<pid>` live only during a run. The next run deletes any left over, first moving back a previous copy whose mod folder is missing.
+- `workflows/<run>/`, one folder per workflow run (below).
+
+## Workflows: `workflow.ts`
+
+`bun run workflow <command>` runs the workflows in `~/.config/vjr-herdr/workflows/<name>.json`: steps that start an agent (`agent`), talk to an earlier step's agent again (`continue`), run a command (`run`) or wait for a person (`approve`), in order, each with what the steps before it produced. `workflow format` prints the file format for a person or an agent, and `workflow check` validates the files. The pure part, the format's checks, templates, `when` conditions and the next step, is `lib/workflow.js`.
+
+- `run <name>` checks the file and its inputs, makes `workflows/<name>-<n>/` with `run.json` (a frozen copy of the workflow, the inputs, the space and its folder, the status and one record per step attempt), and starts the runner, `workflow.ts exec <run> --runs <folder>`, with `hc run --bg --no-parent` and the labels `herdr.space`, a new `herdr.tab` and `nuoh.workflow=<run>`: a new tab in the space, without taking the focus. Without `--space` it takes the space of the terminal it runs in.
+- The runner reports OSC 7501 as `app=workflow` (working, blocked at a gate, done, error), so Herdr's sounds, toasts and Agents list follow a run. It names its tab `⚙ <name> #<n>`, retrying until Herdr has adopted the tab. It starts each agent with `hc run --bg --outlive-parent --no-notify` in the same tab, waits for it to report idle, sends the task with `hc send`, waits for its turn to end and for its children (`hc wait --children all`), and reads the answer from the file the message names (`<step>-<attempt>.md`, or `.json` with typed fields), asking once more when it is missing or invalid. A command's output goes to `<step>-<attempt>.log`. `run.json` is written whole after each change, through a temporary file.
+- `approve`, `reject` and `stop` write `decision.json`, which the runner takes within a second; `a`, `r` or `s` typed in the runner's pane do the same. `retry <run> [--from <step>]` starts a new run of the current file, keeping the results of the steps before the one it starts from; `resume <run>` starts a runner again for a run whose runner is gone, waiting again on an agent that still runs. `runs` reports such a run as `interrupted`.
+- Everything the runner does to the outside goes through an `Io` (`workflow-io.ts` is the real one), so `tests/workflow-runner.test.ts` drives whole runs with fake terminals and a fake clock.
+- `hc run` doesn't pass the caller's environment to the terminal it starts, which is why the runner gets its runs folder in its argv. `hc` and `herdr-app` also place their sockets by `XDG_STATE_HOME` and `XDG_CONFIG_HOME`, so a live try with those moved talks to no Herdr: try against the real folders and remove what it made.
 
 ## The theme: `build.ts`, `install.ts`, `watch.ts`
 

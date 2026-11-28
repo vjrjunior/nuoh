@@ -1,0 +1,198 @@
+import { runSummary, warnings } from "../lib/workflow.js";
+import { runsDir, workflowsDir } from "./paths";
+import { realIo } from "./workflow-io";
+import { decide, type Dirs, executeRun, listWorkflows, loadRun, loadWorkflow, resumeRun, retryRun, type Run, startRun, summaries } from "./workflow-run";
+
+const USAGE = `usage: workflow <command>
+  ls [--json]                         the workflows and their problems
+  check [name]                        validate one workflow, or all
+  format                              how to write a workflow
+  run <name> [--input key=value]... [--space <id>] [--json]
+  runs [name] [--json]                runs, newest first
+  show <run>                          one run as JSON
+  approve <run> | reject <run>        answer the gate a run waits at
+  stop <run>                          stop a run
+  retry <run> [--from <step>] [--json]
+  resume <run>                        start the runner again for a run that was cut off`;
+
+export const FORMAT = `A workflow is one JSON file in ${workflowsDir()}/<name>.json, where <name> uses letters, digits, - and _.
+It runs its steps in order, in a new tab of a Herdr space. Each step can use what earlier steps produced.
+
+{
+  "title": "Implement, review, fix",
+  "about": "One line on what it does",
+  "inputs": { "task": { "label": "Task", "required": true, "default": "" } },
+  "steps": [ ... ]
+}
+
+Steps. Every step has an "id" (a letter, then letters, digits, - and _) and exactly one of:
+
+- "agent": ["claude"]          starts that program in a new pane and gives it "task".
+                                Any argv works: ["codex"], ["claude", "--model", "opus"].
+- "continue": "<step id>"      gives "task" to the agent an earlier agent step started, in the same conversation.
+- "run": ["bun", "test"]       runs a command in the run's folder. It fails the run when it exits non-zero,
+                                unless "allowFail": true.
+- "approve": "Open the PR?"    waits until a person approves or rejects. "show" adds text under the question.
+                                Rejecting stops the run.
+
+Agent and continue steps:
+- "task" is the message. The workflow adds a last line asking the agent to write its answer to a file,
+  and the answer becomes the step's output.
+- "answer": { "blocking": "number", "summary": "text", "level": "low|high", "note": "text?" } asks for
+  one JSON object with those fields instead. Types: text, number, boolean, or options a|b|c; ? makes a field optional.
+  An answer that is missing or invalid gets one more request, then the step fails.
+- "cwd" (agent only) and "timeout" (seconds) are optional.
+
+Templates, in task, approve, show, cwd and the run argv:
+- {{input.task}}               an input of the run
+- {{<step>.output}}             an earlier step's answer text, or a command's output
+- {{<step>.exit}}               a command's exit code
+- {{<step>.<field>}}            a field of an earlier step's answer
+- {{run.id}} {{run.dir}} {{run.folder}} {{run.space}} {{run.workflow}} {{run.number}}
+A step that was skipped gives empty values.
+
+Any step can also have:
+- "when": "{{review.blocking}} > 0"   runs the step only when it holds; otherwise the step is skipped.
+  Operators: = != > >= < <= contains, "set" and "unset" after a value, joined with and / or.
+  A value alone is true unless it is empty, 0 or false. Quote text with spaces: {{x.level}} = "very high".
+- "goto": "<step id>" with "max": N    after the step runs, go back to that step (or itself). The step may run
+  at most N times; needing it once more fails the run.
+
+Example: implement, test, review, fix until the review passes, then ask before the PR.
+
+{
+  "title": "Implement, review, fix",
+  "inputs": { "task": { "label": "Task", "required": true } },
+  "steps": [
+    { "id": "implement", "agent": ["claude"], "task": "{{input.task}}" },
+    { "id": "test", "run": ["bun", "test"], "allowFail": true },
+    { "id": "review", "agent": ["codex"], "task": "Review the uncommitted diff. Tests said:\\n{{test.output}}",
+      "answer": { "blocking": "number", "summary": "text" } },
+    { "id": "fix", "continue": "implement", "when": "{{review.blocking}} > 0",
+      "task": "Fix what the review found:\\n{{review.summary}}", "goto": "test", "max": 3 },
+    { "id": "ship", "approve": "Open the PR?", "show": "{{review.summary}}" },
+    { "id": "pr", "continue": "implement", "task": "Open a PR for this work." }
+  ]
+}
+
+After writing a file, run: workflow check <name>
+A workflow is code its owner chooses to run: the agents get the argv as written, with no permission flags added.`;
+
+type Parsed = { positional: string[]; inputs: Record<string, string>; space?: string; from?: string; runs?: string; json: boolean };
+
+function parseArgs(args: string[]): Parsed {
+  const parsed: Parsed = { positional: [], inputs: {}, json: false };
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    const value = () => {
+      const next = args[index + 1];
+      if (next === undefined) throw new Error(`${arg} needs a value`);
+      index += 1;
+      return next;
+    };
+    if (arg === "--json") parsed.json = true;
+    else if (arg === "--space") parsed.space = value();
+    else if (arg === "--from") parsed.from = value();
+    else if (arg === "--runs") parsed.runs = value();
+    else if (arg === "--input") {
+      const pair = value();
+      const equals = pair.indexOf("=");
+      if (equals < 1) throw new Error(`--input takes key=value, not ${pair}`);
+      parsed.inputs[pair.slice(0, equals)] = pair.slice(equals + 1);
+    } else if (arg.startsWith("--")) throw new Error(`unknown option ${arg}`);
+    else parsed.positional.push(arg);
+  }
+  return parsed;
+}
+
+function when(ms: number | null | undefined): string {
+  if (!ms) return "";
+  const date = new Date(ms);
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function started(run: Run, json: boolean): string {
+  return json ? JSON.stringify(runSummary(run)) : `started ${run.id} in a new tab of space ${run.space}`;
+}
+
+function need(value: string | undefined, what: string): string {
+  if (!value) throw new Error(`give the ${what}`);
+  return value;
+}
+
+export async function main(args: string[], dirs: Dirs): Promise<number> {
+  const [command, ...rest] = args;
+  const parsed = parseArgs(rest);
+  const [first] = parsed.positional;
+  const io = realIo();
+  switch (command) {
+    case "ls": {
+      const workflows = listWorkflows(dirs);
+      if (parsed.json) console.log(JSON.stringify(workflows));
+      else if (workflows.length === 0) console.log(`no workflows in ${dirs.workflows}`);
+      else for (const item of workflows) console.log(item.problems.length ? `${item.name}  invalid: ${item.problems[0]}` : `${item.name}  ${item.title} · ${item.workflow.steps.length} steps`);
+      return 0;
+    }
+    case "check": {
+      const names = first ? [first] : listWorkflows(dirs).map((item) => item.name);
+      if (names.length === 0) console.log(`no workflows in ${dirs.workflows}`);
+      let bad = 0;
+      for (const name of names) {
+        const loaded: any = loadWorkflow(dirs, name);
+        if (!loaded.ok) {
+          bad += 1;
+          for (const problem of loaded.problems) console.log(`${name}: ${problem}`);
+          continue;
+        }
+        console.log(`${name}: ok`);
+        for (const warning of warnings(loaded.workflow)) console.log(`${name}: warning: ${warning}`);
+      }
+      return bad ? 1 : 0;
+    }
+    case "format":
+      console.log(FORMAT);
+      return 0;
+    case "run":
+      console.log(started(await startRun(io, dirs, need(first, "workflow's name"), parsed.inputs, parsed.space), parsed.json));
+      return 0;
+    case "runs": {
+      const list = await summaries(io, dirs, first);
+      if (parsed.json) console.log(JSON.stringify(list));
+      else if (list.length === 0) console.log("no runs");
+      else for (const run of list) console.log(`${run.id}  ${run.status}${run.step ? ` at ${run.step}` : ""}  ${when(run.created)}${run.error ? `  ${run.error.split("\n")[0]}` : ""}`);
+      return 0;
+    }
+    case "show":
+      console.log(JSON.stringify(loadRun(dirs, need(first, "run id")), null, 2));
+      return 0;
+    case "approve":
+    case "reject":
+    case "stop":
+      decide(dirs, need(first, "run id"), command, Date.now());
+      console.log(`${command} sent to ${first}`);
+      return 0;
+    case "retry":
+      console.log(started(await retryRun(io, dirs, need(first, "run id"), parsed.from), parsed.json));
+      return 0;
+    case "resume":
+      await resumeRun(io, dirs, need(first, "run id"));
+      console.log(`resumed ${first}`);
+      return 0;
+    case "exec":
+      await executeRun(io, { ...dirs, runs: parsed.runs ?? dirs.runs }, need(first, "run id"));
+      return 0;
+    default:
+      console.log(USAGE);
+      return command === undefined || command === "help" || command === "--help" ? 0 : 1;
+  }
+}
+
+if (import.meta.main) {
+  main(process.argv.slice(2), { workflows: workflowsDir(), runs: runsDir() })
+    .then((code) => process.exit(code))
+    .catch((error) => {
+      console.error(`workflow: ${error instanceof Error ? error.message : String(error)}`);
+      process.exit(1);
+    });
+}

@@ -1,0 +1,7 @@
+{
+  "title": "Broken",
+  "steps": [
+    { "id": "fix", "continue": "review", "task": "{{review.summary}}", "goto": "fix" },
+    { "id": "review", "agent": ["codex"], "task": "Review", "answer": { "blocking": "count" } }
+  ]
+}

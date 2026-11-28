@@ -30,6 +30,7 @@ herdr-app do layout.switch '{"name":"nuoh"}'
 - **Markdown** ([recipe](mods/markdown/RECIPE.md)) shows one `.md` file formatted, in a pane beside the terminal. `cmd-shift-o`, or `Open Markdown…` in a terminal's right-click menu, lists the files the terminal shows and the repository's; a `.md` Cmd-clicked in a terminal or clicked in Files opens there too.
 - **Move tab** ([recipe](mods/move-tab/RECIPE.md)) sends a tab to another checkout of its repo, from `Move to…` in the tab's menu, `cmd-shift-m` or a drag onto the Spaces tree. Its Claude Code conversation ends and resumes there.
 - **Comeback** ([recipe](mods/comeback/RECIPE.md)) gives each terminal that lost its Claude Code in a restart the same conversation back, as soon as the window opens, with a toast that says what came back.
+- **Workflows** run a chain of agent, command and approval steps you save in `~/.config/vjr-herdr/workflows/`, in a new tab of a space, each step getting what the ones before it produced: `bun run workflow format` explains the file and `bun run workflow run <name>` starts one ([`scripts/AGENTS.md`](scripts/AGENTS.md#workflows-workflowts)).
 
 ## Keys
 

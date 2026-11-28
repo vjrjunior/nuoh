@@ -13,6 +13,14 @@ export function stateDir(): string {
   return join(process.env.XDG_STATE_HOME || join(homedir(), ".local/state"), "vjr-herdr");
 }
 
+export function workflowsDir(): string {
+  return join(configHome(), "vjr-herdr/workflows");
+}
+
+export function runsDir(): string {
+  return join(stateDir(), "workflows");
+}
+
 export function localConfigPath(): string {
   return process.env.VJR_HERDR_CONFIG || join(configHome(), "vjr-herdr/config.json");
 }
