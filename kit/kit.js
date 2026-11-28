@@ -1,5 +1,5 @@
 import { div, image, svg } from "gpui-kit";
-import { h_flex, Input, v_flex } from "gpui-base";
+import { h_flex, Input, Textarea, v_flex } from "gpui-base";
 
 export const KIT = { name: "kit" };
 export const CONTROL = { tiny: 18, small: 22, regular: 24, square: 26, row: 28, large: 32 };
@@ -31,6 +31,7 @@ export const ICONS = [
   "columns-2",
   "command",
   "copy",
+  "copy-plus",
   "cursor",
   "exclamation",
   "external-link",
@@ -43,29 +44,41 @@ export const ICONS = [
   "folder-plus",
   "git-branch",
   "git-compare",
+  "git-fork",
   "git-pull-request",
   "github",
+  "hand",
   "image",
   "layers",
+  "layout-grid",
   "list",
+  "list-checks",
   "list-filter",
   "loader-circle",
+  "map",
+  "maximize",
   "maximize-2",
   "minimize-2",
+  "minus",
   "monitor",
+  "mouse-pointer-2",
+  "network",
   "panel-left",
   "pin",
   "pin-off",
   "play",
   "plus",
+  "repeat",
   "rotate-cw",
   "route",
   "rows-2",
   "search",
   "server",
   "settings",
+  "square",
   "square-kanban",
   "terminal",
+  "trash-2",
   "x",
   "zed",
 ];
@@ -976,4 +989,433 @@ export function spaceCard(id, { avatar: face, name, line, action }, t) {
         .child(div().min_w(0).truncate().text_size(TEXT.base).text_color(t.unknown).child(line ?? "")),
     )
     .when(action != null, (el) => el.child(action));
+}
+
+export const NODE_WIDTH = 300;
+export const NODE_LABEL = 16;
+export const PORT = { dot: 10, under: 14, hit: 22 };
+export const EDGE = { width: 1.5, selected: 2, dash: [5, 5], bend: 48 };
+export const NODE_ICON = { start: "play", agent: "bot", continue: "bot", run: "terminal", approve: "flag", condition: "git-fork" };
+
+const NODE_LOOK = {
+  idle: { line: (t) => t.foreground + "14", width: 1 },
+  selected: { line: (t) => t.accent + "66", width: 1.5 },
+  running: { line: (t) => t.working, width: 1.5, icon: "loader-circle", tone: (t) => t.working, spin: true },
+  done: { line: (t) => t.foreground + "14", width: 1, icon: "check", tone: (t) => t.done },
+  failed: { line: (t) => t.blocked, width: 1.5, icon: "circle-x", tone: (t) => t.blocked },
+  waiting: { line: (t) => t.blocked, width: 1.5, tone: (t) => t.blocked },
+  skipped: { line: (t) => t.foreground + "14", width: 1, fade: 0.5 },
+};
+
+export function edgeLook(state, t) {
+  if (state === "done") return { color: t.done + "99", width: EDGE.width, dash: null };
+  if (state === "running") return { color: t.working, width: EDGE.width, dash: EDGE.dash };
+  if (state === "selected") return { color: t.accent, width: EDGE.selected, dash: null };
+  if (state === "pulling") return { color: t.accent, width: EDGE.width, dash: EDGE.dash };
+  if (state === "refused") return { color: t.blocked, width: EDGE.width, dash: EDGE.dash };
+  if (state === "delete") return { color: t.blocked, width: EDGE.selected, dash: null };
+  if (state === "faded") return { color: t.dim + "80", width: EDGE.width, dash: EDGE.dash };
+  return { color: t.dim, width: EDGE.width, dash: EDGE.dash };
+}
+
+export function port(id, { state = "idle", onMouseDown, onMouseUp, onHover } = {}, t, z = 1) {
+  const hit = PORT.hit * Math.max(1, Math.min(z, 2));
+  const dot = (size) => div().size(size * z).flex_none().rounded(size * z);
+  const shown =
+    state === "connected"
+      ? dot(PORT.dot).bg(t.muted)
+      : state === "target"
+        ? dot(PORT.dot).bg(t.accent)
+        : state === "under"
+          ? dot(PORT.under).bg(t.accent)
+          : state === "refused"
+            ? dot(PORT.dot).bg(t.raised).border(1.5).border_color(t.blocked)
+            : dot(PORT.dot).bg(t.raised).border(1.5).border_color(t.dim);
+  return h_flex()
+    .id(id)
+    .size(hit)
+    .flex_none()
+    .items_center()
+    .justify_center()
+    .rounded(hit)
+    .when(state === "under", (el) => el.bg(t.accent + "4D"))
+    .when(state === "dimmed", (el) => el.opacity(0.25))
+    .when(state === "hidden", (el) => el.opacity(0))
+    .when(onMouseDown != null, (el) => el.on_mouse_down("left", (event, cx) => onMouseDown(event, cx)))
+    .when(onMouseUp != null, (el) => el.on_mouse_up("left", (event, cx) => onMouseUp(event, cx)))
+    .when(onHover != null, (el) => el.on_hover((on, cx) => onHover(on, cx)))
+    .child(shown);
+}
+
+export function nodeField(content, t, { z = 1, rows = 3, focused = false, mono = null } = {}) {
+  return v_flex()
+    .w_full()
+    .h((rows * 18 + 16) * z)
+    .p(8 * z)
+    .rounded(7 * z)
+    .bg(t.background)
+    .border_1()
+    .border_color(focused ? t.accent + "B3" : t.foreground + "14")
+    .text_size((mono ? 12 : 12.5) * z)
+    .text_color(t.foreground)
+    .when(mono != null, (el) => el.font_family(mono))
+    .overflow_hidden()
+    .child(content);
+}
+
+export function textareaField(state, t, options = {}) {
+  return nodeField(Textarea.new(state), t, options);
+}
+
+export function nodeResult({ head = "RESULT", text, color, fields = null }, t, z = 1) {
+  return v_flex()
+    .w_full()
+    .gap(4 * z)
+    .child(div().w_full().h(1).bg(t.foreground + "0A"))
+    .child(div().text_size(TEXT.xs * z).font_medium().text_color(t.unknown).child(head))
+    .when(fields == null, (el) => el.child(div().w_full().text_size(12 * z).text_color(color ?? t.muted).child(text ?? "")))
+    .when(fields != null, (el) =>
+      el.children(
+        Object.entries(fields ?? {}).map(([name, value]) =>
+          h_flex()
+            .w_full()
+            .gap(8 * z)
+            .text_size(12 * z)
+            .child(div().flex_none().text_color(t.foreground).child(name))
+            .child(div().flex_1().min_w(0).truncate().text_color(t.muted).child(value == null ? "" : String(value))),
+        ),
+      ),
+    );
+}
+
+export function nodeButton(id, { label, icon: iconName, variant = "secondary", disabled = false, loading = false, onClick }, t, z = 1) {
+  const primary = variant === "primary";
+  const danger = variant === "danger";
+  const text = primary ? t.solid_foreground ?? t.accent_foreground : danger ? t.blocked : t.foreground;
+  const glyph = icon(loading ? "loader-circle" : iconName, { size: 12 * z, color: primary ? text : danger ? t.blocked : t.muted });
+  return h_flex()
+    .id(id)
+    .flex_1()
+    .h(28 * z)
+    .gap(6 * z)
+    .items_center()
+    .justify_center()
+    .rounded(8 * z)
+    .bg(primary ? t.solid ?? t.accent : danger ? t.blocked + "1F" : t.foreground + "0D")
+    .when(!primary && !danger, (el) => el.border_1().border_color(t.foreground + "14"))
+    .when(disabled, (el) => el.opacity(0.4))
+    .when(!disabled, (el) => el.hover((s) => s.opacity(0.85)))
+    .text_size(12 * z)
+    .when(primary, (el) => el.font_semibold())
+    .when(!primary, (el) => el.font_medium())
+    .text_color(text)
+    .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
+    .on_click((_e, cx) => {
+      cx.stop_propagation();
+      if (!disabled && !loading) onClick?.(cx);
+    })
+    .child(loading ? glyph.spin(900) : glyph)
+    .child(label);
+}
+
+export function agentPicker(id, { program = null, name, model, open = false, onClick }, t, z = 1) {
+  const glyph = program ? programIcon(program, { size: 14 * z }, t) : icon("bot", { size: 13 * z, color: t.muted });
+  return h_flex()
+    .id(id)
+    .h(24 * z)
+    .gap(6 * z)
+    .items_center()
+    .child(
+      h_flex()
+        .id(`${id}-agent`)
+        .h(24 * z)
+        .px(8 * z)
+        .gap(6 * z)
+        .items_center()
+        .rounded(6 * z)
+        .bg(t.foreground + (open ? "17" : "0D"))
+        .when(open, (el) => el.border_1().border_color(t.foreground + "24"))
+        .hover((s) => s.bg(t.foreground + "17"))
+        .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
+        .on_click((_e, cx) => onClick?.(cx))
+        .child(glyph)
+        .child(div().text_size(12 * z).text_color(t.foreground).child(name))
+        .child(icon("chevron-down", { size: 11 * z, color: t.dim })),
+    )
+    .when(model != null, (el) =>
+      el.child(
+        h_flex()
+          .h(24 * z)
+          .px(8 * z)
+          .min_w(48 * z)
+          .items_center()
+          .rounded(6 * z)
+          .border_1()
+          .border_color(t.foreground + "14")
+          .text_size(12 * z)
+          .text_color(t.unknown)
+          .child(model),
+      ),
+    );
+}
+
+export function nodeShell(id, { kind, name, meta = null, state = "idle", width = NODE_WIDTH, body = [], result = null, actions = null }, t, z = 1) {
+  const look = NODE_LOOK[state] ?? NODE_LOOK.idle;
+  const tone = look.tone?.(t) ?? t.unknown;
+  const iconName = look.icon ?? (state === "waiting" ? "flag" : NODE_ICON[kind] ?? "bot");
+  const glyph = icon(iconName, { size: 12 * z, color: look.icon || state === "waiting" ? tone : t.unknown });
+  return v_flex()
+    .id(id)
+    .w(width * z)
+    .gap(6 * z)
+    .when(look.fade != null, (el) => el.opacity(look.fade))
+    .child(
+      h_flex()
+        .id(`${id}-label`)
+        .w_full()
+        .h(NODE_LABEL * z)
+        .gap(6 * z)
+        .items_center()
+        .child(look.spin ? glyph.spin(900) : glyph)
+        .child(div().min_w(0).truncate().text_size(TEXT.sm * z).font_medium().text_color(t.muted).child(name))
+        .child(div().flex_1())
+        .when(meta != null, (el) => el.child(div().flex_none().text_size(TEXT.sm * z).text_color(state === "idle" || state === "selected" || state === "done" ? t.unknown : tone).child(meta))),
+    )
+    .child(
+      v_flex()
+        .w_full()
+        .p(10 * z)
+        .gap(8 * z)
+        .rounded(10 * z)
+        .bg(t.raised)
+        .border(look.width)
+        .border_color(look.line(t))
+        .children(body.filter(Boolean))
+        .when(result != null, (el) => el.child(result))
+        .when(actions != null, (el) => el.child(h_flex().w_full().gap(8 * z).children([].concat(actions).filter(Boolean)))),
+    );
+}
+
+export function branchRow(id, { label, taken = null }, t, z = 1) {
+  return h_flex()
+    .id(id)
+    .w_full()
+    .h(22 * z)
+    .px(8 * z)
+    .items_center()
+    .rounded(6 * z)
+    .bg(taken === true ? t.done + "1A" : t.foreground + "08")
+    .when(taken === false, (el) => el.opacity(0.5))
+    .text_size(12 * z)
+    .text_color(t.foreground)
+    .child(label);
+}
+
+export function edgeBadge(id, { label, onClick }, t, z = 1) {
+  return h_flex()
+    .id(id)
+    .h(22 * z)
+    .px(8 * z)
+    .gap(5 * z)
+    .items_center()
+    .rounded(11 * z)
+    .bg(t.raised)
+    .border_1()
+    .border_color(t.foreground + "1F")
+    .text_size(TEXT.sm * z)
+    .text_color(t.muted)
+    .when(onClick != null, (el) => el.hover((s) => s.border_color(t.accent + "80")).on_click((_e, cx) => onClick(cx)))
+    .child(icon("repeat", { size: 11 * z, color: t.muted }))
+    .child(label);
+}
+
+export function refusal(text, t) {
+  return h_flex().flex_none().h(22).px(8).items_center().rounded(6).bg(t.blocked + "1F").text_size(TEXT.md).text_color(t.blocked).child(text);
+}
+
+function barButton(id, { icon: iconName, selected = false, tooltip, onClick, size = 26, iconSize = 14 }, t) {
+  return h_flex()
+    .id(id)
+    .size(size)
+    .flex_none()
+    .items_center()
+    .justify_center()
+    .rounded(size === 34 ? 10 : 7)
+    .when(selected, (el) => el.bg(t.selected).border_1().border_color(t.input))
+    .when(!selected, (el) => el.hover((s) => s.bg(t.foreground + "0D")))
+    .when(tooltip != null, (el) => el.tooltip(tooltip))
+    .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
+    .on_click((_e, cx) => onClick?.(cx))
+    .child(icon(iconName, { size: iconSize, color: selected ? t.foreground : t.muted }));
+}
+
+const barRule = (t, height = 16) => div().w(1).h(height).flex_none().bg(t.foreground + "14");
+
+export function nodeToolbar(id, { answer = false, answerLabel = "Answer fields", hot = false, onAnswer, onDuplicate, onDelete, onDeleteHover }, t) {
+  return h_flex()
+    .id(id)
+    .flex_none()
+    .h(34)
+    .px(4)
+    .gap(2)
+    .items_center()
+    .rounded(10)
+    .bg(t.raised)
+    .border_1()
+    .border_color(t.foreground + "1F")
+    .shadow_md()
+    .when(answer, (el) => el.child(barButton(`${id}-answer`, { icon: "list-checks", tooltip: answerLabel, onClick: onAnswer }, t)))
+    .child(barButton(`${id}-duplicate`, { icon: "copy-plus", tooltip: "Duplicate", onClick: onDuplicate }, t))
+    .child(barRule(t))
+    .child(
+      h_flex()
+        .id(`${id}-delete`)
+        .size(26)
+        .flex_none()
+        .items_center()
+        .justify_center()
+        .rounded(7)
+        .when(hot, (el) => el.bg(t.blocked + "1F"))
+        .tooltip("Delete")
+        .on_hover((on, cx) => onDeleteHover?.(on, cx))
+        .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
+        .on_click((_e, cx) => onDelete?.(cx))
+        .child(icon("trash-2", { size: 14, color: hot ? t.blocked : t.muted })),
+    );
+}
+
+export function canvasBar(id, { tool = "select", onSelect, onHand, onSearch, onAdd }, t) {
+  return h_flex()
+    .id(id)
+    .flex_none()
+    .h(44)
+    .p(5)
+    .gap(4)
+    .items_center()
+    .rounded(14)
+    .bg(t.surface)
+    .border_1()
+    .border_color(t.foreground + "14")
+    .shadow_lg()
+    .child(barButton(`${id}-select`, { icon: "mouse-pointer-2", selected: tool === "select", tooltip: "Select  V", onClick: onSelect, size: 34, iconSize: 16 }, t))
+    .child(barButton(`${id}-hand`, { icon: "hand", selected: tool === "hand", tooltip: "Hand  H", onClick: onHand, size: 34, iconSize: 16 }, t))
+    .child(barButton(`${id}-search`, { icon: "search", tooltip: "Search  ⌘F", onClick: onSearch, size: 34, iconSize: 16 }, t))
+    .child(barRule(t, 20))
+    .child(button(`${id}-add`, { label: "Add node", icon: "plus", variant: "primary", size: "lg", stop: true, onClick: onAdd }, t));
+}
+
+export function zoomBar(id, { percent, minimap = false, onOut, onIn, onPercent, onFit, onTidy, onMinimap }, t) {
+  return h_flex()
+    .id(id)
+    .flex_none()
+    .h(34)
+    .px(4)
+    .gap(2)
+    .items_center()
+    .rounded(10)
+    .bg(t.surface)
+    .border_1()
+    .border_color(t.foreground + "14")
+    .child(barButton(`${id}-out`, { icon: "minus", tooltip: "Zoom out  ⌘-", onClick: onOut }, t))
+    .child(
+      h_flex()
+        .id(`${id}-percent`)
+        .w(46)
+        .h(26)
+        .items_center()
+        .justify_center()
+        .rounded(7)
+        .hover((s) => s.bg(t.foreground + "0D"))
+        .tooltip("Zoom to fit")
+        .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
+        .on_click((_e, cx) => onPercent?.(cx))
+        .text_size(TEXT.base)
+        .text_color(t.foreground)
+        .child(`${Math.round(percent)}%`),
+    )
+    .child(barButton(`${id}-in`, { icon: "plus", tooltip: "Zoom in  ⌘=", onClick: onIn }, t))
+    .child(barRule(t))
+    .child(barButton(`${id}-fit`, { icon: "maximize", tooltip: "Fit  ⇧1", onClick: onFit }, t))
+    .child(barButton(`${id}-tidy`, { icon: "network", tooltip: "Tidy up  ⇧T", onClick: onTidy }, t))
+    .child(barButton(`${id}-map`, { icon: "map", selected: minimap, tooltip: "Minimap", onClick: onMinimap }, t));
+}
+
+export const MINIMAP = { width: 200, height: 128 };
+
+export function minimap(id, { blocks = [], view = null, onClick }, t) {
+  return div()
+    .id(id)
+    .relative()
+    .w(MINIMAP.width)
+    .h(MINIMAP.height)
+    .flex_none()
+    .rounded(10)
+    .bg(t.surface)
+    .border_1()
+    .border_color(t.foreground + "14")
+    .overflow_hidden()
+    .on_mouse_down("left", (event, cx) => {
+      cx.stop_propagation();
+      onClick?.(event, cx);
+    })
+    .children(blocks.map((block, index) => div().id(`${id}-node-${index}`).absolute().left(block.x).top(block.y).w(Math.max(block.w, 3)).h(Math.max(block.h, 3)).rounded(2).bg(block.color)))
+    .when(view != null, (el) => el.child(div().absolute().left(view.x).top(view.y).w(Math.max(view.w, 4)).h(Math.max(view.h, 4)).rounded(3).border_1().border_color(t.accent)));
+}
+
+const RUN_TONE = { running: ["working", "Running"], waiting: ["blocked", "Needs you"], failed: ["blocked", "Failed"], done: ["done", "Done"], stopped: ["neutral", "Stopped"], interrupted: ["neutral", "Interrupted"], starting: ["working", "Starting"] };
+
+export function runPill(id, { status, number, at = null, action = null, onAt }, t) {
+  const [tone, label] = RUN_TONE[status] ?? ["neutral", status];
+  return h_flex()
+    .id(id)
+    .flex_none()
+    .h(30)
+    .pl(8)
+    .pr(4)
+    .gap(8)
+    .items_center()
+    .rounded(15)
+    .bg(t.surface)
+    .border_1()
+    .border_color(t.foreground + "14")
+    .child(chip(label, { tone, dot: true }, t))
+    .child(div().flex_none().text_size(TEXT.base).text_color(t.muted).child(`#${number}`))
+    .when(at != null, (el) =>
+      el.child(
+        div()
+          .id(`${id}-at`)
+          .min_w(0)
+          .truncate()
+          .text_size(TEXT.base)
+          .text_color(t.foreground)
+          .when(onAt != null, (row) => row.hover((s) => s.text_color(t.accent)).on_click((_e, cx) => onAt(cx)))
+          .child(at),
+      ),
+    )
+    .when(action != null, (el) => el.child(button(`${id}-action`, { label: action.label, icon: action.icon, variant: action.variant ?? "ghost", size: "sm", loading: action.loading, stop: true, onClick: action.onClick }, t)));
+}
+
+export function addNodeMenu(id, { search = null, groups = [] }, t) {
+  return v_flex()
+    .id(id)
+    .w(260)
+    .p(6)
+    .gap(4)
+    .rounded(10)
+    .bg(t.raised)
+    .border_1()
+    .border_color(t.foreground + "1F")
+    .shadow_lg()
+    .when(search != null, (el) => el.child(input(search, t, { kind: "search", height: 30 })))
+    .children(
+      groups
+        .filter((group) => group.items.length)
+        .map((group) =>
+          v_flex()
+            .pt(4)
+            .gap(2)
+            .child(div().px(8).h(18).child(heading(group.label, t)))
+            .children(group.items.map((item) => menuItem(`${id}-${item.id}`, { icon: item.icon, label: item.label, detail: item.note, selected: item.selected, onClick: item.onClick }, t))),
+        ),
+    );
 }

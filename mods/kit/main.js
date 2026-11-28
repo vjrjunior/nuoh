@@ -1,7 +1,7 @@
 import { View, div } from "gpui-kit";
 import { h_flex, InputState, v_flex } from "gpui-base";
 import { theme } from "herdr";
-import { ICONS, TEXT, avatar, button, cardHeader, cardLink, checkRow, chip, columnHead, detailLine, emptyState, flightRow, heading, icon, iconButton, iconPath, input, laneRow, lastClick, link, logLine, menuItem, meta, needRow, nextStep, paneTile, pill, prRow, profile, programIcon, releaseCard, segment, segmentGroup, sheet, sheetBar, spaceCard, statCard, stepCard, stepNode, statusChip, statusDot, tag, taskCard, taskRow, timelineStep, viewCard, viewTile } from "../../kit/kit.js";
+import { ICONS, TEXT, addNodeMenu, agentPicker, avatar, branchRow, button, canvasBar, edgeBadge, edgeLook, minimap, nodeButton, nodeField, nodeResult, nodeShell, nodeToolbar, port, refusal, runPill, zoomBar, cardHeader, cardLink, checkRow, chip, columnHead, detailLine, emptyState, flightRow, heading, icon, iconButton, iconPath, input, laneRow, lastClick, link, logLine, menuItem, meta, needRow, nextStep, paneTile, pill, prRow, profile, programIcon, releaseCard, segment, segmentGroup, sheet, sheetBar, spaceCard, statCard, stepCard, stepNode, statusChip, statusDot, tag, taskCard, taskRow, timelineStep, viewCard, viewTile } from "../../kit/kit.js";
 
 const STATUSES = ["working", "blocked", "done", "idle", "unknown"];
 const STEPS = ["done", "current", "bad", "todo"];
@@ -21,6 +21,92 @@ export default class Kit extends View {
     this.field = InputState.new({ placeholder: "Filter files…" });
     this.quiet = InputState.new({ value: "Typed text" });
     this.start = InputState.new({ placeholder: "CUP-1234 or what you'll work on" });
+    this.nodeSearch = InputState.new({ placeholder: "Search nodes" });
+  }
+
+  canvasParts(t, noop) {
+    const task = "Implement {{input.task}}. Keep the change small and run the tests before you answer.";
+    const field = (text, options = {}) => nodeField(text, t, options);
+    const picker = (id) => agentPicker(id, { name: "Claude", model: "opus", onClick: noop }, t);
+    const agent = (state, extra = {}) =>
+      nodeShell(`kit-node-${state}`, { kind: "agent", name: "implement", state, body: [field(task), picker(`kit-picker-${state}`)], actions: nodeButton(`kit-node-run-${state}`, { label: "Run step", icon: "play", onClick: noop }, t), ...extra }, t);
+    const nodes = row()
+      .gap(24)
+      .items_start()
+      .child(agent("idle"))
+      .child(agent("selected"))
+      .child(agent("running", { meta: "0:42", result: nodeResult({ text: "Reading src/auth/login.ts", color: t.working }, t), actions: nodeButton("kit-node-stop", { label: "Stop", icon: "square", onClick: noop }, t) }))
+      .child(agent("done", { meta: "3:18", result: nodeResult({ head: "ANSWER", fields: { blocking: 0, summary: "Nothing blocking." } }, t) }))
+      .child(agent("failed", { meta: "1:05", result: nodeResult({ text: "No answer in implement-1.md after a second request.", color: t.blocked }, t), actions: nodeButton("kit-node-retry", { label: "Retry", icon: "rotate-cw", onClick: noop }, t) }))
+      .child(nodeShell("kit-node-command", { kind: "run", name: "test", body: [field("bun test", { rows: 1, mono: "JetBrains Mono" })], actions: nodeButton("kit-node-run-command", { label: "Run step", icon: "play", onClick: noop }, t) }, t))
+      .child(nodeShell("kit-node-condition", { kind: "condition", name: "clean", body: [field("{{review.blocking}} = 0", { rows: 1, mono: "JetBrains Mono" }), branchRow("kit-yes", { label: "Yes", taken: true }, t), branchRow("kit-no", { label: "No", taken: false }, t)] }, t))
+      .child(
+        nodeShell(
+          "kit-node-approval",
+          {
+            kind: "approve",
+            name: "ship",
+            meta: "Needs you",
+            state: "waiting",
+            body: [div().text_size(TEXT.xl).font_medium().child("Open the PR?"), div().text_size(TEXT.base).text_color(t.muted).child("Two findings fixed. Nothing blocking left.")],
+            actions: [nodeButton("kit-approve", { label: "Approve", icon: "check", variant: "primary", onClick: noop }, t), nodeButton("kit-reject", { label: "Reject", icon: "x", variant: "danger", onClick: noop }, t)],
+          },
+          t,
+        ),
+      )
+      .child(nodeShell("kit-node-start", { kind: "start", name: "start", body: [field("Fix the login redirect", { rows: 1 })], actions: nodeButton("kit-node-run-workflow", { label: "Run workflow", icon: "play", variant: "primary", onClick: noop }, t) }, t))
+      .child(nodeShell("kit-node-skipped", { kind: "agent", name: "fix", state: "skipped", body: [field("Fix what the review found: {{review.summary}}")] }, t));
+    const ports = row().gap(16).children(["idle", "connected", "target", "under", "dimmed", "refused"].map((state) => v_flex().gap(4).items_center().text_size(TEXT.xs).text_color(t.muted).child(port(`kit-port-${state}`, { state }, t)).child(state)));
+    const edges = row()
+      .gap(16)
+      .children(["idle", "done", "running", "selected", "pulling", "refused", "faded"].map((state) => {
+        const look = edgeLook(state, t);
+        return v_flex().gap(4).items_center().text_size(TEXT.xs).text_color(t.muted).child(div().w(80).h(look.width).bg(look.color).when(look.dash != null, (el) => el.opacity(0.7))).child(state);
+      }))
+      .child(edgeBadge("kit-edge-badge", { label: "up to 3×", onClick: noop }, t))
+      .child(refusal("A node cannot connect to itself", t));
+    const bars = row()
+      .gap(16)
+      .items_start()
+      .child(nodeToolbar("kit-toolbar", { answer: true, onAnswer: noop, onDuplicate: noop, onDelete: noop }, t))
+      .child(nodeToolbar("kit-toolbar-hot", { hot: true, onDuplicate: noop, onDelete: noop }, t))
+      .child(canvasBar("kit-canvas-bar", { tool: "select", onSelect: noop, onHand: noop, onSearch: noop, onAdd: noop }, t))
+      .child(zoomBar("kit-zoom-bar", { percent: 100, minimap: true, onOut: noop, onIn: noop, onPercent: noop, onFit: noop, onTidy: noop, onMinimap: noop }, t))
+      .child(
+        minimap(
+          "kit-minimap",
+          {
+            blocks: [
+              { x: 14, y: 52, w: 26, h: 12, color: t.muted + "66" },
+              { x: 52, y: 46, w: 26, h: 12, color: t.done + "99" },
+              { x: 90, y: 52, w: 26, h: 12, color: t.done + "99" },
+              { x: 128, y: 46, w: 26, h: 12, color: t.working },
+            ],
+            view: { x: 40, y: 30, w: 110, h: 70 },
+          },
+          t,
+        ),
+      )
+      .child(
+        addNodeMenu(
+          "kit-add-node",
+          {
+            search: this.nodeSearch,
+            groups: [
+              { label: "Steps", items: [{ id: "agent", icon: "bot", label: "Agent", note: "a task for an agent", selected: true, onClick: noop }, { id: "command", icon: "terminal", label: "Command", note: "runs in the folder", onClick: noop }] },
+              { label: "Flow", items: [{ id: "condition", icon: "git-fork", label: "Condition", note: "yes or no", onClick: noop }, { id: "approval", icon: "flag", label: "Approval", note: "waits for you", onClick: noop }] },
+            ],
+          },
+          t,
+        ),
+      );
+    const pills = v_flex()
+      .gap(8)
+      .child(runPill("kit-run-running", { status: "running", number: 4, at: "review", action: { label: "Stop", icon: "circle-x", onClick: noop } }, t))
+      .child(runPill("kit-run-waiting", { status: "waiting", number: 4, at: "Waiting at ship", action: { label: "Approve", icon: "check", variant: "primary", onClick: noop } }, t))
+      .child(runPill("kit-run-failed", { status: "failed", number: 4, at: "at implement", action: { label: "Retry", icon: "rotate-cw", variant: "secondary", onClick: noop } }, t))
+      .child(runPill("kit-run-done", { status: "done", number: 4, at: "in 6m 12s" }, t));
+    return v_flex().gap(16).child(nodes).child(ports).child(edges).child(bars).child(pills);
   }
 
   render() {
@@ -296,6 +382,7 @@ export default class Kit extends View {
       .child(section("log", "Log lines", t).child(logs))
       .child(section("board", "Board and sheet", t).child(board))
       .child(section("menu-items", "Menu items", t).child(menuItems))
+      .child(section("workflows-canvas", "Workflows canvas", t).child(this.canvasParts(t, noop)))
       .child(section("dots", "Dots", t).child(dots))
       .child(section("steps", "Steps", t).child(steps))
       .child(section("icons", "Icons", t).child(icons));

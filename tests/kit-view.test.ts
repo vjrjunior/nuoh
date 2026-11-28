@@ -16,7 +16,7 @@ function render() {
 
 test("the gallery shows every section", () => {
   const root = render();
-  for (const id of ["buttons", "icon-buttons", "segments", "tags", "links", "chips", "status-chips", "pills", "program-icons", "avatars", "inputs", "card-headers", "view-parts", "lines", "timeline", "checks", "lanes", "release", "empty", "last-click", "profile", "stats", "rows", "log", "board", "menu-items", "dots", "steps", "icons"]) {
+  for (const id of ["buttons", "icon-buttons", "segments", "tags", "links", "chips", "status-chips", "pills", "program-icons", "avatars", "inputs", "card-headers", "view-parts", "lines", "timeline", "checks", "lanes", "release", "empty", "last-click", "profile", "stats", "rows", "log", "board", "menu-items", "workflows-canvas", "dots", "steps", "icons"]) {
     expect(byKey(root, `kit-${id}`)).toBeDefined();
   }
 });
@@ -89,4 +89,12 @@ test("the gallery shows the view parts the nuoh views draw their bands and cards
   const section = byKey(root, "kit-view-parts");
   expect(byKey(section, "kit-view-card")).toBeDefined();
   expect(svgs(section)).toEqual(expect.arrayContaining(["mods/kit/icons/layers.svg", "mods/kit/icons/command.svg"]));
+});
+
+test("the gallery shows the canvas's nodes in each state, its ports, bars and run pills", () => {
+  const section = byKey(render(), "kit-workflows-canvas");
+  for (const id of ["kit-node-idle", "kit-node-selected", "kit-node-running", "kit-node-done", "kit-node-failed", "kit-node-command", "kit-node-condition", "kit-node-approval", "kit-node-start", "kit-node-skipped", "kit-port-under", "kit-toolbar", "kit-canvas-bar", "kit-zoom-bar", "kit-minimap", "kit-add-node", "kit-run-waiting"]) {
+    expect(byKey(section, id)).toBeDefined();
+  }
+  expect(texts(section)).toContain("up to 3×");
 });

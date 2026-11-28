@@ -190,6 +190,8 @@ mock.module("gpui-base", () => ({
   TextView: { markdown: (_id: string, text: string) => make().child(text), html: (_id: string, text: string) => make().child(text) },
   InputState: { new: (options?: { placeholder?: string; value?: string }) => new FakeInput(options) },
   Input: { new: () => make() },
+  TextareaState: { new: (options?: { placeholder?: string; value?: string }) => new FakeInput(options) },
+  Textarea: { new: () => make() },
   ScrollHandle: { new: () => ({ shown: [] as number[], scroll_to_item(index: number) { this.shown.push(index); } }) },
   EditorState: { new: (options: Record<string, unknown>) => ({ options, released: false, release() { this.released = true; return true; } }) },
   Editor: { new: (state: { options: { value?: string } }) => make().child(state.options.value ?? "") },

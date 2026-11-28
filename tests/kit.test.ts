@@ -3,7 +3,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { click, type Node, own, svgs, texts, walk } from "./app-mocks";
 
-const { ICONS, avatar, button, cardHeader, cardLink, checkRow, chip, columnHead, detailLine, emptyState, flightRow, iconButton, iconPath, input, laneRow, lastClick, logLine, menuItem, meta, needRow, nextStep, paneTile, pill, prRow, profile, programIcon, releaseCard, segment, segmentGroup, statCard, statusChip, stepCard, stepNode, tag, taskCard, taskRow, timelineStep, toneColor, viewCard, viewTile } = await import("../kit/kit.js");
+const { ICONS, addNodeMenu, agentPicker, avatar, branchRow, button, canvasBar, edgeBadge, edgeLook, EDGE, minimap, nodeButton, nodeField, nodeResult, nodeShell, nodeToolbar, port, PORT, refusal, runPill, zoomBar, cardHeader, cardLink, checkRow, chip, columnHead, detailLine, emptyState, flightRow, iconButton, iconPath, input, laneRow, lastClick, logLine, menuItem, meta, needRow, nextStep, paneTile, pill, prRow, profile, programIcon, releaseCard, segment, segmentGroup, statCard, statusChip, stepCard, stepNode, tag, taskCard, taskRow, timelineStep, toneColor, viewCard, viewTile } = await import("../kit/kit.js");
 
 const repo = join(import.meta.dir, "..");
 const t = new Proxy({}, { get: (_x, p) => (typeof p === "string" ? `t.${p}` : undefined) }) as any;
@@ -608,4 +608,93 @@ test("a column head and a meta mark keep the design system's sizes", () => {
   const mark = meta({ icon: "calendar", text: "Today", color: "t.working" }, t) as Node;
   expect(own(mark.kids[0] as Node, "size")).toEqual([[11]]);
   expect(own(mark.kids[1] as Node, "text_color")).toEqual([["t.working"]]);
+});
+
+test("a port shows its state, grows its target under the pointer and keeps a grabbable size when zoomed out", () => {
+  const dot = (state: string, z = 1) => port("p", { state }, t, z);
+  expect(own(dot("connected").kids[0] as Node, "bg")).toEqual([["t.muted"]]);
+  expect(own(dot("target").kids[0] as Node, "bg")).toEqual([["t.accent"]]);
+  expect(own(dot("under"), "bg")).toEqual([["t.accent4D"]]);
+  expect(own(dot("under").kids[0] as Node, "size")).toEqual([[PORT.under]]);
+  expect(own(dot("refused").kids[0] as Node, "border_color")).toEqual([["t.blocked"]]);
+  expect(own(dot("dimmed"), "opacity")).toEqual([[0.25]]);
+  expect(own(dot("hidden"), "opacity")).toEqual([[0]]);
+  expect(own(dot("idle", 0.5), "size")).toEqual([[PORT.hit]]);
+  expect(own(dot("idle", 3), "size")).toEqual([[PORT.hit * 2]]);
+  expect(own(dot("idle", 0.5).kids[0] as Node, "size")).toEqual([[PORT.dot * 0.5]]);
+});
+
+test("a connection's look follows its state", () => {
+  expect(edgeLook("idle", t)).toEqual({ color: "t.dim", width: EDGE.width, dash: EDGE.dash });
+  expect(edgeLook("done", t)).toEqual({ color: "t.done99", width: EDGE.width, dash: null });
+  expect(edgeLook("running", t).color).toBe("t.working");
+  expect(edgeLook("selected", t)).toEqual({ color: "t.accent", width: EDGE.selected, dash: null });
+  expect(edgeLook("refused", t).color).toBe("t.blocked");
+});
+
+test("a node's state sets its line, its label's icon and its fade", () => {
+  const shell = (state: string) => nodeShell("n", { kind: "agent", name: "review", meta: "0:42", state, body: [] }, t);
+  const card = (node: Node) => node.kids[1] as Node;
+  expect(own(card(shell("idle")), "border_color")).toEqual([["t.foreground14"]]);
+  expect(own(card(shell("selected")), "border")).toEqual([[1.5]]);
+  expect(own(card(shell("selected")), "border_color")).toEqual([["t.accent66"]]);
+  expect(own(card(shell("running")), "border_color")).toEqual([["t.working"]]);
+  expect(calls(shell("running"), "spin")).toEqual([[900]]);
+  expect(svgs(shell("done"))).toEqual(["mods/kit/icons/check.svg"]);
+  expect(svgs(shell("failed"))).toEqual(["mods/kit/icons/circle-x.svg"]);
+  expect(svgs(shell("waiting"))).toEqual(["mods/kit/icons/flag.svg"]);
+  expect(svgs(shell("idle"))).toEqual(["mods/kit/icons/bot.svg"]);
+  expect(own(shell("skipped"), "opacity")).toEqual([[0.5]]);
+  expect(texts(shell("idle"))).toEqual(["review", "0:42"]);
+});
+
+test("a node scales with the zoom, its text and fields included", () => {
+  const node = nodeShell("n", { kind: "run", name: "test", body: [nodeField("bun test", t, { z: 2, rows: 1, mono: "JetBrains Mono" })] }, t, 2);
+  expect(own(node, "w")).toEqual([[600]]);
+  const field = (node.kids[1] as Node).kids[0] as Node;
+  expect(own(field, "h")).toEqual([[68]]);
+  expect(own(field, "text_size")).toEqual([[24]]);
+  expect(own(field, "font_family")).toEqual([["JetBrains Mono"]]);
+  expect(own(nodeField("x", t, { focused: true }), "border_color")).toEqual([["t.accentB3"]]);
+});
+
+test("a node's button runs its click once, not through the node, and not while disabled", () => {
+  let clicks = 0;
+  const go = nodeButton("b", { label: "Run step", icon: "play", onClick: () => clicks++ }, t);
+  const stopped = { stopped: 0, stop_propagation() { this.stopped += 1; } };
+  click(go, stopped);
+  expect(clicks).toBe(1);
+  expect(stopped.stopped).toBe(1);
+  click(nodeButton("d", { label: "Run step", icon: "play", disabled: true, onClick: () => clicks++ }, t), stopped);
+  expect(clicks).toBe(1);
+  expect(own(nodeButton("p", { label: "Approve", icon: "check", variant: "primary", onClick() {} }, t), "bg")).toEqual([["t.solid"]]);
+  expect(own(nodeButton("r", { label: "Reject", icon: "x", variant: "danger", onClick() {} }, t), "bg")).toEqual([["t.blocked1F"]]);
+});
+
+test("the result shows typed fields as rows, and a branch row says whether it was taken", () => {
+  expect(texts(nodeResult({ head: "ANSWER", fields: { blocking: 0, summary: "Clean" } }, t))).toEqual(["ANSWER", "blocking", "0", "summary", "Clean"]);
+  expect(own(branchRow("y", { label: "Yes", taken: true }, t), "bg")).toEqual([["t.done1A"]]);
+  expect(own(branchRow("n", { label: "No", taken: false }, t), "opacity")).toEqual([[0.5]]);
+  expect(texts(agentPicker("a", { name: "Claude", model: "opus" }, t))).toEqual(["Claude", "opus"]);
+  expect(texts(edgeBadge("b", { label: "up to 3×" }, t))).toEqual(["up to 3×"]);
+  expect(own(refusal("Already connected", t), "bg")).toEqual([["t.blocked1F"]]);
+});
+
+test("the bars: the tool shows selected, the zoom shows its percent, the toolbar's delete turns red", () => {
+  const bar = canvasBar("c", { tool: "hand" }, t);
+  expect(texts(bar)).toEqual(["Add node"]);
+  expect(svgs(bar)).toEqual(["mods/kit/icons/mouse-pointer-2.svg", "mods/kit/icons/hand.svg", "mods/kit/icons/search.svg", "mods/kit/icons/plus.svg"]);
+  expect(texts(zoomBar("z", { percent: 82.4 }, t))).toEqual(["82%"]);
+  expect(svgs(nodeToolbar("t", { answer: true }, t))).toEqual(["mods/kit/icons/list-checks.svg", "mods/kit/icons/copy-plus.svg", "mods/kit/icons/trash-2.svg"]);
+  expect(svgs(nodeToolbar("t", {}, t))).toEqual(["mods/kit/icons/copy-plus.svg", "mods/kit/icons/trash-2.svg"]);
+  expect(calls(nodeToolbar("t", { hot: true }, t), "bg")).toContainEqual(["t.blocked1F"]);
+});
+
+test("the minimap draws a block per node and the view; the run pill takes its status's tone", () => {
+  const map = minimap("m", { blocks: [{ x: 1, y: 2, w: 1, h: 1, color: "t.done" }], view: { x: 0, y: 0, w: 50, h: 40 } }, t);
+  expect(walk(map).filter((node) => own(node, "absolute").length)).toHaveLength(2);
+  expect(texts(runPill("r", { status: "waiting", number: 3, at: "Waiting at ship" }, t))).toEqual(["Needs you", "#3", "Waiting at ship"]);
+  expect(texts(runPill("r", { status: "done", number: 2 }, t))).toEqual(["Done", "#2"]);
+  const menu = addNodeMenu("a", { groups: [{ label: "Steps", items: [{ id: "agent", icon: "bot", label: "Agent", note: "a task" }] }, { label: "Flow", items: [] }] }, t);
+  expect(texts(menu)).toEqual(["STEPS", "Agent", "a task"]);
 });
