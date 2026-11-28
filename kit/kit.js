@@ -402,9 +402,6 @@ export function viewCard(id, t) {
   return v_flex().id(id).min_w(0).bg(t.surface).rounded(14).border_1().border_color(t.foreground + "12").shadow_md();
 }
 
-export function card(t) {
-  return v_flex().gap(8).p(10).rounded(RADIUS.card).bg(t.surface).border_1().border_color(t.border);
-}
 
 export function heading(text, t, right) {
   return h_flex()
@@ -416,23 +413,308 @@ export function heading(text, t, right) {
     .when(right != null, (el) => el.child(div().text_color(t.dim).child(String(right))));
 }
 
-export function line(name, { detail, color, mark: kind }, t) {
-  return h_flex()
-    .h(24)
-    .gap(10)
-    .items_center()
-    .border_t_1()
-    .border_color(t.border)
-    .text_size(TEXT.md)
-    .child(div().flex_1().min_w(0).truncate().text_color(t.foreground).child(name))
+const rule = (t) => div().h(1).flex_none().bg(t.foreground + "0A");
+
+export function stepCard(t) {
+  return v_flex().p(8).gap(4).rounded(RADIUS.panel).bg(t.surface).border_1().border_color(t.foreground + "0F");
+}
+
+export function detailLine(name, { detail, color, mark: kind }, t) {
+  return v_flex()
+    .child(rule(t))
     .child(
       h_flex()
+        .h(26)
+        .gap(10)
+        .items_center()
+        .text_size(TEXT.md)
+        .child(div().flex_1().min_w(0).truncate().text_color(t.foreground).child(name))
+        .child(
+          h_flex()
+            .flex_none()
+            .gap(4)
+            .items_center()
+            .text_size(TEXT.sm)
+            .text_color(color)
+            .when(kind != null, (el) => el.child(mark(kind, color, { size: ICON_SIZE.md })))
+            .child(detail),
+        ),
+    );
+}
+
+export function timelineStep(id, { name, node = "todo", current = false, note, last = false, chevron = null, onToggle, body }, t) {
+  const done = node === "done";
+  const noteColor = node === "bad" ? t.blocked : current ? t.accent : done ? t.done : t.unknown;
+  const head = h_flex()
+    .id(id)
+    .h(20)
+    .gap(8)
+    .items_center()
+    .child(
+      div()
         .flex_none()
+        .text_size(TEXT.xl)
+        .text_color(current ? t.foreground : done ? t.muted : t.unknown)
+        .when(current, (el) => el.font_semibold())
+        .child(name),
+    )
+    .when(chevron != null, (el) => el.child(icon(chevron === "down" ? "chevron-down" : "chevron-right", { size: ICON_SIZE.md, color: t.unknown })))
+    .child(
+      h_flex()
+        .flex_1()
+        .min_w(0)
+        .justify_end()
+        .child(
+          div()
+            .min_w(0)
+            .truncate()
+            .text_size(TEXT.base)
+            .text_color(noteColor)
+            .when(done && !current, (el) => el.opacity(0.75))
+            .child(note ?? ""),
+        ),
+    )
+    .when(onToggle != null, (el) => el.on_click((_e, cx) => onToggle(cx)));
+  const rail = h_flex()
+    .flex_1()
+    .justify_center()
+    .items_stretch()
+    .when(!last, (el) => el.child(div().w(1.5).bg(done ? t.done : t.foreground + "1A").when(done, (line) => line.opacity(0.35))));
+  return h_flex()
+    .items_stretch()
+    .gap(10)
+    .child(v_flex().flex_none().w(18).child(h_flex().h(20).items_center().justify_center().child(stepNode(node, t))).child(rail))
+    .child(
+      v_flex()
+        .flex_1()
+        .min_w(0)
+        .pb(body != null ? 14 : 12)
+        .child(head)
+        .when(body != null, (el) => el.child(div().pt(8).child(body))),
+    );
+}
+
+const CHECK_TONE = { passed: "done", failed: "blocked", asking: "working", sent: "working" };
+
+export function checkRow(id, { code, codeFont, steps, expected, state = "pending", label, saw, actions = [], open = null, note = null }, t) {
+  const asking = state === "asking";
+  const indent = (el) => el.pl(36);
+  return v_flex()
+    .id(id)
+    .gap(4)
+    .p(8)
+    .rounded(8)
+    .when(asking, (el) => el.bg(t.selection ?? t.raised).border_1().border_color(t.accent + "80"))
+    .child(
+      h_flex()
+        .items_start()
+        .gap(8)
+        .child(
+          div()
+            .flex_none()
+            .w(28)
+            .when(codeFont != null, (el) => el.font_family(codeFont))
+            .text_size(TEXT.md)
+            .text_color(t.unknown)
+            .child(code),
+        )
+        .child(div().flex_1().min_w(0).text_size(TEXT.base).text_color(t.foreground).child(steps))
+        .child(chip(label ?? state, { tone: CHECK_TONE[state] ?? "neutral" }, t)),
+    )
+    .child(indent(div()).text_size(TEXT.md).text_color(t.muted).child(`→ ${expected}`))
+    .when(Boolean(saw), (el) => el.child(indent(div()).text_size(TEXT.md).text_color(t.blocked).child(saw)))
+    .when(actions.length > 0 || open != null, (el) =>
+      el.child(
+        indent(h_flex())
+          .pt(4)
+          .gap(6)
+          .items_center()
+          .children(actions)
+          .child(div().flex_1())
+          .when(open != null, (row) => row.child(open)),
+      ),
+    )
+    .when(note != null, (el) => el.child(indent(v_flex()).pt(4).gap(4).child(note)));
+}
+
+export function profile(id, { label, off = false, onClick }, t) {
+  return h_flex()
+    .id(id)
+    .flex_none()
+    .h(CONTROL.regular)
+    .px(8)
+    .gap(6)
+    .items_center()
+    .rounded(7)
+    .bg(t.foreground + "08")
+    .border_1()
+    .border_color(t.foreground + "14")
+    .text_size(TEXT.base)
+    .font_medium()
+    .text_color(off ? t.muted : t.foreground)
+    .hover((s) => s.bg(t.foreground + "14"))
+    .on_click((_e, cx) => onClick?.(cx))
+    .child(statusDot(off ? t.dim : t.accent, { size: 6 }))
+    .child(off ? "Off" : label)
+    .child(icon("chevron-down", { size: ICON_SIZE.sm, color: t.unknown }));
+}
+
+export function laneRow(id, { color, code, codeFont, title, step, why, dots = [], action = null, last = false, onClick }, t) {
+  const dot = (state) => {
+    if (state === "done") return statusDot(t.done, { size: 6 }).opacity(0.6);
+    if (state === "current") return statusDot(color, { size: 6 });
+    return statusDot(t.dim, { size: 6, hollow: true });
+  };
+  return v_flex()
+    .child(
+      h_flex()
+        .py(10)
+        .gap(10)
+        .items_center()
+        .child(div().flex_none().w(3).h(34).rounded(2).bg(color))
+        .child(
+          v_flex()
+            .id(id)
+            .flex_1()
+            .min_w(0)
+            .gap(5)
+            .hover((s) => s.opacity(0.85))
+            .on_click((_e, cx) => onClick?.(cx))
+            .child(
+              h_flex()
+                .gap(6)
+                .items_center()
+                .child(
+                  div()
+                    .flex_none()
+                    .when(codeFont != null, (el) => el.font_family(codeFont))
+                    .text_size(TEXT.md)
+                    .text_color(t.unknown)
+                    .child(code),
+                )
+                .child(div().flex_1().min_w(0).truncate().text_size(TEXT.lg).font_medium().text_color(t.foreground).child(title)),
+            )
+            .child(
+              h_flex()
+                .gap(8)
+                .items_center()
+                .text_size(TEXT.md)
+                .child(h_flex().flex_none().gap(3).items_center().children(dots.map(dot)))
+                .child(div().flex_none().font_medium().text_color(color).child(step))
+                .child(div().flex_1().min_w(0).truncate().text_color(t.muted).child(why ?? "")),
+            ),
+        )
+        .when(action != null, (el) => el.child(action)),
+    )
+    .when(!last, (el) => el.child(rule(t)));
+}
+
+export function nextStep(id, { label, icon: iconName, disabled = false, loading = false, target, aside = null, note, onClick }, t) {
+  return v_flex()
+    .gap(6)
+    .child(button(id, { label, icon: iconName, variant: "primary", size: "lg", full: true, disabled, loading, onClick }, t))
+    .child(
+      h_flex()
+        .gap(8)
+        .items_center()
+        .text_size(TEXT.md)
+        .child(div().flex_1().min_w(0).truncate().text_color(t.unknown).child(`→ ${target ?? ""}`))
+        .when(aside != null, (el) => el.child(aside)),
+    )
+    .when(Boolean(note), (el) => el.child(div().text_size(TEXT.sm).text_color(t.working).child(note)));
+}
+
+export function releaseCard({ heading: head, title, items = null, shots = [], warning = null, copy = null }, t) {
+  const rows = [];
+  for (let index = 0; index < shots.length; index += 2) rows.push(shots.slice(index, index + 2));
+  return v_flex()
+    .gap(10)
+    .child(div().text_size(TEXT.xs).font_medium().text_color(t.unknown).child(String(head ?? "").toUpperCase()))
+    .child(div().text_size(TEXT.xl).font_semibold().text_color(t.foreground).child(title))
+    .when(items != null, (el) =>
+      el.child(
+        h_flex()
+          .items_stretch()
+          .gap(8)
+          .child(div().flex_none().w(2).rounded(1).bg(t.accent))
+          .child(div().flex_1().min_w(0).text_size(TEXT.md).text_color(t.muted).child(items)),
+      ),
+    )
+    .children(
+      rows.map((pair) =>
+        h_flex()
+          .gap(6)
+          .items_start()
+          .children(
+            pair.map((shot) =>
+              v_flex()
+                .id(shot.id)
+                .flex_1()
+                .min_w(0)
+                .gap(4)
+                .when(shot.onClick != null, (el) => el.on_click((_e, cx) => shot.onClick(cx)))
+                .child(image(shot.image).w_full().h(84).rounded(6))
+                .child(div().min_w(0).truncate().text_size(TEXT.xs).text_color(t.unknown).child(shot.caption ?? "")),
+            ),
+          ),
+      ),
+    )
+    .when(warning != null, (el) =>
+      el.child(
+        v_flex()
+          .gap(4)
+          .p(8)
+          .rounded(8)
+          .bg(t.working + "0D")
+          .border_1()
+          .border_color(t.working + "66")
+          .text_size(TEXT.md)
+          .child(div().text_color(t.working).child(warning.text))
+          .when(warning.action != null, (box) => box.child(warning.action)),
+      ),
+    )
+    .when(copy != null, (el) => el.child(copy));
+}
+
+export function emptyState({ icon: iconName = "command", title, detail, action = null }, t) {
+  return v_flex()
+    .w_full()
+    .pt(40)
+    .pb(24)
+    .gap(10)
+    .items_center()
+    .child(
+      h_flex()
+        .size(32)
+        .flex_none()
+        .items_center()
+        .justify_center()
+        .rounded(9)
+        .bg(t.foreground + "0A")
+        .border_1()
+        .border_color(t.foreground + "0F")
+        .child(icon(iconName, { size: ICON_SIZE.lg, color: t.muted })),
+    )
+    .child(
+      v_flex()
+        .w_full()
         .gap(4)
         .items_center()
-        .text_size(TEXT.sm)
-        .text_color(color)
-        .when(kind != null, (el) => el.child(mark(kind, color)))
-        .child(detail),
-    );
+        .child(div().text_center().text_size(TEXT.xl).font_medium().text_color(t.foreground).child(title))
+        .when(Boolean(detail), (el) => el.child(div().text_center().text_size(TEXT.base).text_color(t.unknown).child(detail))),
+    )
+    .when(action != null, (el) => el.child(div().pt(4).child(action)));
+}
+
+export function lastClick(text, { ok = true } = {}, t) {
+  const color = ok ? t.done : t.working;
+  return h_flex()
+    .flex_none()
+    .py(10)
+    .gap(6)
+    .items_center()
+    .border_t_1()
+    .border_color(t.foreground + "0A")
+    .child(icon(ok ? "check" : "exclamation", { size: ICON_SIZE.md, color }))
+    .child(div().min_w(0).truncate().text_size(TEXT.base).text_color(color).child(text));
 }

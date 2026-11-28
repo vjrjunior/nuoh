@@ -3,7 +3,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { click, type Node, own, svgs, texts, walk } from "./app-mocks";
 
-const { ICONS, avatar, button, cardHeader, chip, iconButton, iconPath, input, menuItem, paneTile, pill, programIcon, segment, statusChip, stepNode, tag, toneColor, viewCard, viewTile } = await import("../kit/kit.js");
+const { ICONS, avatar, button, cardHeader, checkRow, chip, detailLine, emptyState, iconButton, iconPath, input, laneRow, lastClick, menuItem, nextStep, paneTile, pill, profile, programIcon, releaseCard, segment, statusChip, stepCard, stepNode, tag, timelineStep, toneColor, viewCard, viewTile } = await import("../kit/kit.js");
 
 const repo = join(import.meta.dir, "..");
 const t = new Proxy({}, { get: (_x, p) => (typeof p === "string" ? `t.${p}` : undefined) }) as any;
@@ -421,4 +421,111 @@ test("a program without an icon draws nothing, or the fallback glyph in muted", 
   const fallback = programIcon(null, { fallback: "terminal" }, t) as Node;
   expect(svgs(fallback)).toEqual(["mods/kit/icons/terminal.svg"]);
   expect(fallback.calls).toContainEqual(["text_color", ["t.muted"]]);
+});
+
+test("a step card is the surface with 10 px corners, 8 px in and a faint line", () => {
+  const node = stepCard(t) as Node;
+  expect(own(node, "p")).toEqual([[8]]);
+  expect(own(node, "rounded")).toEqual([[10]]);
+  expect(own(node, "bg")).toEqual([["t.surface"]]);
+  expect(own(node, "border_color")).toEqual([["t.foreground0F"]]);
+});
+
+test("a detail line is a faint rule over a 26 px row, its mark and detail in its color", () => {
+  const node = detailLine("Tests", { detail: "failure", color: "t.blocked", mark: "exclamation" }, t) as Node;
+  expect(own(node.kids[0] as Node, "bg")).toEqual([["t.foreground0A"]]);
+  const row = node.kids[1] as Node;
+  expect(own(row, "h")).toEqual([[26]]);
+  expect(texts(row)).toEqual(["Tests", "failure"]);
+  expect(svgs(row)).toEqual(["mods/kit/icons/exclamation.svg"]);
+});
+
+test("a timeline step colors its name and note by where it stands", () => {
+  const note = (options: Record<string, unknown>) => {
+    const node = timelineStep("s", { name: "Ship", note: "n", ...options }, t) as Node;
+    return walk(node).find((n) => n.texts.includes("n")) as Node;
+  };
+  expect(own(note({ node: "done" }), "text_color")).toEqual([["t.done"]]);
+  expect(own(note({ node: "done" }), "opacity")).toEqual([[0.75]]);
+  expect(own(note({ node: "current", current: true }), "text_color")).toEqual([["t.accent"]]);
+  expect(own(note({ node: "bad", current: true }), "text_color")).toEqual([["t.blocked"]]);
+  expect(own(note({}), "text_color")).toEqual([["t.unknown"]]);
+  const name = walk(timelineStep("s", { name: "Ship", node: "current", current: true }, t) as Node).find((n) => n.texts.includes("Ship")) as Node;
+  expect(own(name, "font_semibold")).toEqual([[]]);
+});
+
+test("a timeline step's chevron points down while it is open, and its body sits 8 px under the name", () => {
+  const open = timelineStep("s", { name: "Task", node: "done", chevron: "down", body: "the body" }, t) as Node;
+  expect(svgs(open)).toContain("mods/kit/icons/chevron-down.svg");
+  expect(texts(open)).toContain("the body");
+  expect(svgs(timelineStep("s", { name: "Task", node: "done", chevron: "right" }, t))).toContain("mods/kit/icons/chevron-right.svg");
+  const last = timelineStep("s", { name: "Clear", last: true }, t) as Node;
+  expect(walk(last).filter((n) => own(n, "w").some(([w]) => w === 1.5))).toEqual([]);
+});
+
+test("a check row being asked sits on the selection with an accent edge, its state as a chip", () => {
+  const asking = checkRow("c", { code: "D02", steps: "Reply", expected: "It reopens", state: "asking" }, t) as Node;
+  expect(own(asking, "bg")).toEqual([["t.selection"]]);
+  expect(own(asking, "border_color")).toEqual([["t.accent80"]]);
+  expect(texts(asking)).toEqual(["D02", "Reply", "asking", "→ It reopens"]);
+  const chipNode = walk(asking).find((n) => n.texts.includes("asking")) as Node;
+  expect(own(chipNode, "bg")).toEqual([["t.working1F"]]);
+  const pending = checkRow("p", { code: "D03", steps: "Run", expected: "Left out", state: "pending" }, t) as Node;
+  expect(own(pending, "bg")).toEqual([]);
+  expect(own(walk(pending).find((n) => n.texts.includes("pending")) as Node, "bg")).toEqual([["t.foreground0F"]]);
+  expect(texts(checkRow("s", { code: "D01", steps: "Close", expected: "Quiet", state: "sent", label: "sent" }, t))).toContain("sent");
+});
+
+test("a lane row draws a dot per step: done ones faded, the current one in its color, the rest as rings", () => {
+  const node = laneRow("l", { color: "t.blocked", code: "T-1", title: "A task", step: "Check", why: "asks", dots: ["done", "current", "todo"] }, t) as Node;
+  const dots = walk(node).filter((n) => own(n, "size").some(([size]) => size === 6));
+  expect(dots.map((n) => own(n, "bg")[0]?.[0] ?? own(n, "border_color")[0]?.[0])).toEqual(["t.done", "t.blocked", "t.dim"]);
+  expect(own(dots[0] as Node, "opacity")).toEqual([[0.6]]);
+  expect(texts(node)).toEqual(["T-1", "A task", "Check", "asks"]);
+  expect(own(node.kids.at(-1) as Node, "bg")).toEqual([["t.foreground0A"]]);
+  expect(laneRow("l", { color: "t.done", code: "T", title: "x", step: "s", last: true }, t).kids).toHaveLength(1);
+});
+
+test("the next step is a full-width large primary button with where it goes under it", () => {
+  const node = nextStep("next", { label: "Run it", icon: "play", target: "the agent", onClick() {} }, t) as Node;
+  const button = node.kids[0] as Node;
+  expect(own(button, "h")).toEqual([[34]]);
+  expect(own(button, "bg")).toEqual([["t.solid"]]);
+  expect(own(button, "w_full")).toEqual([[]]);
+  expect(texts(node)).toEqual(["Run it", "→ the agent"]);
+});
+
+test("a release card puts its screenshots two to a row", () => {
+  const shots = [1, 2, 3].map((n) => ({ id: `shot-${n}`, image: `/s/${n}.png`, caption: `Shot ${n}` }));
+  const node = releaseCard({ heading: "Release 4", title: "Title", shots }, t) as Node;
+  const images = walk(node).filter((n) => n.calls.some(([c]) => c === "image"));
+  expect(images).toHaveLength(3);
+  expect(texts(node)).toEqual(["RELEASE 4", "Title", "Shot 1", "Shot 2", "Shot 3"]);
+});
+
+test("an empty state centers its title and detail under a 32 px tile", () => {
+  const node = emptyState({ title: "Nothing here", detail: "Why" }, t) as Node;
+  expect(own(node.kids[0] as Node, "size")).toEqual([[32]]);
+  expect(svgs(node)).toEqual(["mods/kit/icons/command.svg"]);
+  expect(texts(node)).toEqual(["Nothing here", "Why"]);
+  expect(texts(emptyState({ title: "Reading" }, t))).toEqual(["Reading"]);
+});
+
+test("the last click's line has a check in done when it worked and an exclamation in working when it didn't", () => {
+  const ok = lastClick("Sent", {}, t) as Node;
+  expect(svgs(ok)).toEqual(["mods/kit/icons/check.svg"]);
+  expect(own(ok.kids[1] as Node, "text_color")).toEqual([["t.done"]]);
+  const failed = lastClick("Not sent", { ok: false }, t) as Node;
+  expect(svgs(failed)).toEqual(["mods/kit/icons/exclamation.svg"]);
+  expect(own(failed.kids[1] as Node, "text_color")).toEqual([["t.working"]]);
+});
+
+test("a profile button says the flow with an accent dot, or Off with a dim one", () => {
+  const on = profile("p", { label: "Work", onClick() {} }, t) as Node;
+  expect(own(on, "h")).toEqual([[24]]);
+  expect(own(on.kids[0] as Node, "bg")).toEqual([["t.accent"]]);
+  expect(texts(on)).toEqual(["Work"]);
+  const off = profile("p", { off: true, onClick() {} }, t) as Node;
+  expect(own(off.kids[0] as Node, "bg")).toEqual([["t.dim"]]);
+  expect(texts(off)).toEqual(["Off"]);
 });

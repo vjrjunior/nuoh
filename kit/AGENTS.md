@@ -1,6 +1,6 @@
 # kit/
 
-`kit.js` is the UI kit every mod in this repo draws with: its tokens (`CONTROL`, `TEXT`, `RADIUS`, `ICON_SIZE`, `CARD_HEADER`, `MENU_ITEM`), its components (`button`, `iconButton`, `segment`, `tag`, `chip`, `statusChip`, `pill`, `input`, `menuItem`, `paneTile`, `cardHeader`, `avatar`, `programIcon`, `viewTile`, `viewCard` and the rest) and the SVG icons in `icons/`. The extras' mods draw with it too: an extra has no kit of its own.
+`kit.js` is the UI kit every mod in this repo draws with: its tokens (`CONTROL`, `TEXT`, `RADIUS`, `ICON_SIZE`, `CARD_HEADER`, `MENU_ITEM`), its components (`button`, `iconButton`, `segment`, `tag`, `chip`, `statusChip`, `pill`, `input`, `menuItem`, `paneTile`, `cardHeader`, `avatar`, `programIcon`, `viewTile`, `viewCard`, the step parts `stepNode`, `timelineStep`, `stepCard`, `detailLine`, `checkRow`, `nextStep`, `releaseCard`, and `laneRow`, `profile`, `emptyState`, `lastClick` and the rest) and the SVG icons in `icons/`. The extras' mods draw with it too: an extra has no kit of its own.
 
 ## Rules
 
