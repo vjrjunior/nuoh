@@ -99,6 +99,20 @@ describe("apply", () => {
     });
   });
 
+  test("the Workflows canvas takes the keys Herdr binds globally only while it has the keyboard", () => {
+    const { apply, keys } = setup();
+
+    apply();
+
+    expect(keys()["mod:nuoh-workflows"]).toEqual({
+      "cmd-d": "nuoh-workflows.duplicate",
+      "cmd-=": "nuoh-workflows.zoom-in",
+      "cmd-+": "nuoh-workflows.zoom-in",
+      "cmd--": "nuoh-workflows.zoom-out",
+    });
+    expect(keys().global).toBeDefined();
+  });
+
   test("apply installs the kit's icons once", () => {
     const { home, apply } = setup();
 
@@ -144,7 +158,7 @@ describe("apply", () => {
 
     expect(apply().code).toBe(0);
 
-    expect(Object.keys(keys())).toEqual(["layout:nuoh"]);
+    expect(Object.keys(keys())).toEqual(["layout:nuoh", "mod:nuoh-workflows"]);
   });
 
   test("never touches shipped files or layout state", () => {
@@ -201,7 +215,7 @@ describe("apply", () => {
     expect(record().version).toBe("0.1.10");
     expect(record().mods).toHaveLength(16);
     expect(record().files.sort()).toEqual(["layouts/nuoh.json", "layouts/nuoh.svg"]);
-    expect(record().sections).toEqual(["layout:nuoh"]);
+    expect(record().sections).toEqual(["layout:nuoh", "mod:nuoh-workflows"]);
   });
 
   test("a second run with nothing changed writes nothing", () => {
@@ -278,7 +292,7 @@ describe("apply", () => {
     expect(Object.keys(keys())).not.toContain("layout:retired");
     expect(keys()["layout:nuoh"]).toBeDefined();
     expect(record().files.sort()).toEqual(["layouts/nuoh.json", "layouts/nuoh.svg"]);
-    expect(record().sections).toEqual(["layout:nuoh"]);
+    expect(record().sections).toEqual(["layout:nuoh", "mod:nuoh-workflows"]);
     expect(log()).toContain('do layout.switch {"name":"nuoh"}');
   });
 
@@ -573,6 +587,7 @@ describe("uninstall", () => {
     expect(readdirSync(join(home, "mods")).filter((name) => name.startsWith("nuoh-"))).toEqual([]);
     for (const file of ["nuoh.json", "nuoh.svg"]) expect(existsSync(join(home, "layouts", file))).toBe(false);
     expect(keys()["layout:nuoh"]).toBeUndefined();
+    expect(keys()["mod:nuoh-workflows"]).toBeUndefined();
     expect(keys().global).toEqual(global);
     expect(existsSync(join(home, "themes/vjr.json"))).toBe(true);
     expect(existsSync(join(home, "mods/tabs/main.js"))).toBe(true);

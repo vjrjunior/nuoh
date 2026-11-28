@@ -131,7 +131,8 @@ function refuseForeign(paths: string[], recorded: string[], home: string): void 
 }
 
 function keySections(table: KeyTable, generated: Generated): KeyTable {
-  return { [`layout:${LAYOUT}`]: { ...deriveSection(table.global ?? {}, generated.replacements), ...generated.keys } };
+  const mods = Object.fromEntries(Object.entries(generated.modKeys ?? {}).map(([mod, bound]) => [`mod:${mod}`, bound]));
+  return { [`layout:${LAYOUT}`]: { ...deriveSection(table.global ?? {}, generated.replacements), ...generated.keys }, ...mods };
 }
 
 const CHECK_ONE = 'out=$(herdr-app check "$1/$2" 2>&1) || printf "%s\\t%s\\n" "$2" "$(printf "%s" "$out" | tr "\\n" " " | cut -c1-400)"';

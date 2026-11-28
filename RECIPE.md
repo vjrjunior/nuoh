@@ -92,7 +92,7 @@ The art is `layouts/nuoh.svg`; the theme is `themes/vjr.json`, generated from `p
 - `bun run apply-layout` prints `applied`, and running it again prints `unchanged`.
 - `herdr-app do layout.switch '{"name":"nuoh"}'` shows the layout, and `herdr-app status` lists no errors.
 - `~/.config/herdr-app/layouts/nuoh.json` has `rail-column` and `views` as the root's children, `views` shows `workspace` and holds `workflows` after it, and it has no `brand`, `sidebar-footer` or `status` node.
-- The `layout:nuoh` section of `keys.json` binds `ctrl-cmd-1` to `layout.select` of `workspace`, `ctrl-cmd-2` to `layout.select` of `workflows`, `cmd-shift-o` to `mod.open:nuoh-markdown`, `cmd-shift-m` to `mod.open:nuoh-move-tab` and `cmd-shift-j` to `nuoh-rail.waiting`.
+- The `layout:nuoh` section of `keys.json` binds `ctrl-cmd-1` to `layout.select` of `workspace`, `ctrl-cmd-2` to `layout.select` of `workflows`, `cmd-shift-o` to `mod.open:nuoh-markdown`, `cmd-shift-m` to `mod.open:nuoh-move-tab` and `cmd-shift-j` to `nuoh-rail.waiting`; a `mod:nuoh-workflows` section binds `cmd-d`, `cmd-=`, `cmd-+` and `cmd--` to the canvas's own commands.
 - `herdr-app shot` shows the gradient, the rail card, the band with the window buttons, the Spaces and Agents cards, and the panes as cards with their header, the focused one lined in `#FFC799B3`.
 - `herdr-app do layout.select '{"stack":"panel-body","child":"graph"}'` and then `herdr-app do layout.show '{"id":"panel"}'` show the focused repository's history in a card beside the panes.
 - Changing `built` in the `sync` block's props to an older version brings it back to the installed version within seconds, with a line for it in `~/.local/state/vjr-herdr/layout.log`.

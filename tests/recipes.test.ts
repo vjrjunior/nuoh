@@ -475,6 +475,19 @@ describe("nuoh", () => {
     makeHerdrHome(home);
     expect(() => generateIn(home, [stray])).toThrow("recipe rail-keys: the rail shows missing, which views does not have");
   });
+
+  test("keys bound in a mod's own section need that mod", () => {
+    const stray = {
+      name: "stray-keys",
+      mods: [],
+      apply({ modKeys }: { modKeys: Record<string, Record<string, string>> }) {
+        modKeys.ghost = { "cmd-d": "duplicate" };
+      },
+    };
+    const home = tempDir();
+    makeHerdrHome(home);
+    expect(() => generateIn(home, [stray])).toThrow("keys are bound for ghost, and ghost has no copy");
+  });
 });
 
 describe("spaces-tree", () => {

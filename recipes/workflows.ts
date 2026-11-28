@@ -7,7 +7,7 @@ export const WORKFLOWS = "workflows";
 export const workflowsView: Recipe = {
   name: "workflows-view",
   mods: [{ name: WORKFLOWS, from: "repo" }],
-  apply({ layout, repo, bun }) {
+  apply({ layout, repo, bun, modKeys }) {
     if (!repo || !bun) throw new RecipeError("the workflows view needs the repo and bun's path");
     const view = (role: string) => ({ mod: WORKFLOWS, props: { role, repo, bun } });
     const stack = findNode(layout, VIEWS).children as LayoutNode[];
@@ -21,6 +21,7 @@ export const workflowsView: Recipe = {
         { id: "workflows-body", type: "block", content: view("body") },
       ],
     });
+    modKeys[WORKFLOWS] = { "cmd-d": "duplicate", "cmd-=": "zoom-in", "cmd-+": "zoom-in", "cmd--": "zoom-out" };
     const views = (findNode(layout, "rail").content as { props: { views: { id: string }[] } }).props.views;
     views.splice(views.findIndex((entry) => entry.id === WORKSPACE) + 1, 0, { id: WORKFLOWS, label: "Workflows", icon: "route" });
   },

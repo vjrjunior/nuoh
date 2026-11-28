@@ -9,6 +9,7 @@ export type Generated = {
   mods: Record<string, Record<string, string>>;
   replacements: Record<string, string>;
   keys: Record<string, string | KeyCommand>;
+  modKeys: Record<string, Record<string, string>>;
 };
 
 const REFERENCE = /(\bmod:\s*"|\{\s*name:\s*")([a-z-]+)"/g;
@@ -130,6 +131,11 @@ function keyAction(action: string | KeyCommand | ModCommand, copies: Record<stri
   return `${PREFIX}${action.mod}.${action.command}`;
 }
 
+function modSection(mod: string, bound: Record<string, string>, copies: Record<string, Copy>): Record<string, string> {
+  if (!Object.hasOwn(copies, mod)) throw new RecipeError(`keys are bound for ${mod}, and ${mod} has no copy`);
+  return Object.fromEntries(Object.entries(bound).map(([key, command]) => [key, `${PREFIX}${mod}.${command}`]));
+}
+
 function applyRecipes(recipes: Recipe[], context: Omit<RecipeContext, "options">): void {
   for (const recipe of recipes) {
     try {
@@ -166,7 +172,8 @@ export function generateWith(recipes: Recipe[], options: GenerateOptions): Gener
   }
   const replacements: Record<string, string> = {};
   const keys: Record<string, string | KeyCommand | ModCommand> = {};
-  applyRecipes(recipes, { copies, layout: main, replacements, keys, repo: options.repo, bun: options.bun, editor: options.editor });
+  const modKeys: Record<string, Record<string, string>> = {};
+  applyRecipes(recipes, { copies, layout: main, replacements, keys, modKeys, repo: options.repo, bun: options.bun, editor: options.editor });
   for (const copy of Object.values(copies)) {
     if (copy.files["kit.js"] !== undefined && !Object.hasOwn(copies, "kit")) throw new RecipeError(`${copy.name} uses the kit, but ${LAYOUT} has no kit`);
   }
@@ -179,6 +186,7 @@ export function generateWith(recipes: Recipe[], options: GenerateOptions): Gener
     mods: Object.fromEntries(Object.values(copies).map((copy) => [`${PREFIX}${copy.name}`, modFiles(copy, options.version)])),
     replacements: Object.fromEntries(Object.entries(replacements).map(([action, mod]) => [action, `mod.open:${PREFIX}${mod}`])),
     keys: Object.fromEntries(Object.entries(keys).map(([key, action]) => [key, keyAction(action, copies)])),
+    modKeys: Object.fromEntries(Object.entries(modKeys).map(([mod, bound]) => [`${PREFIX}${mod}`, modSection(mod, bound, copies)])),
   };
 }
 

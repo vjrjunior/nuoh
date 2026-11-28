@@ -385,13 +385,10 @@ describe("retry, run from a step, one step alone, resume", () => {
     expect(first.status).toBe("failed");
     context.world.self = "t0";
     const second = await retryRun(context.io, context.dirs, first.id);
-    expect(second.steps.map((record) => [record.id, record.reused])).toEqual([
-      ["start", true],
-      ["a", true],
-    ]);
+    expect(second.steps.map((record) => [record.id, record.reused])).toEqual([["a", true]]);
     context.world.self = "t-runner-2";
     const done = await executeRun(context.io, context.dirs, second.id);
-    expect(steps(done)).toEqual(["start:done", "a:done", "b:done", "c:done"]);
+    expect(steps(done)).toEqual(["a:done", "start:done", "b:done", "c:done"]);
     expect(context.world.spawned.map((call) => call.argv.join(" "))).toEqual(["echo one", "check", "check", "echo one"]);
   });
 
@@ -405,7 +402,7 @@ describe("retry, run from a step, one step alone, resume", () => {
     writeFileSync(join(context.dirs.workflows, "flow.json"), JSON.stringify(changed));
     context.world.self = "t0";
     const again = await startAndRun(context, "flow", {}, { from: "c" });
-    expect(again.steps.map((record) => `${record.id}:${record.reused ? "reused" : record.status}`)).toEqual(["start:reused", "a:done", "b:done", "c:done"]);
+    expect(again.steps.map((record) => `${record.id}:${record.reused ? "reused" : record.status}`)).toEqual(["start:done", "a:done", "b:done", "c:done"]);
   });
 
   test("one step alone uses the newest results before it, and refuses without them", async () => {
@@ -417,7 +414,7 @@ describe("retry, run from a step, one step alone, resume", () => {
     context.world.self = "t0";
     const alone = await startAndRun(context, "flow", {}, { only: "b" });
     expect(alone.only).toBe("b");
-    expect(alone.steps.filter((record) => !record.reused).map((record) => `${record.id}:${record.status}`)).toEqual(["b:done"]);
+    expect(alone.steps.filter((record) => !record.reused).map((record) => `${record.id}:${record.status}`)).toEqual(["start:done", "b:done"]);
   });
 
   test("resume waits again on an agent still working, without sending twice", async () => {

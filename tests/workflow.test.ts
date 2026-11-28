@@ -259,20 +259,28 @@ describe("reusing results", () => {
     expect([...staleNodes(EXAMPLE, EXAMPLE)]).toEqual([]);
   });
 
-  test("run from a step keeps the fresh results before it", () => {
+  test("run from a step keeps the fresh results before it; start is always settled again", () => {
     const { steps, problems: found } = reuseFor(previous, EXAMPLE, { from: "review" });
     expect(found).toEqual([]);
     expect(steps.map((step: any) => [step.id, step.reused, step.epoch])).toEqual([
-      ["start", true, 0],
       ["implement", true, 0],
       ["test", true, 0],
     ]);
   });
 
-  test("one step alone needs a fresh result from each step before it", () => {
+  test("one step alone needs a fresh result from each step before it except start", () => {
     expect(reuseFor(previous, EXAMPLE, { only: "review" }).problems).toEqual([]);
     expect(reuseFor(previous, EXAMPLE, { only: "clean" }).problems).toEqual(["clean needs a fresh result from review first: run the workflow, or run from review"]);
     expect(reuseFor(previous, EXAMPLE, { from: "nope" }).problems).toEqual(['Implement, review, fix has no step "nope"']);
+    expect(reuseFor(null, EXAMPLE, { only: "implement" })).toEqual({ steps: [], problems: [] });
+  });
+
+  test("a run of one step settles start first, then that step", () => {
+    const graph = graphOf(EXAMPLE);
+    const run = { only: "implement", epoch: {}, steps: [] as any[] };
+    expect(readyNodes(graph, run)).toEqual(["start"]);
+    run.steps.push(record("start", "done"));
+    expect(readyNodes(graph, run)).toEqual(["implement"]);
   });
 });
 

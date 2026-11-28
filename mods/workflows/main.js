@@ -204,17 +204,23 @@ export default class Workflows extends View {
     cx.notify();
   }
 
-  async listen() {
+  async listen(cx) {
     while (!this.closed) {
       const next = nextCommand();
       if (typeof next?.then !== "function") return;
-      const command = await next;
-      if (command === "focus") this.handle?.focus();
+      this.order(await next, cx);
     }
   }
 
+  order(command, cx) {
+    if (command === "focus") this.handle?.focus();
+    else if (command === "zoom-in") this.zoomBy(ZOOM.step, cx);
+    else if (command === "zoom-out") this.zoomBy(1 / ZOOM.step, cx);
+    else if (command === "duplicate" && this.doc && !this.typing && !this.renaming && !this.menu) this.duplicate(cx);
+  }
+
   async start(cx) {
-    if (this.role === "body") cx.spawn(async () => this.listen());
+    if (this.role === "body") cx.spawn(async (cx) => this.listen(cx));
     const result = await this.command(["paths"]).catch(() => null);
     try {
       this.paths = JSON.parse(result?.stdout ?? "");
@@ -1316,9 +1322,6 @@ export default class Workflows extends View {
     const cmd = mods.platform;
     if (cmd && key === "z") return mods.shift ? this.redo(cx) : this.undo(cx);
     if (cmd && key === "y") return this.redo(cx);
-    if (cmd && key === "d") return this.duplicate(cx);
-    if (cmd && (key === "=" || key === "+")) return this.zoomBy(ZOOM.step, cx);
-    if (cmd && key === "-") return this.zoomBy(1 / ZOOM.step, cx);
     if (cmd && key === "f") return this.openMenu({ kind: "find", at: { x: this.viewport.width / 2 - 130, y: this.viewport.height - 330 } }, cx);
     if (cmd) return;
     if (key === "backspace" || key === "delete") return this.remove(cx);

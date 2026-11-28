@@ -348,6 +348,23 @@ describe("editing on the canvas", () => {
     expect(view.doc.workflow.edges).toEqual(FLOW.edges);
   });
 
+  test("Cmd-D and the zoom keys come as the mod's own commands, since Herdr binds them globally", async () => {
+    writeWorkflow("flow", FLOW);
+    const commandsIn = ["duplicate", "zoom-in"];
+    herdr.nextCommand = (() => (commandsIn.length ? Promise.resolve(commandsIn.shift()) : new Promise(() => {}))) as never;
+    const { view, cx } = await open();
+    expect(view.doc.workflow.nodes.at(-1).id).toBe("ship");
+    view.sel = { node: "implement", edge: null };
+    view.order("duplicate", cx);
+    expect(view.doc.workflow.nodes.at(-1)).toMatchObject({ id: "implement-2" });
+    view.order("zoom-out", cx);
+    expect(view.camera.z).toBeCloseTo(1 / 1.2);
+    view.field("implement", "task").emit("focus", cx);
+    view.order("duplicate", cx);
+    expect(view.doc.workflow.nodes).toHaveLength(4);
+    herdr.nextCommand = undefined as never;
+  });
+
   test("keys don't edit the graph while a field has the keyboard", async () => {
     writeWorkflow("flow", FLOW);
     const { view, cx } = await open();

@@ -32,6 +32,8 @@ A recipe is `{ name, mods, apply }` (`recipe.ts`). `mods` names what it copies: 
 
 The `layout:nuoh` section of `keys.json` is rebuilt on every apply, so a key edited there by hand comes back: change it in the recipe. For each `global` key whose action is in `replacements` (`replacements["app.palette"] = "palette"`), the section binds that key to `mod.open:nuoh-palette`. The recipes' `keys` go on top: a string is a mod to open (`keys["cmd-shift-o"] = "markdown"`), `{ mod, command }` a mod's own command, prefixed (`{ mod: "rail", command: "waiting" }` is `nuoh-rail.waiting`), and any other object an app command as written. A copy's `mod.json` `palette` entries that run its own `<name>.<command>` get the prefix too.
 
+A key that Herdr binds globally but a mod needs while it has the keyboard goes in `modKeys`: `modKeys.workflows = { "cmd-d": "duplicate" }` writes a `mod:nuoh-workflows` section with `"cmd-d": "nuoh-workflows.duplicate"`, which wins over `global` only while that mod has the keyboard, and the mod gets `duplicate` from `nextCommand()`. Apply records these sections with the layout's, so they leave `keys.json` with it.
+
 ## The layout tree
 
 - A worker that runs without showing (`sync`, `comeback`, the `move-tab` worker) is a floating block whose mod renders an empty `div()`. A `hidden: true` block never starts its mod.
