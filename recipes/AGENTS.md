@@ -29,7 +29,7 @@ A recipe is `{ name, mods, apply }` (`recipe.ts`). `mods` names what it copies: 
 
 ## Keys
 
-The `layout:nuoh` section of `keys.json` is rebuilt on every apply, so a key edited there by hand comes back: change it in the recipe. For each `global` key whose action is in `replacements` (`replacements["app.palette"] = "palette"`), the section binds that key to `mod.open:nuoh-palette`. The recipes' `keys` go on top: a string is a mod to open (`keys["cmd-shift-o"] = "markdown"`), an object a command as written.
+The `layout:nuoh` section of `keys.json` is rebuilt on every apply, so a key edited there by hand comes back: change it in the recipe. For each `global` key whose action is in `replacements` (`replacements["app.palette"] = "palette"`), the section binds that key to `mod.open:nuoh-palette`. The recipes' `keys` go on top: a string is a mod to open (`keys["cmd-shift-o"] = "markdown"`), `{ mod, command }` a mod's own command, prefixed (`{ mod: "rail", command: "waiting" }` is `nuoh-rail.waiting`), and any other object an app command as written. A copy's `mod.json` `palette` entries that run its own `<name>.<command>` get the prefix too.
 
 ## The layout tree
 

@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { recipesWith } from "../recipes/order";
-import { type Copy, type Editor, type KeyCommand, LAYOUT, type LayoutNode, type ModSource, PREFIX, type Recipe, RecipeError, type RecipeContext } from "../recipes/recipe";
+import { type Copy, type Editor, type KeyCommand, LAYOUT, type LayoutNode, type ModCommand, type ModSource, PREFIX, type Recipe, RecipeError, type RecipeContext } from "../recipes/recipe";
 
 export type GenerateOptions = { home: string; version: string; repo: string; bun: string; editor?: Editor; icons?: string[] };
 export type Generated = {
@@ -115,6 +115,22 @@ function rewireLayout(node: unknown, copies: Record<string, Copy>, prefix: strin
   }
 }
 
+function rewirePalettes(copies: Record<string, Copy>, prefix: string): void {
+  for (const copy of Object.values(copies)) {
+    if (!Array.isArray(copy.meta.palette)) continue;
+    copy.meta.palette = copy.meta.palette.map((entry: Record<string, unknown>) =>
+      typeof entry?.command === "string" && entry.command.startsWith(`${copy.name}.`) ? { ...entry, command: `${prefix}${entry.command}` } : entry,
+    );
+  }
+}
+
+function keyAction(action: string | KeyCommand | ModCommand, copies: Record<string, Copy>): string | KeyCommand {
+  if (typeof action === "string") return `mod.open:${PREFIX}${action}`;
+  if (!("mod" in action)) return action;
+  if (!Object.hasOwn(copies, action.mod)) throw new RecipeError(`a key runs ${action.mod}.${action.command}, and ${action.mod} has no copy`);
+  return `${PREFIX}${action.mod}.${action.command}`;
+}
+
 function applyRecipes(recipes: Recipe[], context: Omit<RecipeContext, "options">): void {
   for (const recipe of recipes) {
     try {
@@ -150,19 +166,20 @@ export function generateWith(recipes: Recipe[], options: GenerateOptions): Gener
     copies[source.name] ??= readCopy(source, options);
   }
   const replacements: Record<string, string> = {};
-  const keys: Record<string, string | KeyCommand> = {};
+  const keys: Record<string, string | KeyCommand | ModCommand> = {};
   applyRecipes(recipes, { copies, layout: main, replacements, keys, bun: options.bun, editor: options.editor });
   for (const copy of Object.values(copies)) {
     if (copy.files["kit.js"] !== undefined && !Object.hasOwn(copies, "kit")) throw new RecipeError(`${copy.name} uses the kit, but ${LAYOUT} has no kit`);
   }
   const layout = finishLayout(main, options);
   rewireFiles(copies, PREFIX);
+  rewirePalettes(copies, PREFIX);
   rewireLayout(layout, copies, PREFIX);
   return {
     layoutText: `${JSON.stringify(layout, null, 2)}\n`,
     mods: Object.fromEntries(Object.values(copies).map((copy) => [`${PREFIX}${copy.name}`, modFiles(copy, options.version)])),
     replacements: Object.fromEntries(Object.entries(replacements).map(([action, mod]) => [action, `mod.open:${PREFIX}${mod}`])),
-    keys: Object.fromEntries(Object.entries(keys).map(([key, action]) => [key, typeof action === "string" ? `mod.open:${PREFIX}${action}` : action])),
+    keys: Object.fromEntries(Object.entries(keys).map(([key, action]) => [key, keyAction(action, copies)])),
   };
 }
 

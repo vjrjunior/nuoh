@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, test } from "bun:test";
-import { byKey, calls, click, herdr, type Node, svgs, walk } from "./app-mocks";
+import { beforeEach, describe, expect, setSystemTime, test } from "bun:test";
+import { byKey, calls, click, flush, herdr, makeCx, type Node, svgs, walk } from "./app-mocks";
 
 const { default: Rail } = await import("../mods/rail/main.js");
 
@@ -11,8 +11,10 @@ const VIEWS = [
 let active = "workspace";
 let focus: Record<string, unknown> | null = null;
 let paneIds: string[] = [];
-let agentList: { status: string }[] = [];
+let agentList: Record<string, unknown>[] = [];
 let runs: [string, unknown][] = [];
+let notes: Record<string, unknown>[] = [];
+let commands: ((command: string) => void)[] = [];
 
 beforeEach(() => {
   active = "workspace";
@@ -20,6 +22,8 @@ beforeEach(() => {
   paneIds = ["p1", "p2"];
   agentList = [];
   runs = [];
+  notes = [];
+  commands = [];
   Object.assign(herdr, {
     theme: () => new Proxy({}, { get: (_x, p) => (typeof p === "string" ? `t.${p}` : undefined) }),
     props: () => ({ views: VIEWS }),
@@ -33,13 +37,21 @@ beforeEach(() => {
     ],
     window: () => ({ platform: "macos" }),
     run: (name: string, args: unknown) => runs.push([name, args]),
+    nextCommand: () => new Promise((resolve) => commands.push(resolve)),
+    notify: (note: Record<string, unknown>) => notes.push(note),
   });
 });
 
 function start() {
   const rail = new Rail();
-  rail.init();
+  rail.init(null, makeCx());
   return rail;
+}
+
+async function command(name: string) {
+  await flush();
+  commands.shift()?.(name);
+  await flush();
 }
 
 const draw = (rail: InstanceType<typeof Rail>) => rail.render() as Node;
@@ -156,5 +168,90 @@ describe("back to the Workspace", () => {
     focus = { space: "s1", tab: "t2", pane: "p2" };
     draw(rail);
     expect(runs).toEqual([]);
+  });
+});
+
+describe("the next agent waiting", () => {
+  const agent = (address: string, status: string, pane: string | null = `p-${address}`) => ({ address, status, pane });
+
+  test("focuses the blocked agent first, then the next on each press", async () => {
+    agentList = [agent("t1", "done"), agent("t2", "blocked"), agent("t3", "working")];
+    start();
+    await command("waiting");
+    expect(runs).toEqual([["pane.focus", { pane: "p-t2" }]]);
+    focus = { space: "s1", tab: "t1", pane: "p-t2", terminal: "t2" };
+    await command("waiting");
+    expect(runs.at(-1)).toEqual(["pane.focus", { pane: "p-t1" }]);
+  });
+
+  test("the one waiting longest goes first", async () => {
+    const rail = start();
+    agentList = [agent("t1", "blocked")];
+    setSystemTime(new Date(1000));
+    draw(rail);
+    agentList = [agent("t1", "blocked"), agent("t2", "blocked")];
+    setSystemTime(new Date(500_000));
+    agentList = [agent("t2", "blocked"), agent("t1", "blocked")];
+    draw(rail);
+    setSystemTime();
+    await command("waiting");
+    expect(runs).toEqual([["pane.focus", { pane: "p-t1" }]]);
+  });
+
+  test("remembers when each one began waiting after the rail starts again", async () => {
+    const store = new Map<string, string>();
+    const global = globalThis as Record<string, unknown>;
+    global.localStorage = { getItem: (key: string) => store.get(key) ?? null, setItem: (key: string, value: string) => void store.set(key, value) };
+    try {
+      agentList = [agent("t1", "blocked")];
+      setSystemTime(new Date(1000));
+      draw(start());
+      await flush();
+      commands = [];
+      setSystemTime(new Date(500_000));
+      agentList = [agent("t2", "blocked"), agent("t1", "blocked")];
+      start();
+      await command("waiting");
+      expect(runs).toEqual([["pane.focus", { pane: "p-t1" }]]);
+      expect(JSON.parse(store.get("changed") ?? "{}").t1).toEqual({ s: "blocked", at: 1000 });
+    } finally {
+      setSystemTime();
+      delete global.localStorage;
+    }
+  });
+
+  test("a sub-agent without a pane opens as a peek", async () => {
+    agentList = [agent("t9", "blocked", null)];
+    start();
+    await command("waiting");
+    expect(runs).toEqual([["terminal.peek", { terminal: "t9" }]]);
+  });
+
+  test("from another view it brings the Workspace back first", async () => {
+    active = "board";
+    agentList = [agent("t2", "blocked")];
+    start();
+    await command("waiting");
+    expect(runs).toEqual([
+      ["layout.select", { stack: "views", child: "workspace" }],
+      ["pane.focus", { pane: "p-t2" }],
+    ]);
+  });
+
+  test("with nobody waiting a toast says so", async () => {
+    agentList = [agent("t3", "working"), agent("t4", "idle")];
+    start();
+    await command("waiting");
+    expect(runs).toEqual([]);
+    expect(notes).toEqual([{ title: "Nobody is waiting", level: "info", timeout: 2000 }]);
+  });
+
+  test("other commands do nothing and the rail keeps listening", async () => {
+    agentList = [agent("t2", "blocked")];
+    start();
+    await command("other");
+    expect(runs).toEqual([]);
+    await command("waiting");
+    expect(runs).toEqual([["pane.focus", { pane: "p-t2" }]]);
   });
 });

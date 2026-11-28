@@ -5,7 +5,8 @@ import { CONTROL, ICON_SIZE, TEXT, avatar, cardHeader, icon, iconButton, popupRo
 import { avatarLook } from "../../lib/space-colors.js";
 import { isNarrow } from "../../lib/layout-tree.js";
 import { agentTitle } from "../../lib/agent-title.js";
-import { SORTS, SORT_KEY, ago, arrange, crowdedTabs, kidStatus, machineOf, mostUrgent, needsYou, readChanged, sortOf, track } from "./logic.js";
+import { readChanged, track } from "../../lib/agent-since.js";
+import { SORTS, SORT_KEY, ago, arrange, crowdedTabs, kidStatus, machineOf, mostUrgent, needsYou, sortOf } from "./logic.js";
 
 const ROW = 54;
 const SUB_ROW = 26;

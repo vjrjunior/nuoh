@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { badgeOf, focusOf, followFocus, hint, keyFor, keyLabel, shownView, viewsOf } from "../mods/rail/logic.js";
+import { badgeOf, focusOf, followFocus, hint, keyFor, keyLabel, nextWaiting, shownView, viewsOf, waitingOrder } from "../mods/rail/logic.js";
 
 const layoutWith = (views: Record<string, unknown>) => ({ id: "root", type: "row", children: [{ id: "rail", type: "block" }, { id: "views", type: "stack", ...views }] });
 
@@ -124,5 +124,28 @@ describe("keys", () => {
     expect(keyFor(bindings, ["mod.open:nuoh-palette", "app.palette"])).toBe("cmd-k");
     expect(keyFor(bindings, ["mod.open:other", "app.palette"])).toBe("cmd-shift-p");
     expect(keyFor(bindings, ["app.help"])).toBeNull();
+  });
+});
+
+describe("the next agent waiting", () => {
+  const agent = (address: string, status: string) => ({ address, status });
+  const stamps: Record<string, number> = { a: 300, b: 100, c: 200, d: 50, e: 10 };
+  const since = (one: { address: string }) => stamps[one.address] ?? 0;
+  const list = [agent("a", "blocked"), agent("b", "done"), agent("c", "blocked"), agent("d", "working"), agent("e", "idle")];
+
+  test("blocked ones come before done ones, the longest waiting first, and the rest stay out", () => {
+    expect(waitingOrder(list, since).map((one) => one.address)).toEqual(["c", "a", "b"]);
+  });
+
+  test("starts at the first, goes past the focused one and wraps at the end", () => {
+    expect(nextWaiting(list, { since, current: null })?.address).toBe("c");
+    expect(nextWaiting(list, { since, current: "d" })?.address).toBe("c");
+    expect(nextWaiting(list, { since, current: "c" })?.address).toBe("a");
+    expect(nextWaiting(list, { since, current: "b" })?.address).toBe("c");
+  });
+
+  test("nobody waiting gives nothing", () => {
+    expect(nextWaiting([agent("d", "working"), agent("e", "idle")], { since, current: null })).toBeNull();
+    expect(nextWaiting(null, { since, current: null })).toBeNull();
   });
 });

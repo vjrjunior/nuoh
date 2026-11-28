@@ -26,7 +26,7 @@ Left to right, at zoom 1. Every block sits 8px from the next and from the window
 - **Back to the Workspace:** when the focused space, tab or pane changes while another view shows (a notification clicked, `agent.next`, the palette), the rail selects `workspace`. A pane that closes on its own, or a click on the rail's own tile, doesn't.
 - **Panels:** the Files, Changes and Graph buttons show their panel, or hide it when it shows, and each space remembers its panels, as in Herdr's layout.
 - **The window** moves by dragging either band or the tab bar's free space, and a double-click maximizes it. The fold button folds the sidebar to 44px and opens it again; below 160px the sidebar cards draw their narrow rails.
-- `cmd-shift-o` opens the Markdown picker and `cmd-shift-m` the Move to… popup; a Cmd-click on a `.md` path in a terminal opens it in the Markdown viewer. After a restart, Comeback resumes the Claude Code conversations the terminals lost.
+- `cmd-shift-o` opens the Markdown picker, `cmd-shift-m` the Move to… popup and `cmd-shift-j` the next agent waiting (blocked, then done, the longest waiting first); a Cmd-click on a `.md` path in a terminal opens it in the Markdown viewer. After a restart, Comeback resumes the Claude Code conversations the terminals lost.
 - **After a Herdr update**, the layout builds itself again within seconds, or keeps the previous copies and shows a warning toast that says why.
 
 ## Built from
@@ -59,13 +59,13 @@ The root also keeps Herdr's `titlebar: "none"` and `terminal_padding`, gets `ter
 6. **`markdown`** installs [`mods/markdown/`](mods/markdown/RECIPE.md), adds `Open Markdown…` to the menu, makes that menu the terminal menu, sends a Cmd-click on a Markdown path to the viewer and binds `cmd-shift-o`.
 7. **`move-tab`** installs [`mods/move-tab/`](mods/move-tab/RECIPE.md), adds `Move to…` to the menu and the tab drag to the tab bar, the worker's floating block, and binds `cmd-shift-m`.
 8. **`files`** points the `files` block at [`mods/files/`](mods/files/RECIPE.md).
-9. **`rail`** moves the window into `workspace`, the first child of the `views` stack, beside the [`rail`](mods/rail/RECIPE.md) block.
+9. **`rail`** moves the window into `workspace`, the first child of the `views` stack, beside the [`rail`](mods/rail/RECIPE.md) block, and binds `cmd-shift-j`.
 10. **The extras**, the local config's recipes, which find the window as Herdr ships it plus the steps above.
 11. **`rail-keys`** binds `ctrl-cmd-<n>` to each view the rail lists.
 12. **`nuoh-frame`** removes `brand`, `sidebar-footer` and `status`, paints the gradient, builds `rail-column`, `space-title` and `work-top` around [`topbar`](mods/topbar/RECIPE.md), lines the panes, and reshapes the tabs.
 13. **`nuoh-cards`** makes Spaces, Agents ([`agent-list`](mods/agent-list/RECIPE.md)), the panes ([`pane-header`](mods/pane-header/RECIPE.md)) and every panel beside them cards, and gathers the panel buttons into one group.
 
-The `layout:nuoh` section of `keys.json` takes the key `global` binds to `app.palette` (as `mod.open:nuoh-palette`), `cmd-shift-o` (`mod.open:nuoh-markdown`), `cmd-shift-m` (`mod.open:nuoh-move-tab`), and `ctrl-cmd-<n>` as `{ "command": "layout.select", "args": { "stack": "views", "child": <view> } }`.
+The `layout:nuoh` section of `keys.json` takes the key `global` binds to `app.palette` (as `mod.open:nuoh-palette`), `cmd-shift-o` (`mod.open:nuoh-markdown`), `cmd-shift-m` (`mod.open:nuoh-move-tab`), `cmd-shift-j` (`nuoh-rail.waiting`), and `ctrl-cmd-<n>` as `{ "command": "layout.select", "args": { "stack": "views", "child": <view> } }`.
 
 `nuoh-sync`, from `mods/sync/`, is the `sync` block, with `{ built, repo, bun }` in its props. When it starts and `updates().app.version` differs from `built`, it runs `<bun> scripts/layout.ts apply --herdr-version <version>` in `repo` with a 120 s timeout, and on a failure posts `nuoh stayed on <built>` with the first line of the error.
 
@@ -89,7 +89,7 @@ The art is `layouts/nuoh.svg`; the theme is `themes/vjr.json`, generated from `p
 - `bun run apply-layout` prints `applied`, and running it again prints `unchanged`.
 - `herdr-app do layout.switch '{"name":"nuoh"}'` shows the layout, and `herdr-app status` lists no errors.
 - `~/.config/herdr-app/layouts/nuoh.json` has `rail-column` and `views` as the root's children, `views` shows `workspace`, and it has no `brand`, `sidebar-footer` or `status` node.
-- The `layout:nuoh` section of `keys.json` binds `ctrl-cmd-1` to `layout.select` of `workspace`, `cmd-shift-o` to `mod.open:nuoh-markdown` and `cmd-shift-m` to `mod.open:nuoh-move-tab`.
+- The `layout:nuoh` section of `keys.json` binds `ctrl-cmd-1` to `layout.select` of `workspace`, `cmd-shift-o` to `mod.open:nuoh-markdown`, `cmd-shift-m` to `mod.open:nuoh-move-tab` and `cmd-shift-j` to `nuoh-rail.waiting`.
 - `herdr-app shot` shows the gradient, the rail card, the band with the window buttons, the Spaces and Agents cards, and the panes as cards with their header, the focused one lined in `#FFC799B3`.
 - `herdr-app do layout.select '{"stack":"panel-body","child":"graph"}'` and then `herdr-app do layout.show '{"id":"panel"}'` show the focused repository's history in a card beside the panes.
 - Changing `built` in the `sync` block's props to an older version brings it back to the installed version within seconds, with a line for it in `~/.local/state/vjr-herdr/layout.log`.

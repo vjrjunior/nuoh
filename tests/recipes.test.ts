@@ -200,7 +200,7 @@ describe("nuoh", () => {
     expect(list["main.js"]).toContain('openOverlay({ mod: "nuoh-agent-list", kind: "popup"');
     expect(list["main.js"]).toContain('from "./kit.js"');
     expect(list["kit.js"]).toContain('{ name: "nuoh-kit" }');
-    expect(Object.keys(list).sort()).toEqual(["agent-title.js", "kit.js", "layout-tree.js", "logic.js", "main.js", "mod.json", "space-colors.js"]);
+    expect(Object.keys(list).sort()).toEqual(["agent-since.js", "agent-title.js", "kit.js", "layout-tree.js", "logic.js", "main.js", "mod.json", "space-colors.js"]);
   });
 
   test("a window without the sidebar's lists fails the cards recipe", () => {
@@ -375,6 +375,13 @@ describe("nuoh", () => {
     expect(rail).toContain('const PALETTE = { name: "nuoh-palette" };');
     expect(generated.mods["nuoh-rail"]?.["kit.js"]).toContain('{ name: "nuoh-kit" }');
     expect(generated.mods["nuoh-topbar"]?.["main.js"]).toContain('const MACHINE_ADD = { name: "machine-add" };');
+  });
+
+  test("cmd-shift-j asks the rail for the next agent waiting, which the palette lists", () => {
+    const generated = generate();
+    expect(generated.keys["cmd-shift-j"]).toBe("nuoh-rail.waiting");
+    expect(meta(generated, "rail").palette).toEqual([{ title: "Next agent waiting on you", command: "nuoh-rail.waiting", group: "Agents", words: "blocked done needs you next" }]);
+    expect(generated.mods["nuoh-rail"]?.["agent-since.js"]).toContain("export function track");
   });
 
   test("the top bar carries its own copies of the kit and the space colors", () => {

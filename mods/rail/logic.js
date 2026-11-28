@@ -4,6 +4,7 @@ export const VIEWS = "views";
 export const WORKSPACE = "workspace";
 
 const URGENCY = ["blocked", "done", "working"];
+const WAITING = ["blocked", "done"];
 const MAC_KEYS = { ctrl: "⌃", alt: "⌥", shift: "⇧", cmd: "⌘" };
 
 export function viewsOf(props) {
@@ -59,4 +60,18 @@ export function keyFor(bindings, actions) {
     if (found) return found.keys;
   }
   return null;
+}
+
+export function waitingOrder(agents, since) {
+  return (agents ?? [])
+    .map((agent, index) => ({ agent, index, rank: WAITING.indexOf(agent?.status) }))
+    .filter(({ rank }) => rank >= 0)
+    .sort((a, b) => a.rank - b.rank || since(a.agent) - since(b.agent) || a.index - b.index)
+    .map(({ agent }) => agent);
+}
+
+export function nextWaiting(agents, { since, current }) {
+  const order = waitingOrder(agents, since);
+  if (order.length === 0) return null;
+  return order[(order.findIndex((agent) => agent.address === current) + 1) % order.length];
 }

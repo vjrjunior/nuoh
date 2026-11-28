@@ -16,7 +16,8 @@ function railViews(layout: LayoutNode): RailView[] {
 export const rail: Recipe = {
   name: "rail",
   mods: [{ name: "rail", from: "repo" }],
-  apply({ layout }) {
+  apply({ layout, keys }) {
+    keys["cmd-shift-j"] = { mod: "rail", command: "waiting" };
     const workspace: LayoutNode = { id: WORKSPACE, type: layout.type };
     for (const field of MOVED_TO_WORKSPACE) {
       if (field in layout) {

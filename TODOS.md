@@ -226,18 +226,6 @@
 
 ## Agents
 
-### A key for the next agent that waits on you
-
-**What:** A key in `layout:nuoh` that focuses the next agent waiting on the person, in any space: blocked ones first, then done ones nobody has seen, the oldest first. With nobody waiting, a toast says `Nobody is waiting`.
-
-**Why:** `agent.next` follows the Agents list's order, not urgency, so reaching the agent that waits means reading the list.
-
-**Context:** `mods/agent-list/` already ranks by urgency and stamps when each state began (`arrange`, `since`, `needsYou`). A `<mod>.<command>` key reaches shown copies only, and the Agents list is hidden while another view shows, so the command belongs in the rail, which always shows; `pane.focus {pane}` moves the focus, and the rail then brings the Workspace back by itself.
-
-**Effort:** S
-**Priority:** P2
-**Depends on:** Nothing
-
 ### Show what each agent is doing, and mark one that is stuck
 
 **What:** Show in each Agents row what the agent is doing now (the tool it runs), and mark one stuck on the same step: its time in `dim` after 3 minutes, in `blocked` after 15.

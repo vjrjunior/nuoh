@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { readChanged, track } from "../lib/agent-since.js";
 import { checkoutOf, parseWorktrees, placeOf } from "../lib/checkouts.js";
 import { isShell, parseSession, quote, resumeCommand } from "../lib/claude.js";
 import { findNode, isNarrow, sidebarPx } from "../lib/layout-tree.js";
@@ -160,5 +161,33 @@ describe("paths", () => {
   test("Markdown files end in .md, .markdown or .mdx, in any case", () => {
     for (const name of ["a.md", "b.MARKDOWN", "c.mdx"]) expect(MARKDOWN_FILE.test(name)).toBe(true);
     for (const name of ["a.mdown", "b.md.txt", "md"]) expect(MARKDOWN_FILE.test(name)).toBe(false);
+  });
+});
+
+describe("when each agent's state began", () => {
+  const agent = (address: string, status: string) => ({ address, status });
+
+  test("a change of state is stamped, and done turning idle is not a change", () => {
+    const first = track({}, [agent("a", "working")], 100);
+    expect(first).toEqual({ changed: { a: { s: "working", at: 100 } }, dirty: true });
+    const done = track(first.changed, [agent("a", "done")], 200);
+    expect(done.changed.a).toEqual({ s: "idle", at: 200 });
+    const looked = track(done.changed, [agent("a", "idle")], 300);
+    expect(looked.dirty).toBe(false);
+    expect(looked.changed).toBe(done.changed);
+  });
+
+  test("a gone agent's stamp is forgotten after 30 days, and kept before", () => {
+    const day = 86_400_000;
+    const stamps = { old: { s: "idle", at: 0 }, recent: { s: "idle", at: 20 * day } };
+    const next = track(stamps, [agent("new", "working")], 31 * day);
+    expect(Object.keys(next.changed).sort()).toEqual(["new", "recent"]);
+  });
+
+  test("a broken store starts empty", () => {
+    expect(readChanged("not json")).toEqual({});
+    expect(readChanged("[1]")).toEqual({});
+    expect(readChanged(null)).toEqual({});
+    expect(readChanged('{"a":{"s":"idle","at":1}}')).toEqual({ a: { s: "idle", at: 1 } });
   });
 });

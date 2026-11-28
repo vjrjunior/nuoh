@@ -92,6 +92,7 @@ describe("apply", () => {
       "cmd-shift-p": "mod.open:nuoh-palette",
       "cmd-shift-o": "mod.open:nuoh-markdown",
       "cmd-shift-m": "mod.open:nuoh-move-tab",
+      "cmd-shift-j": "nuoh-rail.waiting",
       "ctrl-cmd-1": { command: "layout.select", args: { stack: "views", child: "workspace" } },
     });
   });

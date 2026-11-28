@@ -1,1 +1,5 @@
-{ "place": "none", "title": "Rail" }
+{
+  "place": "none",
+  "title": "Rail",
+  "palette": [{ "title": "Next agent waiting on you", "command": "rail.waiting", "group": "Agents", "words": "blocked done needs you next" }]
+}

@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { repo } from "./helpers";
 
-const { RANK, ago, arrange, crowdedTabs, kidStatus, machineOf, mostUrgent, needsYou, readChanged, sortOf, subTree, track } = await import(
+const { RANK, ago, arrange, crowdedTabs, kidStatus, machineOf, mostUrgent, needsYou, sortOf, subTree } = await import(
   "../mods/agent-list/logic.js"
 );
 
@@ -33,30 +33,6 @@ describe("time", () => {
     expect(ago(2 * 60_000)).toBe("2m");
     expect(ago(6 * 3_600_000)).toBe("6h");
     expect(ago(30 * 3_600_000)).toBe("1d");
-  });
-
-  test("a change of state is stamped, and done turning idle is not a change", () => {
-    const first = track({}, [agent("a", "working")], 100);
-    expect(first).toEqual({ changed: { a: { s: "working", at: 100 } }, dirty: true });
-    const done = track(first.changed, [agent("a", "done")], 200);
-    expect(done.changed.a).toEqual({ s: "idle", at: 200 });
-    const looked = track(done.changed, [agent("a", "idle")], 300);
-    expect(looked.dirty).toBe(false);
-    expect(looked.changed).toBe(done.changed);
-  });
-
-  test("a gone agent's stamp is forgotten after 30 days, and kept before", () => {
-    const day = 86_400_000;
-    const stamps = { old: { s: "idle", at: 0 }, recent: { s: "idle", at: 20 * day } };
-    const next = track(stamps, [agent("new", "working")], 31 * day);
-    expect(Object.keys(next.changed).sort()).toEqual(["new", "recent"]);
-  });
-
-  test("a broken store starts empty", () => {
-    expect(readChanged("not json")).toEqual({});
-    expect(readChanged("[1]")).toEqual({});
-    expect(readChanged(null)).toEqual({});
-    expect(readChanged('{"a":{"s":"idle","at":1}}')).toEqual({ a: { s: "idle", at: 1 } });
   });
 });
 
@@ -132,7 +108,7 @@ describe("counts", () => {
   });
 });
 
-test("logic.js imports nothing from the app", () => {
+test("logic.js imports nothing from the app, only lib's pure modules", () => {
   const imports = [...readFileSync(join(repo, "mods/agent-list/logic.js"), "utf8").matchAll(/from "([^"]+)"/g)].map((match) => match[1]);
-  expect(imports).toEqual([]);
+  expect(imports).toEqual(["../../lib/agent-since.js"]);
 });

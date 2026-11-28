@@ -4,6 +4,7 @@ What more than one mod needs and no window shows. Every module is pure (no `herd
 
 | Module | Holds | Used by |
 |---|---|---|
+| `agent-since.js` | `track` (stamps when each agent's state began, `done` and `idle` as one, forgetting gone agents after `KEEP_DAYS`), `settled`, `readChanged` (the stamps kept in `localStorage`) | Agents list, rail |
 | `agent-title.js` | `cleanTitle` (strips the marks an agent puts before its title), `tellingTitle` (turns away a path or `user@host`), `agentTitle` (a pane's name, a named tab, a telling live title, then the program) | Agents list, pane header |
 | `checkouts.js` | `parseWorktrees` (`git worktree list --porcelain`, the main checkout first), `checkoutOf` (the checkout a folder is in), `placeOf` (where a space is now), `base` | Spaces tree, Move tab, Comeback |
 | `claude.js` | a Claude Code session: `OPTIONS` worth keeping, `LOADS_CODE` (options that load code), `parseSession` (`~/.claude/sessions/<pid>.json`), `keepOptions`, `quote`, `resumeCommand`, `isShell` | Move tab, Comeback |
@@ -24,4 +25,4 @@ What more than one mod needs and no window shows. Every module is pure (no `herd
 
 ## Tests
 
-`tests/lib.test.ts`, `tests/agent-title.test.ts` and `tests/open-markdown.test.ts` test these modules.
+`tests/lib.test.ts` (with `agent-since.js`), `tests/agent-title.test.ts` and `tests/open-markdown.test.ts` test these modules.

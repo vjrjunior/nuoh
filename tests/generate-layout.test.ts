@@ -233,6 +233,43 @@ describe("references", () => {
   });
 });
 
+describe("mod commands", () => {
+  test("a recipe's key that runs a mod's command names its copy", () => {
+    const withCommand: Recipe = {
+      name: "mod-key",
+      mods: [{ name: "picker", from: "mods" }],
+      apply(context) {
+        context.keys["cmd-shift-j"] = { mod: "picker", command: "next" };
+      },
+    };
+    expect(setup().generate([withCommand]).keys).toEqual({ "cmd-shift-j": "nuoh-picker.next" });
+  });
+
+  test("a key that runs a command of a mod with no copy fails the build", () => {
+    const withCommand: Recipe = {
+      name: "mod-key",
+      mods: [],
+      apply(context) {
+        context.keys["cmd-shift-j"] = { mod: "rail", command: "waiting" };
+      },
+    };
+    expect(() => setup().generate([withCommand])).toThrow("a key runs rail.waiting, and rail has no copy");
+  });
+
+  test("a copy's palette names its own commands by the copy, and leaves app commands", () => {
+    const { repo, generate } = setup();
+    writeFileSync(
+      join(repo, "mods/git-graph/mod.json"),
+      JSON.stringify({ place: "none", palette: [{ title: "Refresh", command: "git-graph.refresh" }, { title: "Files", command: "mod.open", args: { name: "files" } }] }),
+    );
+    const palette = JSON.parse(generate().mods["nuoh-git-graph"]?.["mod.json"] ?? "{}").palette;
+    expect(palette).toEqual([
+      { title: "Refresh", command: "nuoh-git-graph.refresh" },
+      { title: "Files", command: "mod.open", args: { name: "files" } },
+    ]);
+  });
+});
+
 describe("layout", () => {
   test("adds the theme, preview, source version and sync block to the layout", () => {
     const { repo, generate } = setup();

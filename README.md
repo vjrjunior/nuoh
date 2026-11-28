@@ -41,6 +41,7 @@ herdr-app do layout.switch '{"name":"nuoh"}'
 | `cmd-shift-p` | opens nuoh's command palette, which lists these keys too |
 | `cmd-shift-o` | lists the Markdown files of the focused terminal and its repository |
 | `cmd-shift-m` | opens Move to… for the focused tab |
+| `cmd-shift-j` | goes to the next agent waiting on you, blocked ones first |
 
 The palette takes whichever key `global` binds to `app.palette`: run `bun run apply-layout` again after changing it. `apply-layout` rewrites the section on every run, so the other keys change in `recipes/`, not there. `ctrl-alt-shift-escape` always goes back to Herdr's own layout.
 

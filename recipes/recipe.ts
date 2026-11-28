@@ -3,11 +3,12 @@ export type Editor = { name: string; argv: string[] };
 export type Copy = { name: string; files: Record<string, string>; meta: Record<string, unknown> };
 export type LayoutNode = Record<string, unknown>;
 export type KeyCommand = { command: string; args?: Record<string, unknown> };
+export type ModCommand = { mod: string; command: string };
 export type RecipeContext = {
   copies: Record<string, Copy>;
   layout: LayoutNode;
   replacements: Record<string, string>;
-  keys: Record<string, string | KeyCommand>;
+  keys: Record<string, string | KeyCommand | ModCommand>;
   bun?: string;
   editor?: Editor;
   options: Record<string, unknown>;

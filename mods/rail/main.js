@@ -1,8 +1,9 @@
 import { View, div } from "gpui-kit";
 import { v_flex } from "gpui-base";
-import { agents, focused, keys, layout, panes, props, run, theme, window } from "herdr";
+import { agents, focused, keys, layout, nextCommand, notify, panes, props, run, theme, window } from "herdr";
 import { icon, statusDot } from "../../kit/kit.js";
-import { VIEWS, WORKSPACE, badgeOf, focusOf, followFocus, hint, keyFor, shownView, viewsOf } from "./logic.js";
+import { readChanged, track } from "../../lib/agent-since.js";
+import { VIEWS, WORKSPACE, badgeOf, focusOf, followFocus, hint, keyFor, nextWaiting, shownView, viewsOf } from "./logic.js";
 
 const PALETTE = { name: "palette" };
 const INSET = 7;
@@ -10,10 +11,53 @@ const TILE = 40;
 const TILE_RADIUS = 11;
 const GLYPH = 18;
 const BADGE = 13;
+const STORE = "changed";
+const NOBODY = { title: "Nobody is waiting", level: "info", timeout: 2000 };
+
+function load() {
+  try {
+    return readChanged(localStorage.getItem(STORE));
+  } catch {
+    return {};
+  }
+}
+
+function save(changed) {
+  try {
+    localStorage.setItem(STORE, JSON.stringify(changed));
+  } catch {}
+}
 
 export default class Rail extends View {
-  init() {
+  init(_given, cx) {
     this.last = null;
+    this.changed = load();
+    cx.spawn(async () => {
+      for (;;) {
+        if ((await nextCommand()) === "waiting") this.waiting();
+      }
+    });
+  }
+
+  stamp(list) {
+    const next = track(this.changed, list, Date.now());
+    if (!next.dirty) return;
+    this.changed = next.changed;
+    save(this.changed);
+  }
+
+  waiting() {
+    const list = agents() ?? [];
+    this.stamp(list);
+    const current = focused()?.terminal ?? list.find((agent) => agent.focused)?.address ?? null;
+    const next = nextWaiting(list, { since: (agent) => this.changed[agent.address]?.at ?? 0, current });
+    if (!next) {
+      notify(NOBODY);
+      return;
+    }
+    if (shownView(layout(), viewsOf(props())) !== WORKSPACE) run("layout.select", { stack: VIEWS, child: WORKSPACE });
+    if (next.pane) run("pane.focus", { pane: next.pane });
+    else run("terminal.peek", { terminal: next.address });
   }
 
   select(id) {
@@ -54,7 +98,9 @@ export default class Rail extends View {
     this.follow(shown);
     const platform = window()?.platform;
     const bindings = keys();
-    const badge = badgeOf(agents());
+    const list = agents() ?? [];
+    this.stamp(list);
+    const badge = badgeOf(list);
     return v_flex()
       .id("rail")
       .size_full()

@@ -24,7 +24,7 @@ The `nuoh` layout's Agents card: every agent that reports its status, one 54px r
 ## Built from
 
 - `recipes/cards.ts` (`nuoh-cards`) makes the `agents` block of `sidebar-lists` a card and points it at `agent-list`, installed as `nuoh-agent-list`.
-- `mods/agent-list/logic.js` holds the time stamps and ages, the sub-agent trees and urgency, the order, the needs-you count and the machine of an address; `main.js` draws with the kit and takes the space's color from `lib/space-colors.js` and the folded check from `lib/layout-tree.js`. The sort popup is the same mod opened with `openOverlay({ kind: "popup", props: { sortMenu: true } })`. It reads `agents()`, `terminals()`, `spaces()`, `layout()` and `shared("space.colors")`, and runs no programs and reads no files.
+- `mods/agent-list/logic.js` holds the ages, the sub-agent trees and urgency, the order, the needs-you count and the machine of an address; `lib/agent-since.js` stamps when each state began, shared with the rail; `main.js` draws with the kit and takes the space's color from `lib/space-colors.js` and the folded check from `lib/layout-tree.js`. The sort popup is the same mod opened with `openOverlay({ kind: "popup", props: { sortMenu: true } })`. It reads `agents()`, `terminals()`, `spaces()`, `layout()` and `shared("space.colors")`, and runs no programs and reads no files.
 
 ## Watch out
 
