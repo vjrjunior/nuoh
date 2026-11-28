@@ -2,12 +2,24 @@
   "title": "Implement, review, fix",
   "about": "Claude implements, Codex reviews, Claude fixes until the review passes",
   "inputs": { "task": { "label": "Task", "required": true } },
-  "steps": [
-    { "id": "implement", "agent": ["claude"], "task": "{{input.task}}" },
-    { "id": "test", "run": ["bun", "test"], "allowFail": true },
-    { "id": "review", "agent": ["codex"], "task": "Review the uncommitted diff. Tests said:\n{{test.output}}", "answer": { "blocking": "number", "summary": "text" } },
-    { "id": "fix", "continue": "implement", "when": "{{review.blocking}} > 0", "task": "Fix what the review found:\n{{review.summary}}", "goto": "test", "max": 3 },
-    { "id": "ship", "approve": "Open the PR?", "show": "{{review.summary}}" },
-    { "id": "pr", "continue": "implement", "task": "Open a PR for this work." }
+  "nodes": [
+    { "id": "start", "start": {}, "at": [0, 120] },
+    { "id": "implement", "agent": ["claude"], "task": "{{input.task}}", "at": [360, 80] },
+    { "id": "test", "run": ["bun", "test"], "allowFail": true, "at": [720, 120] },
+    { "id": "review", "agent": ["codex"], "task": "Review the uncommitted diff.", "answer": { "blocking": "number", "summary": "text" }, "at": [1080, 80] },
+    { "id": "clean", "condition": "{{review.blocking}} = 0", "at": [1440, 120] },
+    { "id": "fix", "continue": "implement", "task": "Fix what the review found:\n{{review.summary}}", "at": [1440, 400] },
+    { "id": "ship", "approve": "Open the PR?", "show": "{{review.summary}}", "at": [1800, 80] },
+    { "id": "pr", "continue": "implement", "task": "Open a PR for this work.", "at": [2160, 80] }
+  ],
+  "edges": [
+    { "from": "start", "to": "implement" },
+    { "from": "implement", "to": "test" },
+    { "from": "test", "to": "review" },
+    { "from": "review", "to": "clean" },
+    { "from": "clean", "to": "ship", "branch": "yes" },
+    { "from": "clean", "to": "fix", "branch": "no" },
+    { "from": "fix", "to": "test", "max": 3 },
+    { "from": "ship", "to": "pr" }
   ]
 }

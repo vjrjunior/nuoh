@@ -12,7 +12,7 @@ What more than one mod needs and no window shows. Every module is pure (no `herd
 | `open-markdown.js` | `openMarkdown(file, { pane })`: writes `markdown.request` and runs `nuoh-markdown.show` when the focused tab shows a viewer and no other pane of it is zoomed, else splits a viewer right of the pane | Files, Markdown viewer and picker |
 | `paths.js` | `nameOf`, `folderOf`, `shortFolder`, `MARKDOWN_FILE` | Files, Markdown viewer |
 | `space-colors.js` | the six avatar colors, `LETTER`, `paint`, `spaceColor`, `avatarLook` | Spaces tree, Agents list, top bar |
-| `workflow.js` | a workflow file: `checkWorkflow`, `parseWorkflow`, `warnings`, `resolveInputs`; `fill` (templates), `evaluate` (`when`); typed answers (`readAnswer`, `agentMessage`, `retryMessage`); a run's `scopeOf`, `nextIndex`, `timesRun`, `agentTerminal`, `reuseBefore`, `runSummary` | the workflow runner (`scripts/workflow.ts`), the Workflows view |
+| `workflow.js` | a workflow graph: `checkWorkflow`, `parseWorkflow`, `warnings`, `resolveInputs`; `graphOf` (order, loops), `ancestors`, `reach`, `agentRoot`; `fill`, `evaluate`; typed answers (`readAnswer`, `agentMessage`, `retryMessage`); a run's `current`, `readyNodes`, `activeIn`, `loopsTaken`, `takeLoop`, `nodeInputs`, `staleNodes`, `reuseFor`, `scopeOf`, `runSummary` | the workflow runner (`scripts/workflow.ts`), the Workflows view |
 
 `space-colors.js` is one of the three places allowed to hold hex colors ([`kit/AGENTS.md`](../kit/AGENTS.md)).
 

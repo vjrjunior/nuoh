@@ -22,12 +22,23 @@ import {
 const WORKFLOW = {
   title: "Flow",
   inputs: { task: { label: "Task", required: true }, branch: { default: "main" } },
-  steps: [
+  nodes: [
+    { id: "start", start: {} },
     { id: "implement", agent: ["/usr/local/bin/claude", "--model", "opus"], task: "Do {{input.task}}" },
     { id: "test", run: ["bun", "test"] },
     { id: "review", agent: ["codex"], task: "Review", answer: { blocking: "number" } },
-    { id: "fix", continue: "implement", when: "{{review.blocking}} > 0", task: "Fix it", goto: "test", max: 3 },
+    { id: "check", condition: "{{review.blocking}} > 0" },
+    { id: "fix", continue: "implement", task: "Fix it" },
     { id: "ship", approve: "Ship {{input.task}}?", show: "{{review.blocking}} left" },
+  ],
+  edges: [
+    { from: "start", to: "implement" },
+    { from: "implement", to: "test" },
+    { from: "test", to: "review" },
+    { from: "review", to: "check" },
+    { from: "check", to: "fix", branch: "yes" },
+    { from: "check", to: "ship", branch: "no" },
+    { from: "fix", to: "test", max: 3 },
   ],
 };
 
@@ -37,17 +48,21 @@ const run = (over: Record<string, unknown> = {}) => ({
   number: 2,
   inputs: { task: "login" },
   status: "approval",
-  at: 4,
   created: 1_000_000,
+  epoch: { test: 1, review: 1, check: 1, fix: 1, ship: 1 },
   steps: [
-    { id: "implement", status: "done", output: "Did it", terminal: "t5" },
-    { id: "test", status: "done", output: "1 fail", exit: 1 },
-    { id: "review", status: "done", output: "{}", fields: { blocking: 1 } },
-    { id: "fix", status: "done", output: "Fixed" },
-    { id: "test", status: "done", output: "pass", exit: 0 },
-    { id: "review", status: "done", output: "{}", fields: { blocking: 0 } },
-    { id: "fix", status: "skipped" },
-    { id: "ship", status: "approval" },
+    { id: "start", status: "done", epoch: 0 },
+    { id: "implement", status: "done", output: "Did it", terminal: "t5", epoch: 0 },
+    { id: "test", status: "done", output: "1 fail", exit: 1, epoch: 0 },
+    { id: "review", status: "done", output: "{}", fields: { blocking: 1 }, epoch: 0 },
+    { id: "check", status: "done", output: "yes", epoch: 0 },
+    { id: "ship", status: "skipped", epoch: 0 },
+    { id: "fix", status: "done", output: "Fixed", epoch: 0 },
+    { id: "test", status: "done", output: "pass", exit: 0, epoch: 1 },
+    { id: "review", status: "done", output: "{}", fields: { blocking: 0 }, epoch: 1 },
+    { id: "check", status: "done", output: "no", epoch: 1 },
+    { id: "fix", status: "skipped", epoch: 1 },
+    { id: "ship", status: "approval", epoch: 1 },
   ],
   ...over,
 });
@@ -101,42 +116,47 @@ describe("steps", () => {
   test("without a run, every step is to do and shows its own text", () => {
     const rows = stepRows(WORKFLOW, null, null);
     expect(rows.map((row) => [row.id, row.node, row.note])).toEqual([
+      ["start", "todo", null],
       ["implement", "todo", null],
       ["test", "todo", null],
       ["review", "todo", null],
+      ["check", "todo", null],
       ["fix", "todo", null],
       ["ship", "todo", null],
     ]);
-    expect(rows[0]).toMatchObject({ icon: "bot", detail: "claude --model opus", task: "Do {{input.task}}" });
-    expect(rows[1]).toMatchObject({ icon: "terminal", detail: "$ bun test" });
-    expect(rows[3]).toMatchObject({ detail: "continues implement", condition: "{{review.blocking}} > 0", loop: "back to test, up to 3×" });
-    expect(rows[4]).toMatchObject({ icon: "flag", detail: "Ship {{input.task}}?", task: "{{review.blocking}} left" });
+    expect(rows[1]).toMatchObject({ icon: "bot", detail: "claude --model opus", task: "Do {{input.task}}" });
+    expect(rows[2]).toMatchObject({ icon: "terminal", detail: "$ bun test" });
+    expect(rows[4]).toMatchObject({ icon: "git-branch", detail: "if {{review.blocking}} > 0" });
+    expect(rows[5]).toMatchObject({ detail: "continues implement", loop: "back to test, up to 3×" });
+    expect(rows[6]).toMatchObject({ icon: "flag", detail: "Ship {{input.task}}?", task: "{{review.blocking}} left" });
   });
 
   test("with a run, each step shows its latest record, its passes and the run's values", () => {
     const rows = stepRows(WORKFLOW, run(), "approval");
     expect(rows.map((row) => [row.id, row.node, row.note])).toEqual([
+      ["start", "done", "Done"],
       ["implement", "done", "Done"],
       ["test", "done", "Done · 2×"],
       ["review", "done", "Done · 2×"],
+      ["check", "done", "Done · 2×"],
       ["fix", "todo", "Skipped · 2×"],
-      ["ship", "current", "Needs you"],
+      ["ship", "current", "Needs you · 2×"],
     ]);
-    expect(rows[0]).toMatchObject({ output: "Did it", terminal: "t5", task: "Do login" });
-    expect(rows[2].fields).toEqual({ blocking: 0 });
-    expect(rows[4]).toMatchObject({ waiting: true, detail: "Ship login?", task: "0 left" });
+    expect(rows[1]).toMatchObject({ output: "Did it", terminal: "t5", task: "Do login" });
+    expect(rows[3].fields).toEqual({ blocking: 0 });
+    expect(rows[6]).toMatchObject({ waiting: true, detail: "Ship login?", task: "0 left" });
   });
 
   test("a failed step and a cut-off current step are marked bad", () => {
-    const failed = run({ status: "failed", at: null, steps: [{ id: "implement", status: "failed", error: "no answer" }] });
-    expect(stepRows(WORKFLOW, failed, "failed")[0]).toMatchObject({ node: "bad", note: "Failed", error: "no answer" });
-    const cut = run({ status: "running", at: 0, steps: [{ id: "implement", status: "running", terminal: "t5" }] });
-    expect(stepRows(WORKFLOW, cut, "interrupted")[0]).toMatchObject({ node: "bad", note: "Cut off", current: true });
-    expect(stepRows(WORKFLOW, cut, "running")[0]).toMatchObject({ node: "current", note: "Running" });
+    const failed = run({ status: "failed", epoch: {}, steps: [{ id: "implement", status: "failed", error: "no answer" }] });
+    expect(stepRows(WORKFLOW, failed, "failed")[1]).toMatchObject({ node: "bad", note: "Failed", error: "no answer" });
+    const cut = run({ status: "running", epoch: {}, steps: [{ id: "implement", status: "running", terminal: "t5" }] });
+    expect(stepRows(WORKFLOW, cut, "interrupted")[1]).toMatchObject({ node: "bad", note: "Cut off", current: true });
+    expect(stepRows(WORKFLOW, cut, "running")[1]).toMatchObject({ node: "current", note: "Running" });
   });
 
   test("long text is cut to its first lines", () => {
-    const long = { steps: [{ id: "a", agent: ["claude"], task: "1\n2\n3\n4\n5" }] };
+    const long = { nodes: [{ id: "a", agent: ["claude"], task: "1\n2\n3\n4\n5" }] };
     expect(stepRows(long, null, null)[0].task).toBe("1\n2\n3\n…");
   });
 });
@@ -150,7 +170,7 @@ describe("running from the view", () => {
     ]);
     expect(missingInputs(inputs, { task: " ", branch: "main" })).toEqual(["task"]);
     expect(runArgs("flow", inputs, { task: "Fix login", branch: "" }, "s1")).toEqual(["run", "flow", "--input", "task=Fix login", "--space", "s1", "--json"]);
-    expect(inputsOf({ steps: [] })).toEqual([]);
+    expect(inputsOf({ nodes: [] })).toEqual([]);
   });
 
   test("the popup's height follows the inputs and spaces, up to six spaces", () => {

@@ -11,9 +11,14 @@ const BUN = "/bin/bun";
 const FLOW = {
   title: "Flow",
   inputs: { task: { label: "Task", required: true } },
-  steps: [
+  nodes: [
+    { id: "start", start: {} },
     { id: "implement", agent: ["claude"], task: "Do {{input.task}}" },
     { id: "ship", approve: "Ship {{input.task}}?" },
+  ],
+  edges: [
+    { from: "start", to: "implement" },
+    { from: "implement", to: "ship" },
   ],
 };
 
@@ -101,7 +106,7 @@ describe("the body", () => {
     const { draw } = await open();
     const all = texts(draw());
     expect(all).toContain("Flow");
-    expect(all).toContain("2 steps · Running");
+    expect(all).toContain("3 steps · Running");
     expect(all).toContain("implement");
     expect(all).toContain("Do login");
     expect(all).toContain("#2 · Running");
@@ -158,7 +163,7 @@ describe("the body", () => {
   });
 
   test("an invalid file shows its problems and offers an agent to fix it", async () => {
-    writeWorkflow("broken", { steps: [{ id: "a", run: [] }] });
+    writeWorkflow("broken", { nodes: [{ id: "start", start: {} }, { id: "a", run: [] }], edges: [] });
     const { draw, cx } = await open();
     expect(texts(draw())).toContain('step "a": run must be a list like ["bun", "test"]');
     click(byKey(draw(), "workflows-fix"), cx);

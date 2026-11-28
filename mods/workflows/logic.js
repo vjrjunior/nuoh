@@ -1,4 +1,4 @@
-import { FINAL, fill, scopeOf, stepKind } from "../../lib/workflow.js";
+import { current, FINAL, fill, graphOf, nodeKind, scopeOf } from "../../lib/workflow.js";
 
 export const RUNS_SHOWN = 20;
 export const STARTING_MS = 30000;
@@ -25,7 +25,7 @@ const STEP_NOTE = {
   interrupted: "Cut off",
 };
 
-const KIND_ICON = { agent: "bot", continue: "bot", run: "terminal", approve: "flag" };
+const KIND_ICON = { start: "play", agent: "bot", continue: "bot", run: "terminal", approve: "flag", condition: "git-branch" };
 
 export function groupRuns(ids) {
   const groups = {};
@@ -69,42 +69,47 @@ export function program(argv) {
 }
 
 export function stepDetail(step) {
-  const kind = stepKind(step);
+  const kind = nodeKind(step);
+  if (kind === "start") return "start";
   if (kind === "agent") return program(step.agent);
   if (kind === "continue") return `continues ${step.continue}`;
   if (kind === "run") return `$ ${step.run.join(" ")}`;
+  if (kind === "condition") return `if ${step.condition}`;
   return step.approve;
 }
 
 export function stepRows(workflow, run, status) {
-  const steps = workflow?.steps ?? [];
-  const current = run && !FINAL.includes(run.status) ? run.at : null;
+  const graph = graphOf(workflow);
+  const steps = graph.order.map((id) => graph.byId.get(id));
+  const going = run && !FINAL.includes(run.status);
   const scope = run ? scopeOf(run) : null;
   const text = (value) => (scope ? fill(value, scope) : value);
-  return steps.map((step, index) => {
+  return steps.map((step) => {
     const record = latestRecord(run, step.id);
+    const now = going ? current(run, step.id) : null;
+    const isCurrent = Boolean(now && ["running", "approval"].includes(now.status));
     const tries = run ? run.steps.filter((one) => one.id === step.id && !one.reused).length : 0;
     let node = "todo";
     if (record?.status === "done") node = "done";
-    if (record?.status === "failed" || (index === current && status === "interrupted")) node = "bad";
-    if (index === current && status !== "interrupted") node = "current";
-    const label = record ? (index === current && status === "interrupted" ? "Cut off" : STEP_NOTE[record.status] ?? record.status) : null;
+    if (record?.status === "failed" || (isCurrent && status === "interrupted")) node = "bad";
+    if (isCurrent && status !== "interrupted") node = "current";
+    const label = record ? (isCurrent && status === "interrupted" ? "Cut off" : STEP_NOTE[record.status] ?? record.status) : null;
     return {
       id: step.id,
-      kind: stepKind(step),
-      icon: KIND_ICON[stepKind(step)],
-      detail: stepKind(step) === "approve" ? text(step.approve) : stepDetail(step),
+      kind: nodeKind(step),
+      icon: KIND_ICON[nodeKind(step)],
+      detail: nodeKind(step) === "approve" ? text(step.approve) : stepDetail(step),
       task: step.task ? preview(text(step.task), 3) : step.show ? preview(text(step.show)) : null,
-      condition: step.when ?? null,
-      loop: step.goto ? `back to ${step.goto}, up to ${step.max}×` : null,
+      condition: null,
+      loop: (graph.loopOut.get(step.id) ?? []).map((edge) => `back to ${edge.to}, up to ${edge.max}×`).join(", ") || null,
       node,
-      current: index === current,
+      current: isCurrent,
       note: label ? (tries > 1 ? `${label} · ${tries}×` : label) : null,
       output: record?.output ? preview(record.output) : null,
       fields: record?.fields ?? null,
       error: record?.error ? preview(record.error) : null,
       terminal: record?.terminal ?? null,
-      waiting: index === current && status === "approval",
+      waiting: isCurrent && now.status === "approval" && status === "approval",
       reused: Boolean(record?.reused),
     };
   });

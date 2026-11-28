@@ -275,7 +275,7 @@ export default class Workflows extends View {
     const rows = this.workflows.map((item) => {
       const last = this.runs[item.name]?.[0] ?? null;
       const status = runStatus(last, live, now);
-      const steps = item.workflow?.steps.length ?? 0;
+      const steps = item.workflow?.nodes.length ?? 0;
       return menuItem(
         `workflows-item-${item.name}`,
         {

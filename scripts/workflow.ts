@@ -9,26 +9,32 @@ const USAGE = `usage: workflow <command>
   paths                               the folders of workflows and runs, made if missing, as JSON
   check [name]                        validate one workflow, or all
   format                              how to write a workflow
-  run <name> [--input key=value]... [--space <id>] [--json]
+  run <name> [--input key=value]... [--space <id>] [--from <step> | --only <step>] [--json]
   runs [name] [--json]                runs, newest first
   show <run>                          one run as JSON
-  approve <run> | reject <run>        answer the gate a run waits at
+  approve <run> [--node <step>]       let a run through the gate it waits at
+  reject <run> [--node <step>]        stop a run at its gate
   stop <run>                          stop a run
   retry <run> [--from <step>] [--json]
   resume <run>                        start the runner again for a run that was cut off`;
 
 export const FORMAT = `A workflow is one JSON file in ${workflowsDir()}/<name>.json, where <name> uses letters, digits, - and _.
-It runs its steps in order, in a new tab of a Herdr space. Each step can use what earlier steps produced.
+It is a graph: steps (nodes) joined by connections (edges). A run starts at the start step and follows
+the connections; a step runs once every step that connects into it is through, and steps that don't
+wait on each other run at the same time (up to 4). It runs in a new tab of a Herdr space.
 
 {
   "title": "Implement, review, fix",
   "about": "One line on what it does",
   "inputs": { "task": { "label": "Task", "required": true, "default": "" } },
-  "steps": [ ... ]
+  "nodes": [ ... ],
+  "edges": [ { "from": "start", "to": "implement" }, ... ]
 }
 
-Steps. Every step has an "id" (a letter, then letters, digits, - and _) and exactly one of:
+Steps. Every step has an "id" (a letter, then letters, digits, - and _), optionally "at": [x, y], its place
+on the canvas, and exactly one of:
 
+- "start": {}                  where the run begins; one per workflow. Its output is the inputs.
 - "agent": ["claude"]          starts that program in a new pane and gives it "task".
                                 Any argv works: ["codex"], ["claude", "--model", "opus"].
 - "continue": "<step id>"      gives "task" to the agent an earlier agent step started, in the same conversation.
@@ -36,51 +42,68 @@ Steps. Every step has an "id" (a letter, then letters, digits, - and _) and exac
                                 unless "allowFail": true.
 - "approve": "Open the PR?"    waits until a person approves or rejects. "show" adds text under the question.
                                 Rejecting stops the run.
+- "condition": "{{review.blocking}} = 0"
+                                decides yes or no. Its connections out carry "branch": "yes" or "no", and only
+                                the matching ones go on. Operators: = != > >= < <= contains, "set" and "unset"
+                                after a value, joined with and / or; a value alone is true unless empty, 0 or false.
+
+A step whose connections in all lead nowhere (a condition chose the other branch) is skipped, and so are
+the steps after it that have nothing else to wait for.
 
 Agent and continue steps:
-- "task" is the message. The workflow adds a last line asking the agent to write its answer to a file,
-  and the answer becomes the step's output.
+- "task" is the message. The answers of the agent and command steps that connect into it are added under
+  it, and a last line asks the agent to write its answer to a file; the answer becomes the step's output.
 - "answer": { "blocking": "number", "summary": "text", "level": "low|high", "note": "text?" } asks for
   one JSON object with those fields instead. Types: text, number, boolean, or options a|b|c; ? makes a field optional.
   An answer that is missing or invalid gets one more request, then the step fails.
 - "cwd" (agent only) and "timeout" (seconds) are optional.
 
-Templates, in task, approve, show, cwd and the run argv:
+Templates, in task, approve, show, cwd, condition and the run argv, can use the steps before:
 - {{input.task}}               an input of the run
-- {{<step>.output}}             an earlier step's answer text, or a command's output
+- {{<step>.output}}             a step's answer text, a command's output, a condition's yes or no
 - {{<step>.exit}}               a command's exit code
-- {{<step>.<field>}}            a field of an earlier step's answer
+- {{<step>.<field>}}            a field of a step's typed answer
 - {{run.id}} {{run.dir}} {{run.folder}} {{run.space}} {{run.workflow}} {{run.number}}
-A step that was skipped gives empty values.
+A skipped step gives empty values.
 
-Any step can also have:
-- "when": "{{review.blocking}} > 0"   runs the step only when it holds; otherwise the step is skipped.
-  Operators: = != > >= < <= contains, "set" and "unset" after a value, joined with and / or.
-  A value alone is true unless it is empty, 0 or false. Quote text with spaces: {{x.level}} = "very high".
-- "goto": "<step id>" with "max": N    after the step runs, go back to that step (or itself). The step may run
-  at most N times; needing it once more fails the run.
+Loops. A connection that goes back to an earlier step (or to the same one) is a loop and needs "max", how many
+times the run may go back that way: { "from": "fix", "to": "test", "max": 3 }. Going back runs the steps from
+there again. Needing it once more fails the run.
 
 Example: implement, test, review, fix until the review passes, then ask before the PR.
 
 {
   "title": "Implement, review, fix",
   "inputs": { "task": { "label": "Task", "required": true } },
-  "steps": [
+  "nodes": [
+    { "id": "start", "start": {} },
     { "id": "implement", "agent": ["claude"], "task": "{{input.task}}" },
     { "id": "test", "run": ["bun", "test"], "allowFail": true },
-    { "id": "review", "agent": ["codex"], "task": "Review the uncommitted diff. Tests said:\\n{{test.output}}",
+    { "id": "review", "agent": ["codex"], "task": "Review the uncommitted diff.",
       "answer": { "blocking": "number", "summary": "text" } },
-    { "id": "fix", "continue": "implement", "when": "{{review.blocking}} > 0",
-      "task": "Fix what the review found:\\n{{review.summary}}", "goto": "test", "max": 3 },
+    { "id": "clean", "condition": "{{review.blocking}} = 0" },
+    { "id": "fix", "continue": "implement", "task": "Fix what the review found:\\n{{review.summary}}" },
     { "id": "ship", "approve": "Open the PR?", "show": "{{review.summary}}" },
     { "id": "pr", "continue": "implement", "task": "Open a PR for this work." }
+  ],
+  "edges": [
+    { "from": "start", "to": "implement" },
+    { "from": "implement", "to": "test" },
+    { "from": "test", "to": "review" },
+    { "from": "review", "to": "clean" },
+    { "from": "clean", "to": "ship", "branch": "yes" },
+    { "from": "clean", "to": "fix", "branch": "no" },
+    { "from": "fix", "to": "test", "max": 3 },
+    { "from": "ship", "to": "pr" }
   ]
 }
 
+Run from a step with: workflow run <name> --from <step> (the steps before keep their last results unless they
+changed), or one step alone with --only <step>.
 After writing a file, run: workflow check <name>
 A workflow is code its owner chooses to run: the agents get the argv as written, with no permission flags added.`;
 
-type Parsed = { positional: string[]; inputs: Record<string, string>; space?: string; from?: string; runs?: string; json: boolean };
+type Parsed = { positional: string[]; inputs: Record<string, string>; space?: string; from?: string; only?: string; node?: string; runs?: string; json: boolean };
 
 function parseArgs(args: string[]): Parsed {
   const parsed: Parsed = { positional: [], inputs: {}, json: false };
@@ -95,6 +118,8 @@ function parseArgs(args: string[]): Parsed {
     if (arg === "--json") parsed.json = true;
     else if (arg === "--space") parsed.space = value();
     else if (arg === "--from") parsed.from = value();
+    else if (arg === "--only") parsed.only = value();
+    else if (arg === "--node") parsed.node = value();
     else if (arg === "--runs") parsed.runs = value();
     else if (arg === "--input") {
       const pair = value();
@@ -133,7 +158,7 @@ export async function main(args: string[], dirs: Dirs): Promise<number> {
       const workflows = listWorkflows(dirs);
       if (parsed.json) console.log(JSON.stringify(workflows));
       else if (workflows.length === 0) console.log(`no workflows in ${dirs.workflows}`);
-      else for (const item of workflows) console.log(item.problems.length ? `${item.name}  invalid: ${item.problems[0]}` : `${item.name}  ${item.title} · ${item.workflow.steps.length} steps`);
+      else for (const item of workflows) console.log(item.problems.length ? `${item.name}  invalid: ${item.problems[0]}` : `${item.name}  ${item.title} · ${item.workflow.nodes.length} steps`);
       return 0;
     }
     case "check": {
@@ -161,7 +186,7 @@ export async function main(args: string[], dirs: Dirs): Promise<number> {
       console.log(JSON.stringify({ workflows: dirs.workflows, runs: dirs.runs, script: import.meta.path }));
       return 0;
     case "run":
-      console.log(started(await startRun(io, dirs, need(first, "workflow's name"), parsed.inputs, parsed.space), parsed.json));
+      console.log(started(await startRun(io, dirs, need(first, "workflow's name"), parsed.inputs, { space: parsed.space, from: parsed.from, only: parsed.only }), parsed.json));
       return 0;
     case "runs": {
       const list = await summaries(io, dirs, first);
@@ -176,7 +201,7 @@ export async function main(args: string[], dirs: Dirs): Promise<number> {
     case "approve":
     case "reject":
     case "stop":
-      decide(dirs, need(first, "run id"), command, Date.now());
+      decide(dirs, need(first, "run id"), command, Date.now(), parsed.node);
       console.log(`${command} sent to ${first}`);
       return 0;
     case "retry":

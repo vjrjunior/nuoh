@@ -1,7 +1,15 @@
 {
   "title": "Broken",
-  "steps": [
-    { "id": "fix", "continue": "review", "task": "{{review.summary}}", "goto": "fix" },
-    { "id": "review", "agent": ["codex"], "task": "Review", "answer": { "blocking": "count" } }
+  "nodes": [
+    { "id": "start", "start": {} },
+    { "id": "fix", "continue": "review", "task": "{{review.summary}}" },
+    { "id": "review", "agent": ["codex"], "task": "Review", "answer": { "blocking": "count" } },
+    { "id": "clean", "condition": "{{review.blocking}} = 0" }
+  ],
+  "edges": [
+    { "from": "start", "to": "fix" },
+    { "from": "fix", "to": "review" },
+    { "from": "review", "to": "clean" },
+    { "from": "clean", "to": "fix" }
   ]
 }
