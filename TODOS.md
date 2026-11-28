@@ -342,18 +342,6 @@
 **Priority:** P1
 **Depends on:** Nothing
 
-### See the Spaces tree scroll to the active space in the window
-
-**What:** With more spaces than the sidebar fits, switch to one below the fold by its key and watch the list bring it into view, wide and as the narrow rail.
-
-**Why:** The scroll is covered by tests against a fake `ScrollHandle`. What `scroll_to_item` does with a folder card taller than the list was not seen: it could show the card's top while the active row sits below.
-
-**Context:** `bringActive` in `mods/spaces-tree/main.js` reveals a direct child of the list, and a folder card is one child. The window had fewer spaces than the sidebar fits when this was built, so nothing scrolled. A test panel run with enough spaces open is the check.
-
-**Effort:** S
-**Priority:** P2
-**Depends on:** Nothing
-
 ## Previews
 
 ### A preview template, then a preview.png for each mod
