@@ -296,7 +296,7 @@ describe("move-tab worker", () => {
 
 describe("move-tab worker after a cut-off move", () => {
   const CUT = "move-tab.cut";
-  const record = () => ({ id: "r1", at: Date.now() - 1000, home: "s1", place: "feat/live", claudes: [{ session: "sess-1", cwd: "/r/main", args: [], fresh: false }] });
+  const record = () => ({ id: "r1", at: Date.now() - 1000, home: "s1", place: "feat/live", claudes: [{ session: "sess-1", cwd: "/r/main", args: [], fresh: false, address: "t1", pid: 11 }] });
 
   beforeEach(() => {
     herdr.checking = (() => false) as never;
@@ -320,6 +320,18 @@ describe("move-tab worker after a cut-off move", () => {
     worker();
     await flush();
     expect(app.notes).toHaveLength(1);
+  });
+
+  test("a Claude still running in its old terminal was never ended, so nothing is offered", async () => {
+    answer = (call) =>
+      call.command === "hc" && call.args.join(" ") === "get t1 --json"
+        ? ok(JSON.stringify({ address: "t1", state: "live", foreground: { pid: 11, argv: ["claude"] } }))
+        : { code: 1, stdout: "", stderr: "" };
+    app.shared[CUT] = record();
+    worker();
+    await flush();
+    expect(app.shared[CUT]).toBeNull();
+    expect(app.notes).toEqual([]);
   });
 
   test("after a restart it waits for the terminals before looking", async () => {

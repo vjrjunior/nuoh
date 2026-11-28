@@ -247,6 +247,10 @@ describe("a move cut off in the middle", () => {
     expect(cutNotice(cut([claude, other]), [running], NOW)?.body).toBe("The move to feat/x stopped after Claude ended. To resume Claude by hand: cd /r/main/api && claude --resume abc-2");
   });
 
+  test("skips a Claude the move never ended", () => {
+    expect(cutNotice(cut(), [], NOW, new Set(["abc-1"]))).toBeNull();
+  });
+
   test("drops a record that is a day old or that can't be read", () => {
     expect(cutNotice(cut([claude], NOW - CUT_TTL - 1), [], NOW)).toBeNull();
     expect(cutNotice(null, [], NOW)).toBeNull();

@@ -110,16 +110,17 @@ export function byHand(claudes, space) {
 }
 
 export function cutRecord({ id, at, home, place, claudes }) {
-  return { id, at, home, place, claudes: claudes.map(({ session, cwd, args, fresh }) => ({ session, cwd, args, fresh })) };
+  return { id, at, home, place, claudes: claudes.map(({ session, cwd, args, fresh, address, pid }) => ({ session, cwd, args, fresh, address, pid })) };
 }
 
-export function cutNotice(cut, terminals, now) {
+export function cutNotice(cut, terminals, now, unended = new Set()) {
   if (!cut || typeof cut !== "object" || !Number.isFinite(cut.at) || now - cut.at > CUT_TTL || !Array.isArray(cut.claudes)) return null;
   const left = cut.claudes.filter(
     (claude) =>
       claude &&
       typeof claude.cwd === "string" &&
       Array.isArray(claude.args) &&
+      !unended.has(claude.session) &&
       (claude.fresh === true || (typeof claude.session === "string" && SESSION.test(claude.session) && !terminals.some((terminal) => runsSession(terminal, claude.session)))),
   );
   if (left.length === 0) return null;

@@ -687,8 +687,8 @@ describe("moveTab for a scheduled move", () => {
 
 describe("a move cut off in the middle", () => {
   const record = (claudes: any[]) => ({ id: "r1", home: "s1", place: "feat/x", claudes, at: expect.any(Number) });
-  const first = { session: "new-id", cwd: "/r/main", args: ["--model", "opus"], fresh: false };
-  const second = { session: "two-id", cwd: "/r/main/api", args: ["--effort", "high"], fresh: false };
+  const first = { session: "new-id", cwd: "/r/main", args: ["--model", "opus"], fresh: false, address: "t1", pid: 11 };
+  const second = { session: "two-id", cwd: "/r/main/api", args: ["--effort", "high"], fresh: false, address: "t2", pid: 21 };
 
   test("each Claude is written down before it ends, and the record goes when the move ends", async () => {
     const w = world();

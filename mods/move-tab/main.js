@@ -65,7 +65,13 @@ export default class MoveTab extends View {
     for (let waited = 0; (terminals() ?? []).length === 0 && waited < TERMINALS_WAIT; waited += TERMINALS_POLL) await cx.sleep(TERMINALS_POLL);
     if (shared(CUT)?.id !== cut?.id) return;
     setShared(CUT, null);
-    const notice = cutNotice(cut, terminals() ?? [], Date.now());
+    const io = appIo(cx);
+    const unended = new Set();
+    for (const claude of Array.isArray(cut?.claudes) ? cut.claudes : []) {
+      const info = typeof claude?.address === "string" ? await io.get(claude.address) : null;
+      if (info?.state === "live" && Number.isInteger(claude.pid) && info.foreground?.pid === claude.pid) unended.add(claude.session);
+    }
+    const notice = cutNotice(cut, terminals() ?? [], Date.now(), unended);
     if (notice) notify(notice);
   }
 
