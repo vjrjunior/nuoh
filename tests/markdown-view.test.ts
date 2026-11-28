@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { byKey, click, find, flush, herdr, makeCx, type Node, svgs, texts } from "./app-mocks";
 
 const { default: Markdown } = await import("../mods/markdown/main.js");
+const { handleLink } = await import("../mods/markdown/link.js");
 
 const HOME = "/Users/me";
 const DIR = "/Users/me/w/app/abc-1234";
@@ -450,5 +451,47 @@ describe("the picker", () => {
     const { rows } = await picker();
     expect(rows()).toContain("No Markdown on this terminal's screen. Type a path.");
     expect(rows()).toContain("README.md");
+  });
+});
+
+describe("Cmd-click on a Markdown path", () => {
+  let ran: [string, unknown][];
+  const source = { terminal: "t7", machine: null, cwd: DIR, pane: "p1", tab: "t1", space: "s1" };
+
+  beforeEach(() => {
+    ran = [];
+    Object.assign(herdr, {
+      panes: () => [{ pane: "p1", tab: "t1" }],
+      focused: () => ({ tab: "t1", pane: "p1" }),
+      run: (name: string, args?: unknown) => ran.push([name, args]),
+      setShared: (key: string, value: unknown) => {
+        sharedState[key] = value;
+      },
+    });
+  });
+
+  test("opens the file beside the clicked terminal", () => {
+    expect(handleLink({ link: { kind: "file", raw: "NOTES.md", path: FILE }, source })).toBe("handled");
+    expect(ran).toEqual([["pane.split", { direction: "right", pane: "p1", mod: "markdown", props: { file: FILE } }]]);
+  });
+
+  test("a viewer already in the tab shows the file", () => {
+    herdr.panes = () => [
+      { pane: "p1", tab: "t1" },
+      { pane: "p2", tab: "t1", mod: "markdown" },
+    ];
+    expect(handleLink({ link: { kind: "file", raw: "NOTES.md", path: FILE }, source })).toBe("handled");
+    expect(ran).toEqual([["markdown.show", undefined]]);
+    expect(sharedState["markdown.request"]).toMatchObject({ file: FILE, tab: "t1" });
+  });
+
+  test("a path Herdr couldn't resolve goes to the next handler", () => {
+    expect(handleLink({ link: { kind: "file", raw: "vps:/w/NOTES.md", path: null }, source: { ...source, machine: "vps" } })).toBe("pass");
+    expect(ran).toEqual([]);
+  });
+
+  test("a web address goes to the next handler", () => {
+    expect(handleLink({ link: { kind: "url", raw: "https://x.dev/a.md", url: "https://x.dev/a.md" }, source })).toBe("pass");
+    expect(ran).toEqual([]);
   });
 });

@@ -2,16 +2,16 @@
 
 ## Markdown
 
-### Open a Markdown path with Cmd-click
+### Open a Cmd-clicked Markdown path at its line
 
-**What:** Make Cmd-click on a `.md` path in a terminal open it in the Markdown viewer beside that terminal.
+**What:** When a Cmd-clicked path carries a line (`NOTES.md:12`, `#L12`), scroll the Markdown viewer to the heading or paragraph that holds it.
 
-**Why:** Cmd-click is what people try first, and it goes to macOS's app for `.md`.
+**Why:** Agents point at a line of a plan, and the viewer opens at the top.
 
-**Context:** Herdr 0.1.18 has terminal link handlers (guide › Mods › Terminal link handlers): `link_handlers` in `mods/markdown/mod.json` with a file rule such as `(?i)\\.(md|markdown)$`, and a `link.js` that exports `handleLink({ link, source })`, opens `link.path` with `openMarkdown` from `lib/open-markdown.js` beside `source.pane`, and returns `"handled"`, or `"pass"` when `link.path` is null (a remote or unresolved path). Herdr adds a mod with link rules to a personal layout's root `link_handlers` the first time it sees it, and the next `apply-layout` would drop that edit, so the `markdown` recipe sets the list itself. The generator already copies every `.js` of a repo mod, but `rewireLayout` in `scripts/generate-layout.ts` prefixes only `mod` and `terminal_menu`, so it has to prefix the names in `link_handlers` too. `herdr-app check` verifies that `link.js` exports `handleLink`. `link.line` could later scroll the viewer to the line.
+**Context:** Herdr gives `link.line` to `handleLink` in `mods/markdown/link.js`, which drops it. `TextView.markdown` has no way to scroll to a source offset; the body would have to be split at headings and scrolled with a `ScrollHandle`, or the line highlighted with `.highlight_range`.
 
 **Effort:** S
-**Priority:** P2
+**Priority:** P3
 **Depends on:** Nothing
 
 ### Review a plan in the Markdown viewer and hand back the diff

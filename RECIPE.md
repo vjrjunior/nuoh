@@ -26,7 +26,7 @@ Left to right, at zoom 1. Every block sits 8px from the next and from the window
 - **Back to the Workspace:** when the focused space, tab or pane changes while another view shows (a notification clicked, `agent.next`, the palette), the rail selects `workspace`. A pane that closes on its own, or a click on the rail's own tile, doesn't.
 - **Panels:** the Files, Changes and Graph buttons show their panel, or hide it when it shows, and each space remembers its panels, as in Herdr's layout.
 - **The window** moves by dragging either band or the tab bar's free space, and a double-click maximizes it. The fold button folds the sidebar to 44px and opens it again; below 160px the sidebar cards draw their narrow rails.
-- `cmd-shift-o` opens the Markdown picker and `cmd-shift-m` the Move to… popup. After a restart, Comeback resumes the Claude Code conversations the terminals lost.
+- `cmd-shift-o` opens the Markdown picker and `cmd-shift-m` the Move to… popup; a Cmd-click on a `.md` path in a terminal opens it in the Markdown viewer. After a restart, Comeback resumes the Claude Code conversations the terminals lost.
 - **After a Herdr update**, the layout builds itself again within seconds, or keeps the previous copies and shows a warning toast that says why.
 
 ## Built from
@@ -49,14 +49,14 @@ root                row, gradient, padding 8, gap 8
                            panel (column, hidden) › panel-body (stack): files → files, changes → changes, graph → git-graph
 ```
 
-The root also keeps Herdr's `titlebar: "none"` and `terminal_padding`, gets `terminal_menu: "nuoh-menu"`, `theme: { light: "paper", dark: "vjr" }`, `preview: "layouts/nuoh.svg"`, `cloned_from` and three floating blocks that draw nothing: `comeback`, `move-tab` (the worker) and `sync`. The recipes run in the order `recipes/order.ts` gives:
+The root also keeps Herdr's `titlebar: "none"` and `terminal_padding`, gets `terminal_menu: "nuoh-menu"`, `link_handlers: ["nuoh-markdown"]`, `theme: { light: "paper", dark: "vjr" }`, `preview: "layouts/nuoh.svg"`, `cloned_from` and three floating blocks that draw nothing: `comeback`, `move-tab` (the worker) and `sync`. The recipes run in the order `recipes/order.ts` gives:
 
 1. **`palette`** copies Herdr's `frame/palette` (installed as `nuoh-palette`), makes its key hints read `layout:nuoh` too, and points the key `global` binds to `app.palette` at it.
 2. **`kit`** installs [`mods/kit/`](mods/kit/), the kit's gallery, with the kit's icons.
 3. **`git-graph-panel`** adds the Graph button after Changes in the copy of `tabs` and a `graph` block, `git-graph`, to `panel-body`.
 4. **`spaces-tree`** points `spaces` at [`mods/spaces-tree/`](mods/spaces-tree/RECIPE.md) and adds `Pin to top` and `Move to folder…` to the copy of `menu`.
 5. **`comeback`** adds the floating block of [`mods/comeback/`](mods/comeback/RECIPE.md).
-6. **`markdown`** installs [`mods/markdown/`](mods/markdown/RECIPE.md), adds `Open Markdown…` to the menu, makes that menu the terminal menu and binds `cmd-shift-o`.
+6. **`markdown`** installs [`mods/markdown/`](mods/markdown/RECIPE.md), adds `Open Markdown…` to the menu, makes that menu the terminal menu, sends a Cmd-click on a Markdown path to the viewer and binds `cmd-shift-o`.
 7. **`move-tab`** installs [`mods/move-tab/`](mods/move-tab/RECIPE.md), adds `Move to…` to the menu and the tab drag to the tab bar, the worker's floating block, and binds `cmd-shift-m`.
 8. **`files`** points the `files` block at [`mods/files/`](mods/files/RECIPE.md).
 9. **`rail`** moves the window into `workspace`, the first child of the `views` stack, beside the [`rail`](mods/rail/RECIPE.md) block.

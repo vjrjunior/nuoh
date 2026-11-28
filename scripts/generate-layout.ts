@@ -107,8 +107,10 @@ function rewireLayout(node: unknown, copies: Record<string, Copy>, prefix: strin
   }
   if (node === null || typeof node !== "object") return;
   const fields = node as LayoutNode;
+  const named = (value: unknown) => (typeof value === "string" && Object.hasOwn(copies, value) ? `${prefix}${value}` : value);
   for (const [key, value] of Object.entries(fields)) {
-    if ((key === "mod" || key === "terminal_menu") && typeof value === "string" && Object.hasOwn(copies, value)) fields[key] = `${prefix}${value}`;
+    if (key === "mod" || key === "terminal_menu") fields[key] = named(value);
+    else if (key === "link_handlers" && Array.isArray(value)) fields[key] = value.map(named);
     else rewireLayout(value, copies, prefix);
   }
 }

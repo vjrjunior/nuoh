@@ -272,6 +272,17 @@ describe("layout", () => {
     expect(JSON.parse(setup().generate([withMenu]).layoutText).terminal_menu).toBe("nuoh-menu");
   });
 
+  test("rewires the link handlers set by a recipe, leaving shipped ones", () => {
+    const withLinks: Recipe = {
+      name: "links",
+      mods: [{ name: "picker", from: "mods" }],
+      apply(context) {
+        context.layout.link_handlers = ["picker", "browser"];
+      },
+    };
+    expect(JSON.parse(setup().generate([withLinks]).layoutText).link_handlers).toEqual(["nuoh-picker", "browser"]);
+  });
+
   test("leaves the installed main layout untouched", () => {
     const { home, generate } = setup();
     const before = readFileSync(join(home, "layouts/main.json"), "utf8");

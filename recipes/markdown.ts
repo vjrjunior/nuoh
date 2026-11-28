@@ -26,6 +26,7 @@ export const markdown: Recipe = {
     exact(menu, MENU_ICON, `const MARKDOWN_PICKER = { name: "markdown" };\n\n${MENU_ICON}\n  if (command === "markdown-picker") return "mods/workspace-chrome/file-text.svg";`);
     exact(menu, SHORTCUT, `${SHORTCUT}\n  if (name === "markdown-picker") return keys().find((b) => b.action === \`mod.open:\${MARKDOWN_PICKER.name}\`)?.keys ?? "";`);
     layout.terminal_menu = "menu";
+    layout.link_handlers = ["markdown"];
     keys["cmd-shift-o"] = "markdown";
   },
 };

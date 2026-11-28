@@ -519,8 +519,15 @@ describe("markdown viewer", () => {
   test("installs the viewer without placing it", () => {
     const copy = "nuoh-markdown";
     const generated = generate();
-    expect(Object.keys(generated.mods[copy] ?? {}).sort()).toEqual(["kit.js", "logic.js", "main.js", "mod.json", "open-markdown.js", "paths.js", "picker.js"]);
+    expect(Object.keys(generated.mods[copy] ?? {}).sort()).toEqual(["kit.js", "link.js", "logic.js", "main.js", "mod.json", "open-markdown.js", "paths.js", "picker.js"]);
     expect(modsIn(JSON.parse(generated.layoutText))).not.toContain(copy);
+  });
+
+  test("a Cmd-click on a Markdown path goes to the layout's own viewer", () => {
+    const generated = generate();
+    expect(JSON.parse(generated.layoutText).link_handlers).toEqual(["nuoh-markdown"]);
+    expect(meta(generated, "markdown").link_handlers).toEqual([{ kind: "file", pattern: "(?i)\\.(md|markdown|mdx)$" }]);
+    expect(generated.mods["nuoh-markdown"]?.["link.js"]).toContain('import { openMarkdown } from "./open-markdown.js";');
   });
 });
 

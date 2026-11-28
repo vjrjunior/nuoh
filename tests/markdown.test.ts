@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   EXISTING,
@@ -17,6 +17,7 @@ import {
   stripFrontMatter,
   where,
 } from "../mods/markdown/logic.js";
+import { MARKDOWN_FILE } from "../lib/paths.js";
 import { removeTempDirs, tempDir } from "./helpers";
 
 const FILE = "/w/app/abc-1234/NOTES.md";
@@ -193,5 +194,13 @@ describe("picker rows", () => {
   test("the repository's list stops at the limit", () => {
     const repo = Array.from({ length: 5 }, (_, index) => `${top}/${index}.md`);
     expect(pickerRows([], repo, "", { top, home, limit: 3 }).repo).toHaveLength(3);
+  });
+});
+
+describe("the Cmd-click rule", () => {
+  test("takes the same extensions as the picker and Files", () => {
+    const meta = JSON.parse(readFileSync(join(import.meta.dir, "../mods/markdown/mod.json"), "utf8"));
+    expect(MARKDOWN_FILE.flags).toBe("i");
+    expect(meta.link_handlers).toEqual([{ kind: "file", pattern: `(?i)${MARKDOWN_FILE.source}` }]);
   });
 });
