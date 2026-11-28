@@ -390,7 +390,7 @@
 
 **Why:** `kit/AGENTS.md` says every component a mod draws that the design system has lives in the kit, and a mod only lays them out. These mods were drawn before that rule and still build those rows by hand.
 
-**Context:** The sets are on the sketch's Design system page (`docs/sketches/herdr-ui.fig`), section 05 and the rail's. The rows are in `mods/agent-list/main.js`, `mods/spaces-tree/rows.js` and `mods/spaces-tree/rail.js`, the tiles in `mods/rail/main.js`; their view tests look the rows up by id. The Command Center, the Brain and ClickUp already draw only with the kit.
+**Context:** The sets are on the sketch's Design system page (`docs/sketches/herdr-ui.fig`), section 05 and the rail's. The rows are in `mods/agent-list/main.js`, `mods/spaces-tree/rows.js` and `mods/spaces-tree/rail.js`, the tiles in `mods/rail/main.js`; their view tests look the rows up by id. The extras' views already draw only with the kit.
 
 **Effort:** M
 **Priority:** P2
